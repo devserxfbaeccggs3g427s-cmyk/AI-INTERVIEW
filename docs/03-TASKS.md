@@ -114,12 +114,24 @@ Máy chủ giữ dữ liệu phiên thay vì client (FR-18). Driver `node:sqlite
 
 | Mã | Task | File | Hoàn thành khi | FR |
 |---|---|---|---|---|
-| T-1.1 | Schema `AiConfig`, schema request cho mọi endpoint | `lib/schemas.ts` | Body sai kiểu bị `.parse()` từ chối, có đường dẫn trường; cả ba nguồn CV đều hợp lệ | FR-1…4, FR-12 |
-| T-1.2 | Prompt lõi bất biến | `lib/prompts.ts` | Prompt lõi là **string literal thuần** — tìm `${` trong đó không ra kết quả; giá trị trả về **giống hệt nhau** qua các lần gọi | FR-5, FR-6 |
-| T-1.3 | Hàm dựng khối cấu hình phiên | `lib/prompts.ts` | Dựng đúng cho 2 ngôn ngữ × 2 chế độ × 3 độ dài; thứ tự trường cố định, không timestamp/ID | FR-1, FR-6 |
-| T-1.4 | Dựng khối CV cho ba nguồn | `lib/interview.ts` | Không CV → không thêm khối nào; dán → khối text có delimiter; PDF → khối tài liệu **hoặc** text đã trích, tuỳ capability | FR-2, FR-3, FR-4 |
-| T-1.5 | `buildMessages()` — nơi duy nhất quyết định bố cục prompt | `lib/interview.ts` | Với Anthropic: khối CV ở `messages[0]`, cấu hình phiên là message `role:"system"` đứng sau một message `user`. Với provider khác: cấu hình phiên ở vị trí mà provider cho phép, và adapter không âm thầm bỏ qua | FR-5, FR-7 |
-| T-1.6 | Tách góp ý / câu hỏi cho chế độ kèm góp ý | `lib/interview.ts` | Chuỗi đúng định dạng tách ra hai phần; chuỗi sai định dạng suy giảm thành một câu hỏi, **không** vỡ | FR-6 |
+| ✅ T-1.1 | Schema `AiConfig`, schema request cho mọi endpoint | `lib/schemas.ts` | Body sai kiểu bị `.parse()` từ chối, có đường dẫn trường; cả ba nguồn CV đều hợp lệ | FR-1…4, FR-12 |
+| ✅ T-1.2 | Prompt lõi bất biến | `lib/prompts.ts` | Prompt lõi là **string literal thuần** — tìm `${` trong đó không ra kết quả; giá trị trả về **giống hệt nhau** qua các lần gọi | FR-5, FR-6 |
+| ✅ T-1.3 | Hàm dựng khối cấu hình phiên | `lib/prompts.ts` | Dựng đúng cho 2 ngôn ngữ × 2 chế độ × 3 độ dài; thứ tự trường cố định, không timestamp/ID | FR-1, FR-6 |
+| ✅ T-1.4 | Dựng khối CV cho ba nguồn | `lib/interview.ts` | Không CV → không thêm khối nào; dán → khối text có delimiter; PDF → khối tài liệu **hoặc** text đã trích, tuỳ capability | FR-2, FR-3, FR-4 |
+| ✅ T-1.5 | `buildMessages()` — nơi duy nhất quyết định bố cục prompt | `lib/interview.ts` | Với Anthropic: khối CV ở `messages[0]`, cấu hình phiên là message `role:"system"` đứng sau một message `user`. Với provider khác: cấu hình phiên ở vị trí mà provider cho phép, và adapter không âm thầm bỏ qua | FR-5, FR-7 |
+| ✅ T-1.6 | Tách góp ý / câu hỏi cho chế độ kèm góp ý | `lib/interview.ts` | Chuỗi đúng định dạng tách ra hai phần; chuỗi sai định dạng suy giảm thành một câu hỏi, **không** vỡ | FR-6 |
+
+> **Xác minh giai đoạn 1 (2026-10-16)** — `npm run probe:interview` chạy 155 phép kiểm offline, không cần key và không gọi API có tính phí. `npm run typecheck` sạch trên bản sao không có `.next`; `npm run build` xanh; cả bảy probe qua `npm run probe`.
+>
+> Vài kết quả đáng ghi lại:
+>
+> - **Zod 4 báo trường lạ ở `path` gốc (`""`), không phải ở khoá.** `unrecognized_keys` là **một** issue cho cả object, nên `transcript` và `turnCount` đều bị chặn đúng nhưng `issue.path` rỗng. Tiêu chí của T-1.1 về "đường dẫn trường" vì vậy được kiểm bằng `issue.keys` cho trường lạ, còn `issue.path` cho kiểu sai/thiếu trường — probe kiểm cả hai. `errorResponse()` (`lib/errors.ts`) vẫn trả `400` **không** kèm đường dẫn; nếu muốn UI báo đúng chỗ thì phải đổi cả `errorResponse()` ở T-2.1, chưa làm ở đây.
+> - `superRefine` của `custom` báo đúng `["baseUrl"]`, không báo ở gốc — nên "lỗi phải chỉ đúng chỗ cần sửa" làm được, nhưng chỉ vì rule viết tay thêm issue thay vì để Zod suy ra.
+> - `storedAiSettingsSchema` (lưu xuống `ai_settings`) và `aiConfigSchema` (body của start/turn/evaluate) là **hai** schema: `persistKey` thuộc cái sau, không thuộc cái trước. `db/validation.ts` không định nghĩa lại rule nào — probe kiểm `settingsSchema === storedAiSettingsSchema` bằng phép so sánh tham chiếu, để "một nguồn validation" là điều đo được chứ không phải lời hứa.
+> - **`cv` là người anh em của `config`, không nằm trong nó**: body mở phiên là `{ai, config, cv}`. `createSessionSchema` của giai đoạn 0c cố ý **không** dùng `cvSchema` — cột `sessions.cv_text` chỉ chứa CV đã trích thành văn bản, nên `null` (không có CV) và `""` (rỗng) là hai việc khác nhau.
+> - `buildMessages()` trả **bố cục logic** (`leadingInstruction` + `messages`), không trả cấu trúc SDK. Cả bảy adapter — bốn server, ba `direct` — chỉ còn nhiệm vụ dịch, và **ném lỗi** thay vì bỏ qua khi provider không cho phép (file ở custom, message `system` giữa cuộc trò chuyện ở OpenAI/Gemini). Proxy và direct dùng chung một hàm nên không thể lệch nhau.
+> - Bố cục kiểm trên **cả bốn** provider: lượt mở đầu có CV ở `messages[0]`; Anthropic ra `["user","system"]`, ba hãng còn lại đưa cấu hình phiên vào `leadingInstruction`; lượt sau giữ nguyên vị trí CV và cấu hình (không đẩy xuống cuối transcript — đó là cách hỏng cache âm thầm ở T-5.2); khối `assistant` phát lại nguyên vẹn kể cả thinking; CV chỉ xuất hiện **một** lần; dựng lại hai lần cho ra đúng cùng byte.
+> - Lịch sử sai hình dạng bị từ chối ngay: thiếu lượt mở đầu tổng hợp, hoặc lượt mở đầu nằm sai vị trí.
 
 ## Giai đoạn 2 — API hội thoại
 

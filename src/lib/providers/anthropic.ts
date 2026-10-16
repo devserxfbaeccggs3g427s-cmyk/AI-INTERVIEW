@@ -2,6 +2,7 @@ import Anthropic, { toFile } from "@anthropic-ai/sdk";
 import type { MessageStream } from "@anthropic-ai/sdk/lib/MessageStream";
 
 import { capabilitiesFor } from "./capabilities";
+import { buildMessages as buildPromptMessages, type PromptLayout } from "../interview";
 import { normalizeUsage } from "../usage";
 import type {
   AiConfig,
@@ -73,47 +74,20 @@ function toDocumentBlock(block: DocumentBlock) {
 }
 
 /**
- * Chuyển transcript về đúng hình dạng messages của Anthropic.
+ * Dịch bố cục logic của `lib/interview.ts` sang đúng hình dạng messages của Anthropic.
  *
  * Khối `assistant` phải phát lại **nguyên vẹn** — kể cả khối thinking. Dựng lại
  * lịch sử từ text sẽ khiến mọi lượt viết lại toàn bộ cache; request vẫn thành công,
  * chỉ là hoá đơn tăng gấp rồi. Xem docs/02-DESIGN.md §4.5.
  */
-function buildMessages(req: ChatRequest) {
-  const messages: Anthropic.MessageParam[] = [];
-
-  for (const turn of req.history) {
-    if (turn.role === "assistant") {
-      messages.push({
-        role: "assistant",
-        content: turn.blocks as Anthropic.ContentBlockParam[],
-      });
-      continue;
+function encodeMessages(layout: PromptLayout): Anthropic.MessageParam[] {
+  return layout.messages.map((message): Anthropic.MessageParam => {
+    if (message.role === "assistant") {
+      return { role: "assistant", content: message.blocks as Anthropic.ContentBlockParam[] };
     }
-    messages.push({ role: "user", content: turn.text });
-    if (("synthetic" in turn && turn.synthetic)) {
-      // Phát lại đúng vị trí của cấu hình phiên ở mọi lượt tiếp theo. Đẩy
-      // message system xuống cuối lịch sử sẽ viết lại tiền tố cache mỗi lượt.
-      messages.push({ role: "system", content: req.sessionConfig });
-    }
-  }
-
-  // CV đi kèm lượt cuối, không nhồi vào `system` — sửa system cấp cao nhất sẽ đổi
-  // byte trước cả lịch sử và làm mất cache dùng chung. Xem §5.1.
-  const content: Anthropic.ContentBlockParam[] = [
-    { type: "text", text: req.newTurn },
-  ];
-  for (const attachment of req.attachments ?? []) {
-    content.push(toDocumentBlock(attachment));
-  }
-  messages.push({ role: "user", content });
-  if (!req.history.some((turn) => turn.role === "user" && ("synthetic" in turn && turn.synthetic))) {
-    // Lượt mở đầu: user synthetic rồi system cuối. Lượt kế tiếp, message
-    // system sẽ được phát lại đúng chỗ sau user synthetic trong history.
-    messages.push({ role: "system", content: req.sessionConfig });
-  }
-
-  return messages;
+    if (message.role === "system") return { role: "system", content: message.text };
+    return { role: "user", content: message.content.map(toDocumentBlock) };
+  });
 }
 
 function mapStopReason(
@@ -198,6 +172,7 @@ export function createAnthropicAdapter(): ProviderAdapter {
       const thinking = effort ? { thinking: { type: "adaptive" as const } } : {};
       const outputConfig = effort ? { output_config: { effort } } : {};
 
+      const layout = buildPromptMessages(req, ID);
       const stream = client.messages.stream({
         model: req.model,
         max_tokens: req.maxTokens,
@@ -206,11 +181,11 @@ export function createAnthropicAdapter(): ProviderAdapter {
         system: [
           {
             type: "text",
-            text: req.coreSystem,
+            text: layout.leadingInstruction,
             cache_control: { type: "ephemeral" },
           },
         ],
-        messages: buildMessages(req),
+        messages: encodeMessages(layout),
         // Điểm ghi cache thứ hai: marker cấp cao nhất bám vào khối cacheable
         // cuối cùng của request (đuôi `messages`), nên tiền tố lõi + lịch sử đã
         // có đều được đọc lại. Đối chiếu `MessageCreateParamsBase.cache_control`
@@ -232,7 +207,7 @@ export function createAnthropicAdapter(): ProviderAdapter {
       const effort = supportedEffort(req);
 
       // `structured` bắt buộc phải kết thúc bằng một lượt `user`.
-      const messages = buildMessages({ ...req, newTurn: req.instruction });
+      const layout = buildPromptMessages({ ...req, newTurn: req.instruction }, ID);
 
       const response = await client.messages.create({
         model: req.model,
@@ -240,11 +215,11 @@ export function createAnthropicAdapter(): ProviderAdapter {
         system: [
           {
             type: "text",
-            text: req.coreSystem,
+            text: layout.leadingInstruction,
             cache_control: { type: "ephemeral" },
           },
         ],
-        messages,
+        messages: encodeMessages(layout),
         cache_control: { type: "ephemeral" },
         ...(effort ? { thinking: { type: "adaptive" as const } } : {}),
         output_config: {

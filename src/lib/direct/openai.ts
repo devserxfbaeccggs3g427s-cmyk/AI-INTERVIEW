@@ -1,6 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { toResponseInputItems } from "openai/lib/responses/ResponseInputItems";
 import type { Response, ResponseInput } from "openai/resources/responses/responses";
+import { buildMessages, type PromptLayout } from "../interview";
 import { capabilitiesFor } from "../providers/capabilities";
 import type { ChatRequest, ProviderAdapter, ProviderAuth, StructuredRequest, TurnResult } from "../providers/types";
 import { normalizeUsage } from "../usage";
@@ -13,30 +14,31 @@ function client(auth: ProviderAuth): OpenAI {
   return new OpenAI({ apiKey: auth.apiKey, dangerouslyAllowBrowser: true });
 }
 
-function input(req: ChatRequest): ResponseInput {
-  const history: ResponseInput = [];
-  for (const turn of req.history) {
-    if (turn.role === "user") history.push({ role: "user", content: turn.text });
-    else history.push(...toResponseInputItems(turn.blocks as Response["output"]));
+function input(layout: PromptLayout, model: string): ResponseInput {
+  const result: ResponseInput = [{ role: "developer", content: layout.leadingInstruction }];
+  for (const turn of layout.messages) {
+    if (turn.role === "assistant") {
+      result.push(...toResponseInputItems(turn.blocks as Response["output"]));
+      continue;
+    }
+    if (turn.role === "system") throw new DirectError("request", id);
+    const content: Array<{ type: "input_text"; text: string } | { type: "input_file"; file_id: string }> =
+      turn.content.map((block) => {
+        if (block.kind === "text") return { type: "input_text", text: block.text ?? "" };
+        if (block.kind !== "file" || !block.fileId || !capabilitiesFor(id, model).readsPdf) {
+          throw new DirectError("request", id);
+        }
+        return { type: "input_file", file_id: block.fileId };
+      });
+    result.push({ role: "user", content });
   }
-  const content: Array<{ type: "input_text"; text: string } | { type: "input_file"; file_id: string }> = [
-    { type: "input_text", text: req.newTurn },
-  ];
-  for (const attachment of req.attachments ?? []) {
-    if (attachment.kind === "text") content.push({ type: "input_text", text: attachment.text ?? "" });
-    else if (attachment.fileId && capabilitiesFor(id, req.model).readsPdf) {
-      content.push({ type: "input_file", file_id: attachment.fileId });
-    } else throw new DirectError("request", id);
-  }
-  // OpenAI has no mid-conversation system role. Session config precedes the transcript.
-  return [{ role: "developer", content: req.coreSystem + "\n" + req.sessionConfig }, ...history,
-    { role: "user", content }];
+  return result;
 }
 
-function options(req: ChatRequest) {
+function options(req: ChatRequest, layout: PromptLayout) {
   const caps = capabilitiesFor(id, req.model);
   return {
-    model: req.model, max_output_tokens: req.maxTokens, input: input(req), store: false,
+    model: req.model, max_output_tokens: req.maxTokens, input: input(layout, req.model), store: false,
     include: ["reasoning.encrypted_content" as const],
     ...(caps.reasoningLevels.includes(req.reasoning) && req.reasoning !== "off"
       ? { reasoning: { effort: req.reasoning } } : {}),
@@ -67,7 +69,8 @@ export function createDirectOpenAI(): ProviderAdapter {
     id, capabilities: capabilitiesFor(id, "gpt-5"),
     stream(auth, req) {
       return browserTurnStream(id, async function* () {
-        const events = await client(auth).responses.create({ ...options(req), stream: true });
+        const layout = buildMessages(req, id);
+        const events = await client(auth).responses.create({ ...options(req, layout), stream: true });
         let complete: Response | undefined;
         for await (const event of events) {
           if (event.type === "response.output_text.delta") yield { text: event.delta };
@@ -83,8 +86,10 @@ export function createDirectOpenAI(): ProviderAdapter {
       // `JSON.parse` trên văn bản tự do. Xem docs/02-DESIGN.md §6.3.
       if (!capabilitiesFor(id, req.model).structuredOutput) throw new DirectError("request", id);
       try {
+        const chatReq = { ...req, newTurn: req.instruction };
+        const layout = buildMessages(chatReq, id);
         const response = await client(auth).responses.create({
-          ...options({ ...req, newTurn: req.instruction }),
+          ...options(chatReq, layout),
           text: {
             format: { type: "json_schema", name: "interview_evaluation", schema: req.jsonSchema, strict: true },
           },

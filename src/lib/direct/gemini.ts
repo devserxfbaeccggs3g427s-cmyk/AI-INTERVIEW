@@ -1,5 +1,6 @@
 import { FinishReason, GoogleGenAI, ThinkingLevel } from "@google/genai";
 import type { Content, GenerateContentResponse, Part } from "@google/genai";
+import { buildMessages, type PromptLayout } from "../interview";
 import { capabilitiesFor } from "../providers/capabilities";
 import type { ChatRequest, ProviderAdapter, ProviderAuth, StructuredRequest, TurnResult } from "../providers/types";
 import { normalizeUsage } from "../usage";
@@ -12,26 +13,27 @@ function client(auth: ProviderAuth): GoogleGenAI {
   return new GoogleGenAI({ apiKey: auth.apiKey });
 }
 
-function contents(req: ChatRequest): Content[] {
-  const history: Content[] = req.history.map((turn) => turn.role === "assistant"
-    ? { role: "model", parts: turn.blocks as Part[] }
-    : { role: "user", parts: [{ text: turn.text }] });
-  const parts: Part[] = [{ text: req.newTurn }];
-  for (const attachment of req.attachments ?? []) {
-    if (attachment.kind === "text") parts.push({ text: attachment.text ?? "" });
-    else if (attachment.fileId) parts.push({ fileData: {
-      fileUri: attachment.fileId, mimeType: attachment.mediaType ?? "application/pdf",
-    } });
-    else throw new DirectError("request", id);
-  }
-  history.push({ role: "user", parts });
-  return history;
+function contents(layout: PromptLayout, model: string): Content[] {
+  return layout.messages.map((turn) => {
+    if (turn.role === "assistant") return { role: "model", parts: turn.blocks as Part[] };
+    if (turn.role === "system") throw new DirectError("request", id);
+    const parts: Part[] = turn.content.map((block) => {
+      if (block.kind === "text") return { text: block.text ?? "" };
+      if (block.kind !== "file" || !block.fileId || !capabilitiesFor(id, model).readsPdf) {
+        throw new DirectError("request", id);
+      }
+      return { fileData: {
+        fileUri: block.fileId, mimeType: block.mediaType ?? "application/pdf",
+      } };
+    });
+    return { role: "user", parts };
+  });
 }
 
 /** `structured()` không có `newTurn` — cấu hình chỉ cần các trường chung. */
-type ConfigInput = Pick<ChatRequest, "model" | "coreSystem" | "sessionConfig" | "reasoning" | "maxTokens">;
+type ConfigInput = Pick<ChatRequest, "model" | "reasoning" | "maxTokens">;
 
-function config(req: ConfigInput) {
+function config(req: ConfigInput, layout: PromptLayout) {
   const caps = capabilitiesFor(id, req.model);
   // `minimal` không đồng nghĩa `off`. Với `off`, bỏ thinkingConfig để model
   // dùng mặc định; chỉ gửi mức đã được xác nhận cho đúng model.
@@ -40,7 +42,7 @@ function config(req: ConfigInput) {
       high: ThinkingLevel.HIGH } as const)[req.reasoning]
     : undefined;
   return {
-    systemInstruction: req.coreSystem + "\n" + req.sessionConfig,
+    systemInstruction: layout.leadingInstruction,
     maxOutputTokens: req.maxTokens,
     ...(thinkingLevel ? { thinkingConfig: { thinkingLevel } } : {}),
   };
@@ -79,8 +81,9 @@ export function createDirectGemini(): ProviderAdapter {
     id, capabilities: capabilitiesFor(id, "gemini-3.6-flash"),
     stream(auth, req) {
       return browserTurnStream(id, async function* () {
+        const layout = buildMessages(req, id);
         const stream = await client(auth).models.generateContentStream({
-          model: req.model, contents: contents(req), config: config(req),
+          model: req.model, contents: contents(layout, req.model), config: config(req, layout),
         });
         const parts: Part[] = [];
         let final: GenerateContentResponse | undefined;
@@ -104,9 +107,10 @@ export function createDirectGemini(): ProviderAdapter {
       // phụ trách parse, không phải `JSON.parse` trên văn bản tự do.
       if (!capabilitiesFor(id, req.model).structuredOutput) throw new DirectError("request", id);
       try {
+        const layout = buildMessages({ ...req, newTurn: req.instruction }, id);
         const response = await client(auth).models.generateContent({
-          model: req.model, contents: contents({ ...req, newTurn: req.instruction }),
-          config: { ...config(req), responseMimeType: "application/json", responseJsonSchema: req.jsonSchema },
+          model: req.model, contents: contents(layout, req.model),
+          config: { ...config(req, layout), responseMimeType: "application/json", responseJsonSchema: req.jsonSchema },
         });
         if (stop(response) !== "end_turn") throw new DirectError("provider", id);
         const parts = response.candidates?.[0]?.content?.parts ?? [];

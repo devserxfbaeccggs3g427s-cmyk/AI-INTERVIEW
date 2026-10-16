@@ -57,6 +57,12 @@ export interface Capability {
   reasoning: boolean;
   /** Message `role: "system"` giữa cuộc trò chuyện — chỉ Anthropic có. */
   midConversationSystem: boolean;
+  /**
+   * Cấu hình phiên đứng **sau** lịch sử, nên đổi nó không viết lại tiền tố cache.
+   * Provider khác phải đặt nó ở chỉ thị đầu → tiền tố cache phải viết lại mỗi phiên.
+   * Xem docs/02-DESIGN.md §5.2.
+   */
+  cacheableSessionConfig: boolean;
   /** Đặt `cache_control` tường minh được. Khác với "có cache". */
   explicitCache: boolean;
   /** Provider có trả số token đã cache hay không. Khác với `explicitCache`. */

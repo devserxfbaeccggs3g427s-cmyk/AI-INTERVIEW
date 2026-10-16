@@ -10,6 +10,7 @@ import type {
 
 import { normalizeUsage } from "../usage";
 import { capabilitiesFor } from "./capabilities";
+import { buildMessages } from "../interview";
 import type {
   AiConfig,
   ChatRequest,
@@ -35,41 +36,27 @@ function attachmentParts(attachments: DocumentBlock[]): Array<
 > {
   return attachments.map((block) => {
     if (block.kind === "text") {
-      return { type: "input_text", text: `<<<CV>>>\n${block.text ?? ""}\n<<<END CV>>>` };
+      if (block.text === undefined) throw new Error("Missing text attachment");
+      return { type: "input_text", text: block.text };
     }
     if (!block.fileId) throw new Error("Missing uploaded file ID");
     return { type: "input_file", file_id: block.fileId };
   });
 }
 
-function userItem(text: string, attachments: DocumentBlock[] = []): ResponseInputItem {
-  return {
-    role: "user",
-    content: [{ type: "input_text", text }, ...attachmentParts(attachments)],
-  };
-}
-
 function buildInput(req: ChatRequest | StructuredRequest, finalInstruction: string): ResponseInput {
-  // OpenAI does not accept mid-conversation system messages. A changed session
-  // config therefore changes the beginning of the cacheable prompt prefix.
-  const input: ResponseInput = [
-    { role: "developer", content: `${req.coreSystem}\n\n${req.sessionConfig}` },
-  ];
-  let attached = false;
-  for (const turn of req.history) {
-    if (turn.role === "assistant") {
-      // Keep every response output item, including encrypted reasoning and phase.
-      // A text-only reconstruction loses the reasoning context in stateless mode.
-      // Output and input SDK unions differ for a few tool item statuses; the
-      // unmodified JSON items are the documented replay format.
-      input.push(...(turn.blocks as ResponseOutputItem[] as ResponseInputItem[]));
+  const layout = buildMessages({ ...req, newTurn: finalInstruction }, "openai");
+  const input: ResponseInput = [{ role: "developer", content: layout.leadingInstruction }];
+  for (const message of layout.messages) {
+    if (message.role === "assistant") {
+      // Replay encrypted reasoning and output items untouched.
+      input.push(...(message.blocks as ResponseOutputItem[] as ResponseInputItem[]));
+    } else if (message.role === "user") {
+      input.push({ role: "user", content: attachmentParts(message.content) });
     } else {
-      const docs = "synthetic" in turn && turn.synthetic && !attached ? req.attachments : undefined;
-      input.push(userItem(turn.text, docs));
-      if (docs?.length) attached = true;
+      throw new Error("OpenAI does not support mid-conversation system messages");
     }
   }
-  input.push(userItem(finalInstruction, attached ? [] : req.attachments));
   return input;
 }
 

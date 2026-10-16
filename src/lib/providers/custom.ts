@@ -1,6 +1,7 @@
 import { StringDecoder } from "node:string_decoder";
 
 import { capabilitiesFor } from "./capabilities";
+import { buildMessages } from "../interview";
 import { guardedCustomRequest } from "./outbound-guard";
 import type {
   AiConfig, ChatRequest, ModelInfo, ProviderAdapter, ProviderAuth,
@@ -24,20 +25,20 @@ type Completion = {
 };
 
 function baseMessages(req: ChatRequest | StructuredRequest): Message[] {
-  if (req.attachments?.some((block) => block.kind !== "text")) {
-    throw new Error("Custom endpoint does not support file attachments");
-  }
-  const messages: Message[] = [{
-    role: "system", content: `${req.coreSystem}\n\n${req.sessionConfig}`,
-  }];
-  for (const turn of req.history) {
-    if (turn.role === "user") {
-      messages.push({ role: "user", content: turn.text });
-    } else {
+  const layout = buildMessages(
+    { ...req, newTurn: "newTurn" in req ? req.newTurn : req.instruction },
+    "custom",
+  );
+  const messages: Message[] = [{ role: "system", content: layout.leadingInstruction }];
+  for (const message of layout.messages) {
+    if (message.role === "system") {
+      throw new Error("Custom endpoint does not support mid-conversation system messages");
+    }
+    if (message.role === "assistant") {
       // Blocks carry the original `choices[0].message`; never silently accept
       // a different provider's transcript or unsupported tool-call content.
-      if (turn.blocks.length !== 1) throw new Error("Invalid custom transcript");
-      const block = turn.blocks[0];
+      if (message.blocks.length !== 1) throw new Error("Invalid custom transcript");
+      const block = message.blocks[0];
       if (!block || typeof block !== "object" || Array.isArray(block) ||
           !("role" in block) || block.role !== "assistant" ||
           !("content" in block) || typeof block.content !== "string" ||
@@ -45,10 +46,17 @@ function baseMessages(req: ChatRequest | StructuredRequest): Message[] {
         throw new Error("Invalid custom transcript");
       }
       messages.push({ role: "assistant", content: block.content });
+      continue;
     }
+    const parts: string[] = [];
+    for (const block of message.content) {
+      if (block.kind !== "text" || block.text === undefined) {
+        throw new Error("Custom endpoint does not support file attachments");
+      }
+      parts.push(block.text);
+    }
+    messages.push({ role: "user", content: parts.join("\n") });
   }
-  const attachments = (req.attachments ?? []).map((block) => block.text ?? "").join("\n");
-  messages.push({ role: "user", content: `${"newTurn" in req ? req.newTurn : req.instruction}${attachments ? `\n${attachments}` : ""}` });
   return messages;
 }
 

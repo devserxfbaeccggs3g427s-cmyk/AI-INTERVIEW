@@ -49,6 +49,7 @@ const PROVIDER_BASELINE: Record<ProviderId, Capability> = {
     readsPdf: true,
     reasoning: true,
     midConversationSystem: true,
+    cacheableSessionConfig: true,
     explicitCache: true,
     reportsCacheUsage: true,
     modelListCarriesCapabilities: true,
@@ -63,6 +64,7 @@ const PROVIDER_BASELINE: Record<ProviderId, Capability> = {
     readsPdf: false,
     reasoning: false,
     midConversationSystem: false,
+    cacheableSessionConfig: false,
     // OpenAI cache tự động, không có điểm ghi tường minh.
     explicitCache: false,
     reportsCacheUsage: true,
@@ -77,6 +79,7 @@ const PROVIDER_BASELINE: Record<ProviderId, Capability> = {
     readsPdf: true,
     reasoning: true,
     midConversationSystem: false,
+    cacheableSessionConfig: false,
     // Chỉ cache ngầm định ở các bản mới; không có `cache_control` tường minh.
     explicitCache: false,
     reportsCacheUsage: true,
@@ -95,6 +98,7 @@ const PROVIDER_BASELINE: Record<ProviderId, Capability> = {
     readsPdf: false,
     reasoning: false,
     midConversationSystem: false,
+    cacheableSessionConfig: false,
     explicitCache: false,
     reportsCacheUsage: false,
     modelListCarriesCapabilities: false,

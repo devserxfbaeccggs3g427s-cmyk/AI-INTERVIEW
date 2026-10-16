@@ -88,9 +88,15 @@ expect_absent "không import node: builtins"  "src/lib/direct" 'from "node:'
 
 note ""
 note "=== 5. Module đi vào bundle trình duyệt không được import SDK ==="
-for f in src/lib/providers/capabilities.ts src/lib/providers/types.ts src/lib/usage.ts; do
-  expect_absent "$(basename "$f") không import SDK" "$f" '^import .*from "[^.]'
+# `zod` là dependency thuần của trình duyệt nên được phép; chỉ SDK hãng mô hình bị cấm.
+for f in src/lib/providers/capabilities.ts src/lib/providers/types.ts src/lib/usage.ts \
+         src/lib/schemas.ts src/lib/interview.ts; do
+  expect_absent "$(basename "$f") không import SDK" "$f" '^import .*from "(@anthropic-ai|openai|@google/genai)'
 done
+# `capabilities.ts` nằm trong đồ thị import của trình duyệt; nó không được biết tới
+# cả SDK lẫn `interview.ts` (module cùng nằm trong đồ thị đó) — nếu không,
+# `interview.ts` kéo cả `../prompts` và cả logic layout vào bundle người dùng.
+expect_absent "capabilities.ts không biết tới interview" "src/lib/providers/capabilities.ts" 'from "\.\./interview"'
 
 note ""
 note "=== 6. Không ghi nội dung CV hay key ra log ==="

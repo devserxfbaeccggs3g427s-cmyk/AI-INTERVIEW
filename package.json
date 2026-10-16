@@ -7,12 +7,13 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "probe": "npm run probe:registry && npm run probe:ssrf && npm run probe:capabilities && npm run probe:usage && npm run probe:db && npm run check:secrets",
+    "probe": "npm run probe:registry && npm run probe:ssrf && npm run probe:capabilities && npm run probe:usage && npm run probe:db && npm run probe:interview && npm run check:secrets",
     "probe:registry": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-registry.ts",
     "probe:ssrf": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-ssrf.ts",
     "probe:capabilities": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-capabilities.ts",
     "probe:usage": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-usage.ts",
     "probe:db": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-db.ts",
+    "probe:interview": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-interview.ts",
     "check:secrets": "bash scripts/check-secrets.sh"
   },
   "dependencies": {

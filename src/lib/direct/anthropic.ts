@@ -1,4 +1,5 @@
 import Anthropic, { toFile } from "@anthropic-ai/sdk";
+import { buildMessages, type PromptLayout } from "../interview";
 import { capabilitiesFor } from "../providers/capabilities";
 import type { ChatRequest, ProviderAdapter, ProviderAuth, StructuredRequest, TurnResult } from "../providers/types";
 import { normalizeUsage } from "../usage";
@@ -16,29 +17,21 @@ function client(auth: ProviderAuth): Anthropic {
  * lịch sử mỗi lượt sẽ đổi byte trước đuôi transcript và viết lại cache mỗi lượt —
  * request vẫn thành công, chỉ có hoá đơn tăng. Xem docs/02-DESIGN.md §5.1.
  */
-function messages(req: ChatRequest): Anthropic.MessageParam[] {
-  const result: Anthropic.MessageParam[] = [];
-  let configPlaced = false;
-  for (const turn of req.history) {
+function messages(layout: PromptLayout, model: string): Anthropic.MessageParam[] {
+  return layout.messages.map((turn) => {
     if (turn.role === "assistant") {
-      result.push({ role: "assistant", content: turn.blocks as Anthropic.ContentBlockParam[] });
-      continue;
+      return { role: "assistant", content: turn.blocks as Anthropic.ContentBlockParam[] };
     }
-    result.push({ role: "user", content: turn.text });
-    if ("synthetic" in turn && turn.synthetic && req.sessionConfig) {
-      result.push({ role: "system", content: req.sessionConfig });
-      configPlaced = true;
-    }
-  }
-  const content: Anthropic.ContentBlockParam[] = [{ type: "text", text: req.newTurn }];
-  for (const attachment of req.attachments ?? []) {
-    if (attachment.kind === "text") content.push({ type: "text", text: attachment.text ?? "" });
-    else if (attachment.fileId) content.push({ type: "document", source: { type: "file", file_id: attachment.fileId } });
-    else throw new DirectError("request", id);
-  }
-  result.push({ role: "user", content });
-  if (!configPlaced && req.sessionConfig) result.push({ role: "system", content: req.sessionConfig });
-  return result;
+    if (turn.role === "system") return { role: "system", content: turn.text };
+    const content: Anthropic.ContentBlockParam[] = turn.content.map((block) => {
+      if (block.kind === "text") return { type: "text", text: block.text ?? "" };
+      if (block.kind !== "file" || !block.fileId || !capabilitiesFor(id, model).readsPdf) {
+        throw new DirectError("request", id);
+      }
+      return { type: "document", source: { type: "file", file_id: block.fileId } };
+    });
+    return { role: "user", content };
+  });
 }
 
 function usage(message: Anthropic.Message) {
@@ -91,10 +84,11 @@ export function createDirectAnthropic(): ProviderAdapter {
     id, capabilities: capabilitiesFor(id, "claude-opus-5"),
     stream(auth, req) {
       return browserTurnStream(id, async function* () {
+        const layout = buildMessages(req, id);
         const stream = client(auth).messages.stream({
           model: req.model, max_tokens: req.maxTokens,
-          system: [{ type: "text", text: req.coreSystem, cache_control: { type: "ephemeral" } }],
-          messages: messages(req), ...thinkingConfig(req), ...effortConfig(req),
+          system: [{ type: "text", text: layout.leadingInstruction, cache_control: { type: "ephemeral" } }],
+          messages: messages(layout, req.model), ...thinkingConfig(req), ...effortConfig(req),
           cache_control: { type: "ephemeral" },
         });
         for await (const event of stream) {
@@ -107,10 +101,11 @@ export function createDirectAnthropic(): ProviderAdapter {
     },
     async structured(auth, req: StructuredRequest) {
       try {
+        const layout = buildMessages({ ...req, newTurn: req.instruction }, id);
         const response = await client(auth).messages.stream({
           model: req.model, max_tokens: req.maxTokens,
-          system: [{ type: "text", text: req.coreSystem, cache_control: { type: "ephemeral" } }],
-          messages: messages({ ...req, newTurn: req.instruction }),
+          system: [{ type: "text", text: layout.leadingInstruction, cache_control: { type: "ephemeral" } }],
+          messages: messages(layout, req.model),
           ...thinkingConfig(req), cache_control: { type: "ephemeral" },
           output_config: {
             ...effortConfig(req).output_config,

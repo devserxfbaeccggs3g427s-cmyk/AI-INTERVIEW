@@ -3,6 +3,8 @@ import type { Content, GenerateContentResponse, GenerateContentResponseUsageMeta
 
 import { normalizeUsage } from "../usage";
 import { capabilitiesFor } from "./capabilities";
+import { buildMessages } from "../interview";
+import type { PromptLayout } from "../interview";
 import type {
   AiConfig,
   ChatRequest,
@@ -26,30 +28,36 @@ function clientFor(auth: ProviderAuth): GoogleGenAI {
   return new GoogleGenAI({ apiKey: auth.apiKey, enterprise: false });
 }
 
-function buildContents(req: ChatRequest | StructuredRequest, instruction: string): Content[] {
-  const contents: Content[] = req.history.map((turn) =>
-    turn.role === "assistant"
+function buildContents(layout: PromptLayout): Content[] {
+  const contents: Content[] = [];
+  for (const message of layout.messages) {
+    if (message.role === "assistant") {
       // Preserve thought signatures and all other model parts, not just text.
-      ? { role: "model", parts: turn.blocks as Part[] }
-      : { role: "user", parts: [{ text: turn.text }] },
-  );
-  const parts: Part[] = [{ text: instruction }];
-  for (const attachment of req.attachments ?? []) {
-    if (attachment.kind === "text") {
-      parts.push({ text: attachment.text ?? "" });
+      contents.push({ role: "model", parts: message.blocks as Part[] });
+    } else if (message.role === "user") {
+      const parts: Part[] = [];
+      for (const block of message.content) {
+        if (block.kind === "text") {
+          if (block.text === undefined) throw new Error("Missing CV text");
+          parts.push({ text: block.text });
+        } else if (block.fileId) {
+          parts.push({ fileData: {
+            fileUri: block.fileId,
+            mimeType: block.mediaType ?? "application/pdf",
+          } });
+        } else {
+          throw new Error("Missing Gemini file URI");
+        }
+      }
+      contents.push({ role: "user", parts });
     } else {
-      if (!attachment.fileId) throw new Error("Missing Gemini file URI");
-      parts.push({ fileData: {
-        fileUri: attachment.fileId,
-        mimeType: attachment.mediaType ?? "application/pdf",
-      } });
+      throw new Error("Gemini does not support mid-conversation system messages");
     }
   }
-  contents.push({ role: "user", parts });
   return contents;
 }
 
-function configFor(req: ChatRequest | StructuredRequest) {
+function configFor(req: ChatRequest | StructuredRequest, layout: PromptLayout) {
   const supported = capabilitiesFor(ID, req.model).reasoningLevels;
   // There is no documented ThinkingLevel.OFF. An unsupported level must not
   // be sent: Gemini rejects it with 400 rather than silently downgrading.
@@ -58,13 +66,18 @@ function configFor(req: ChatRequest | StructuredRequest) {
       high: ThinkingLevel.HIGH } as const)[req.reasoning]
     : undefined;
   return {
-    // Gemini has no mid-conversation system role. Changing sessionConfig here
-    // invalidates the cacheable prefix; never modify coreSystem itself.
-    systemInstruction: `${req.coreSystem}\n\n${req.sessionConfig}`,
+    // Gemini has no mid-conversation system role, so the session config joins
+    // the leading instruction. Changing it invalidates the cacheable prefix;
+    // never modify coreSystem itself. See docs/02-DESIGN.md §5.2.
+    systemInstruction: layout.leadingInstruction,
     maxOutputTokens: req.maxTokens,
     automaticContinuation: false,
     ...(level ? { thinkingConfig: { thinkingLevel: level } } : {}),
   };
+}
+
+function layoutFor(req: ChatRequest | StructuredRequest, instruction: string): PromptLayout {
+  return buildMessages({ ...req, newTurn: instruction }, ID);
 }
 
 function stopReason(reason: FinishReason | undefined, blocked?: string): TurnResult["stopReason"] {
@@ -125,10 +138,11 @@ function streamResponse(auth: ProviderAuth, req: ChatRequest): TurnStream {
     let blockReason: string | undefined;
     let usage: GenerateContentResponseUsageMetadata | undefined;
     try {
+      const layout = layoutFor(req, req.newTurn);
       const stream = await client.models.generateContentStream({
         model: req.model,
-        contents: buildContents(req, req.newTurn),
-        config: configFor(req),
+        contents: buildContents(layout),
+        config: configFor(req, layout),
       });
       for await (const chunk of stream) {
         // Chunks contain delta parts, not a final full model turn. Preserve the
@@ -180,11 +194,12 @@ export function createGeminiAdapter(): ProviderAdapter {
       if (!capabilitiesFor(ID, req.model).structuredOutput) {
         throw new Error("Gemini model does not support structured output");
       }
+      const layout = layoutFor(req, req.instruction);
       const response = await clientFor(auth).models.generateContent({
         model: req.model,
-        contents: buildContents(req, req.instruction),
+        contents: buildContents(layout),
         config: {
-          ...configFor(req),
+          ...configFor(req, layout),
           responseMimeType: "application/json",
           responseJsonSchema: req.jsonSchema,
         },
