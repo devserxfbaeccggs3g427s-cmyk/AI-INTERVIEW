@@ -1,0 +1,33 @@
+{
+  "name": "interview-practice",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "probe": "npm run probe:registry && npm run probe:ssrf && npm run probe:capabilities && npm run probe:usage && npm run probe:db && npm run check:secrets",
+    "probe:registry": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-registry.ts",
+    "probe:ssrf": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-ssrf.ts",
+    "probe:capabilities": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-capabilities.ts",
+    "probe:usage": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-usage.ts",
+    "probe:db": "node --experimental-strip-types --import ./scripts/register-ts.mjs scripts/probe-db.ts",
+    "check:secrets": "bash scripts/check-secrets.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@google/genai": "^2.30.0",
+    "next": "16.4.1",
+    "openai": "^7.34.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

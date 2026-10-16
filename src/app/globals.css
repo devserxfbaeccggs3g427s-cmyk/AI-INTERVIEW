@@ -1,0 +1,110 @@
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html {
+  height: 100%;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Vùng hiển thị số liệu tạm — sẽ thay bằng component thật ở giai đoạn sau */
+.probe {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+/* Lịch sử phiên — plain global CSS, không có utility framework */
+.sessions {
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+}
+
+.sessions li {
+  align-items: baseline;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.sessions li a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.sessions span {
+  opacity: 0.75;
+}
+
+.sessions button,
+.danger {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--foreground) 30%, transparent);
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  margin-left: auto;
+  padding: 4px 10px;
+}
+
+.sessions button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+article ol {
+  padding-left: 20px;
+}
+
+article li {
+  margin: 12px 0;
+}
+
+article p {
+  white-space: pre-wrap;
+}
