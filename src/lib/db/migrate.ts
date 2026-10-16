@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 
-const migrations = ["0001_init.sql"] as const;
+const migrations = ["0001_init.sql", "0002_cv_uploads.sql"] as const;
 
 export function migrate(db: DatabaseSync, scripts: readonly string[] = migrations.map(
   (file) => readFileSync(join(process.cwd(), "src/lib/db/migrations", file), "utf8"),

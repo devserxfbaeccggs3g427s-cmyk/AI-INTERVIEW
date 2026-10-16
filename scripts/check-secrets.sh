@@ -41,8 +41,14 @@ expect_in() {
   else fail=$((fail+1)); note "LOI  $label — không thấy mẫu"; fi
 }
 
-# block <mô tả> <tệp> <tên interface> — in nội dung một khối khai báo.
-block() { awk -v b="$3" 'index($0,"interface " b){i=1} i{print} i&&/^\}/{exit}' "$2"; }
+# block <mô tả> <tệp> <tên kiểu> — in nội dung một khối khai báo.
+# Nhận cả `interface X` lẫn `type X =` và `export type X =`: `LogFields` trong
+# `log.ts` là `type`, nên chỉ khớp `interface` sẽ in rỗng — và mọi kiểm "trường này
+# không có" sẽ **tự động đạt**, tức báo động giả ngược lại.
+block() { awk -v b="$3" '
+  (index($0, "interface " b) || index($0, "type " b " =")) { i=1 }
+  i { print }
+  i && /^\}/ { exit }' "$2"; }
 
 note "=== 1. Server không đọc key từ process.env ==="
 # Nếu adapter đọc env, người quên dán key sẽ âm thầm dùng key của chủ dự án —
@@ -101,6 +107,43 @@ expect_absent "capabilities.ts không biết tới interview" "src/lib/providers
 note ""
 note "=== 6. Không ghi nội dung CV hay key ra log ==="
 expect_absent "không console.log trong lib" "src/lib" 'console\.(log|debug|info|dir)\('
+
+note ""
+note "=== 7. Route handler cũng bị rà ==="
+# Nhóm 1–5 quét `src/lib`, nên `src/app/api` — nơi T-2.3 và T-5.5 nói "key chỉ đi qua
+# header" — nằm ngoài tầm. Một route tự đọc `process.env` là đúng cái âm thầm mà
+# nhóm 1 cấm, chỉ là ở chỗ khác.
+expect_absent "route không đọc process.env.<BIẾN>" "src/app/api" 'process\.env\.[A-Za-z_]'
+expect_absent "route không destructure process.env" "src/app/api" '(const|let|var)[[:space:]]*\{[^}]*\}[[:space:]]*=[[:space:]]*process\.env'
+# Route đọc key qua `authFromRequest` (T-2.3), không tự bóc header. `auth.ts` nằm
+# ngoài `src/app/api` nên không cần chừa ngoại lệ — nhưng route nào tự `.headers.get`
+# một tên header bất kỳ để lấy key thì đã đi vòng qua `PROVIDER_KEY_HEADER`.
+expect_absent "route không tự bóc key khỏi header" "src/app/api" '\.headers\.get\([^)]*[Kk]ey'
+expect_absent "không console.log trong route" "src/app/api" 'console\.(log|debug|info|dir)\('
+# Route đi qua `getProviderAdapter`, không import SDK hãng trực tiếp: import SDK ở
+# route là đường vòng qua `ProviderAdapter`, và là đường dễ quên gom key vào log.
+expect_absent "route không import SDK hãng trực tiếp" "src/app/api" 'from "(@anthropic-ai|openai|@google/genai)'
+
+note ""
+note "=== 8. Log chỉ nhận trường đã duyệt ==="
+# `logEvent()` nhận object kiểu `LogFields`, nên thêm `answer`/`cvText`/`apiKey` vào
+# đó là lỗi biên dịch. Kiểm tra ở đây giữ cái đó đúng khi ai đó đổi `LogFields`
+# thành object tự do mà không để lại dấu vết.
+for banned in apiKey answer cvText answerText prompt transcript blocks text report; do
+  if block "" src/lib/log.ts LogFields | grep -qE "(^|[^A-Za-z_])${banned}[?]?:"; then
+    fail=$((fail+1)); note "LOI  LogFields chứa trường '$banned'"
+  else
+    note "OK   LogFields không có '$banned'"
+  fi
+done
+expect_absent "log ghi ra stderr, không phải stdout" "src/lib/log.ts" 'console\.log\('
+
+note ""
+note "=== 9. Key không bao giờ xuống đĩa ==="
+# `cv_uploads.key_fingerprint` là 8 byte sha256, không phải key (NFR-10) — mẫu ở đây
+# cố ý **không** khớp cột đó.
+expect_absent "không cột chứa api key" "src/lib/db/migrations" 'api_key|apikey'
+expect_absent "không lưu key trong settings" "src/lib/db/session-repo.ts" '(insert|INSERT)[[:space:]]+INTO[[:space:]]+ai_settings[^;]*api_key'
 
 note ""
 if [ "$fail" -eq 0 ]; then note "TẤT CẢ ĐÚNG"; else note "$fail NHÓM SAI"; fi

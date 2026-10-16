@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
+import { questionsTotal } from "../prompts";
+import { AppError } from "../errors";
 import type { AiConfig, TranscriptTurn } from "../providers/types";
 
+/** Cấu hình phiên đọc từ `sessions` — trùng kiểu ở `schemas.ts`, không phải trùng quy tắc. */
 export type SessionConfig = {
   role: string;
   language: "vi" | "en";
@@ -14,6 +17,8 @@ export type CreateSession = {
   config: SessionConfig;
   ai: StoredSettings;
   cvText?: string | null;
+  /** Hàng `cv_uploads` đã dùng, để lượt sau dựng lại khối CV — §7.4. */
+  cvUploadId?: string | null;
 };
 export type SavedTurn = TranscriptTurn & { seq: number; createdAt: number };
 export type SavedEvaluation = { data: unknown; partial: boolean; createdAt: number };
@@ -33,10 +38,37 @@ export type SessionRecord = SessionSummary & {
   evaluation: SavedEvaluation | null;
 };
 
+/** Hàng `cv_uploads` mà một phiên đang dùng — chỉ để dựng lại khối CV ở `messages[0]`. */
+export type SessionCvRef = {
+  uploadId: string;
+  provider: string;
+  extractedText: string | null;
+  fileId: string | null;
+  filename: string;
+};
+
 export interface SessionRepository {
   create(input: CreateSession): Promise<{ id: string }>;
   load(id: string): Promise<SessionRecord | null>;
-  appendTurn(id: string, turn: TranscriptTurn, expectedSeq?: number): Promise<void>;
+  appendTurn(id: string, turn: TranscriptTurn): Promise<void>;
+  /**
+   * Ghi **một cặp** lượt trong một transaction — §8.1. Một `appendTurn()` không làm
+   * được: hai lần gọi là hai transaction, và process chết giữa chúng để lại một câu
+   * trả lời không có câu hỏi đi kèm.
+   */
+  appendExchange(
+    id: string,
+    turn: TranscriptTurn,
+    assistantBlocks: unknown[],
+    seqOfNextTurn: number,
+    requestId: string,
+  ): Promise<void>;
+  /** Câu hỏi **đã hỏi xong** — đếm `role = 'assistant'`, xem §8.2. */
+  countQuestions(id: string): Promise<number>;
+  /** `seq` cao nhất hiện có, hoặc `-1` khi phiên còn trống. */
+  lastSeq(id: string): Promise<number>;
+  /** Hàng CV đã tải lên mà phiên này dùng — §7.4. */
+  loadCvRef(id: string): Promise<SessionCvRef | null>;
   saveEvaluation(id: string, data: unknown, partial: boolean): Promise<void>;
   list(limit: number): Promise<SessionSummary[]>;
   delete(id: string): Promise<boolean>;
@@ -58,7 +90,9 @@ function summary(row: SessionRow): SessionSummary {
     id: row.id, role: row.role, language: row.language, mode: row.mode,
     length: row.length, provider: row.provider, model: row.model, status: row.status,
     createdAt: row.created_at, updatedAt: row.updated_at,
-    questionsTotal: { short: 5, medium: 8, long: 12 }[row.length],
+    // Bảng 5/8/12 có **một** nguồn: `questionsTotal()` trong `lib/prompts.ts`. Bản sao
+    // thứ hai ở đây lệch đúng một câu là phiên hỏi thừa hoặc kết thúc sớm (§8.2).
+    questionsTotal: questionsTotal(row.length),
   };
 }
 
@@ -71,14 +105,14 @@ export class SqliteSessionRepository implements SessionRepository {
     this.beforeRead = beforeRead;
   }
 
-  async create({ config, ai, cvText }: CreateSession): Promise<{ id: string }> {
+  async create({ config, ai, cvText, cvUploadId }: CreateSession): Promise<{ id: string }> {
     const id = randomUUID();
     const now = Date.now();
     this.db.prepare(`INSERT INTO sessions
-      (id, created_at, updated_at, role, language, mode, length, provider, model, status, config_json, cv_text)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`).run(
+      (id, created_at, updated_at, role, language, mode, length, provider, model, status, config_json, cv_text, cv_upload_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`).run(
       id, now, now, config.role, config.language, config.mode, config.length,
-      ai.provider, ai.model, JSON.stringify(config), cvText ?? null,
+      ai.provider, ai.model, JSON.stringify(config), cvText ?? null, cvUploadId ?? null,
     );
     return { id };
   }
@@ -107,24 +141,112 @@ export class SqliteSessionRepository implements SessionRepository {
     };
   }
 
-  async appendTurn(id: string, turn: TranscriptTurn, expectedSeq?: number): Promise<void> {
+  /**
+   * Ghi **một** lượt. Giữ vì `SessionRepository` khai báo nó và `T-0c` đã kiểm chứng;
+   * đường hội thoại dùng `appendExchange()` vì hai lượt phải nguyên tử (§8.1).
+   */
+  async appendTurn(id: string, turn: TranscriptTurn): Promise<void> {
     this.db.exec("BEGIN IMMEDIATE");
     try {
-      const next = this.db.prepare("SELECT COALESCE(MAX(seq) + 1, 0) AS seq FROM turns WHERE session_id = ?").get(id) as { seq: number };
-      const seq = expectedSeq ?? next.seq;
+      const next = (this.db.prepare("SELECT COALESCE(MAX(seq) + 1, 0) AS seq FROM turns WHERE session_id = ?").get(id) as { seq: number }).seq;
       const now = Date.now();
-      this.db.prepare(`INSERT INTO turns (session_id, seq, role, text, blocks, synthetic, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
-        id, seq, turn.role, turn.role === "user" ? turn.text : null,
-        turn.role === "assistant" ? JSON.stringify(turn.blocks) : null,
-        turn.role === "user" && "synthetic" in turn && turn.synthetic ? 1 : 0, now,
-      );
+      this.insertTurn(id, next, turn, now);
       this.db.prepare("UPDATE sessions SET updated_at = ? WHERE id = ?").run(now, id);
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;
     }
+  }
+
+  /**
+   * Ghi cặp `user` + `assistant` trong **một** transaction — §8.1.
+   *
+   * Ba kiểm trong cùng transaction, và thứ tự cũng là thứ tự đó:
+   *
+   *   1. `status = 'active'` — lượt đã hỏi lên phiên đã kết thúc thì không nối thêm.
+   *   2. `MAX(seq) + 1 == seqOfNextTurn` — khoá RAM đã chặn hai request chồng, nhưng nó
+   *      chỉ có tác dụng trong **một** tiến trình; đây là chốt chặn ở tầng DB.
+   *   3. Rồi mới ghi. Lệch ở bước nào cũng rollback trước, nên không có nửa cặp.
+   *
+   * `seqOfNextTurn` là `seq` của lượt **đang viết**, không phải của lượt cuối đã có.
+   * Sai quy ước ở đây là lỗi lệch một câu, nên nó có tên riêng thay vì `expectedSeq`.
+   *
+   * `requestId` đi vào từ route chứ không tự sinh ở đây: nếu tầng DB tự sinh, thông báo
+   * lỗi mang một mã khác với dòng log của cùng một sự cố, và §9.1 yêu cầu đối chiếu
+   * được bằng `request_id`.
+   */
+  async appendExchange(
+    id: string,
+    turn: TranscriptTurn,
+    assistantBlocks: unknown[],
+    seqOfNextTurn: number,
+    requestId: string,
+  ): Promise<void> {
+    const now = Date.now();
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const session = this.db.prepare("SELECT status FROM sessions WHERE id = ?").get(id) as
+        { status: SessionStatus } | undefined;
+      if (!session || session.status !== "active") {
+        throw new AppError("session_complete", requestId);
+      }
+      const last = (this.db.prepare("SELECT COALESCE(MAX(seq), -1) AS seq FROM turns WHERE session_id = ?").get(id) as
+        { seq: number }).seq;
+      if (last !== seqOfNextTurn - 1) {
+        throw new AppError("session_conflict", requestId);
+      }
+      this.insertTurn(id, seqOfNextTurn, turn, now);
+      this.insertTurn(id, seqOfNextTurn + 1, { role: "assistant", blocks: assistantBlocks }, now);
+      this.db.prepare("UPDATE sessions SET updated_at = ? WHERE id = ?").run(now, id);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  private insertTurn(id: string, seq: number, turn: TranscriptTurn, now: number): void {
+    this.db.prepare(`INSERT INTO turns (session_id, seq, role, text, blocks, synthetic, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
+      id, seq, turn.role, turn.role === "user" ? turn.text : null,
+      turn.role === "assistant" ? JSON.stringify(turn.blocks) : null,
+      turn.role === "user" && "synthetic" in turn && turn.synthetic ? 1 : 0, now,
+    );
+  }
+
+  /**
+   * Câu hỏi **đã hỏi xong** — `COUNT(*) ... role = 'assistant'` (§8.2).
+   *
+   * Không đếm `role = 'user'` rồi suy ra: công thức đó lệch đúng một câu, vì khi lượt
+   * thứ 5 tới thì mới có 4 câu trả lời, và `4 + 1 > 5` là sai nên lượt đi qua.
+   */
+  async countQuestions(id: string): Promise<number> {
+    await this.beforeRead();
+    return Number((this.db.prepare("SELECT COUNT(*) AS n FROM turns WHERE session_id = ? AND role = 'assistant'").get(id) as { n: number }).n);
+  }
+
+  async lastSeq(id: string): Promise<number> {
+    await this.beforeRead();
+    return (this.db.prepare("SELECT COALESCE(MAX(seq), -1) AS seq FROM turns WHERE session_id = ?").get(id) as
+      { seq: number }).seq;
+  }
+
+  /**
+   * Hàng `cv_uploads` mà phiên này dùng, để dựng lại khối CV ở `messages[0]` (§7.4).
+   *
+   * Phiên chỉ giữ `upload_id`; `file_id` thô nằm ở `cv_uploads` và **không** nằm ở
+   * `sessions`, vì `GET /api/sessions/[id]` trả nguyên `SessionRecord` ra trình duyệt.
+   */
+  async loadCvRef(id: string): Promise<SessionCvRef | null> {
+    await this.beforeRead();
+    const row = this.db.prepare(`SELECT c.id, c.provider, c.extracted_text, c.file_id, c.filename
+      FROM cv_uploads c JOIN sessions s ON s.cv_upload_id = c.id WHERE s.id = ?`).get(id) as
+      { id: string; provider: string; extracted_text: string | null; file_id: string | null; filename: string } | undefined;
+    return row ? {
+      uploadId: row.id, provider: row.provider, extractedText: row.extracted_text,
+      fileId: row.file_id, filename: row.filename,
+    } : null;
   }
 
   async saveEvaluation(id: string, data: unknown, partial: boolean): Promise<void> {

@@ -141,13 +141,31 @@ Máy chủ giữ dữ liệu phiên thay vì client (FR-18). Driver `node:sqlite
 | T-2.2 | `redact()` dùng chung | `lib/errors.ts` | Log không bao giờ chứa giá trị key, kể cả khi URL có tham số lạ | NFR-2 |
 | T-2.3 | Đọc key từ header, truyền vào adapter | `api/interviews/*/route.ts` | Route không đọc key từ `process.env`; key không xuất hiện trong log ở bất kỳ nhánh nào | FR-13, NFR-2 |
 | T-2.4 | Ký token CV | `lib/token.ts` | Token bị sửa một ký tự → xác minh thất bại; token ký bằng khoá khác → thất bại | FR-2 |
-| T-2.5 | Endpoint tải CV + trích text | `api/interviews/upload/route.ts`, `lib/pdf.ts` | PDF hợp lệ → trả token; `.exe` → `400 unsupported_file_type`; 15 MB → `400 file_too_large`; PDF dạng ảnh → lỗi rõ ràng, không đẩy nội dung rỗng | FR-2, NFR-2 |
-| T-2.6 | `streamTurn()` qua adapter | `lib/stream-turn.ts` | Chạy được trên **cả ba** adapter; log cho thấy cache ghi ở lượt 1 (chỉ ở provider báo cache) | FR-5, FR-6 |
+| T-2.5 | Endpoint tải CV + trích text | `api/interviews/upload/route.ts`, `lib/pdf.ts`, `db/migrations/0002_cv_uploads.sql` | PDF hợp lệ → trả token; `.exe` → `400 unsupported_file_type`; 15 MB → `400 file_too_large`, **kể cả khi body chunked không có `Content-Length`**; PDF dạng ảnh → lỗi rõ ràng, không đẩy nội dung rỗng; `file_id` thô không lọt ra response hay vào `sessions` | FR-2, NFR-2 |
+| T-2.6 | `streamTurn()` qua adapter | `lib/stream-turn.ts` | Chạy được trên **cả bốn** adapter; log cho thấy cache ghi ở lượt 1 (chỉ ở provider báo cache) | FR-5, FR-6 |
 | T-2.7 | Endpoint mở phiên | `api/interviews/start/route.ts` | `curl -N` với payload tiếng Việt + chế độ nghiêm khắc truyền câu hỏi rồi frame `done`; trả `sessionId` trong frame `meta` và ghi `sessions` + lượt đầu vào DB | FR-5, FR-18 |
 | T-2.8 | Endpoint lượt trả lời | `api/interviews/turn/route.ts` | Hội thoại 3 lượt viết sẵn truyền đúng câu hỏi thứ 2, 3, 4; request mang `{sessionId, answer}` — **không** có trường `transcript`, server tự nạp từ `turns` | FR-6, FR-20 |
-| T-2.9 | Chặn vượt giới hạn lượt + chặn câu quá dài | `api/interviews/turn/route.ts` | Lượt `(maxTurns + 1)` → `422`; câu trả lời 5000 ký tự → `400` kèm chi tiết trường; request không có trường `turnCount`; số lượt đếm bằng `COUNT(*)` trong DB, không nhận từ client | FR-7, FR-10, NFR-4 |
+| T-2.9 | Chặn vượt giới hạn lượt + chặn câu quá dài | `api/interviews/turn/route.ts` | Lượt `(maxTurns + 1)` → `422`; câu trả lời 5000 ký tự → `400` kèm chi tiết trường; request không có trường `turnCount`; số câu đã hỏi đếm bằng `COUNT(*) ... role = 'assistant'` trong DB, không nhận từ client | FR-7, FR-10, NFR-4 |
 | T-2.10 | Xử lý từ chối và cắt cụt | `lib/stream-turn.ts`, `errors.ts` | Ép mức token tối thiểu → frame `error` code `truncated`, **không** trả nửa câu hỏi; từ chối → message đã bản địa hoá | NFR-3 |
 | T-2.11 | Endpoint health đa provider | `api/health/route.ts` | 401 / 404 / 429 ở bất kỳ hãng nào → đúng thông báo tương ứng; không lộ response thô | NFR-3 |
+
+### Xác minh giai đoạn 2 (2026-10-16)
+
+`npm run typecheck`, `npm run probe` (tám nhóm, gồm `probe:interviews`), `npm run build` và `npm run check:secrets` đều thành công. Các probe offline xác minh chữ ký token, magic bytes PDF, giới hạn body chunked, frame SSE/huỷ reader, ánh xạ lỗi SDK giả, thứ tự delta, schema không nhận `turnCount`/`transcript`, giao dịch ghi cặp lượt và dọn CV staging. Đã kiểm qua HTTP production rằng request thiếu key trả `401`, `callMode: direct` trả `400`, không để lại phiên rỗng và SSE phát `meta` rồi `error` cùng header chống buffering. Đây **không phải** bằng chứng rằng các hãng trả lời thành công.
+
+**Chưa đánh dấu ✅:** tiêu chí còn cần key và API thật; probe giả không thay thế kiểm chứng đó.
+
+| Task | Còn thiếu |
+|---|---|
+| T-2.1–T-2.3 | Rà log và lỗi trên nhánh thực của từng provider; xác nhận không lộ key/nội dung phiên ở mọi nhánh. |
+| T-2.5 | Upload PDF hợp lệ và PDF ảnh qua endpoint thực; đường Files API với key thật; kiểm response không lộ `file_id`. |
+| T-2.6 | Streaming trên cả bốn adapter và chứng cứ cache ghi ở lượt đầu trên provider có báo cache. |
+| T-2.7–T-2.8 | `curl -N` mở phiên và hội thoại ba lượt thành công với key thật, đối chiếu transcript SQLite. |
+| T-2.9 | Kiểm qua HTTP lượt vượt trần trả `422` và đáp án 5000 ký tự trả `400`; schema và phép đếm DB đã kiểm offline. |
+| T-2.10 | Ép cắt cụt và từ chối với model thật; adapter giả đã kiểm phân loại và không ghi nửa lượt. |
+| T-2.11 | Kiểm status 401/404/429 thật trên từng hãng, không phản chiếu response thô. |
+
+T-2.4 đã kiểm offline đầy đủ về chữ ký; token đang sống trong tiến trình server nên token cũ không sống qua lần khởi động lại (hạn chế đã biết). T-0c.9 (client hooks) và phần route phỏng vấn của T-0c.11 chưa đánh dấu.
 
 ## Giai đoạn 3 — Giao diện
 

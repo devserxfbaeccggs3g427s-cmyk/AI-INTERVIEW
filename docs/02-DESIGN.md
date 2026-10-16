@@ -392,7 +392,7 @@ type TranscriptTurn =
 | `GET /api/health` | header key | `{ok, provider, model, capabilities}` |
 | `GET /api/settings` | — | `StoredAiSettings` (`AiConfig` bỏ `persistKey`), hoặc `null` |
 | `POST /api/settings` | `StoredAiSettings` (không key, không `persistKey`) | `{ok}` |
-| `POST /api/interviews/upload` | file (multipart) | `{token, filename, sizeBytes, expiresAt}` |
+| `POST /api/interviews/upload` | file (multipart) | `{token, filename, sizeBytes, expiresAt}` — xem §7.4 về nơi CV sống giữa `upload` và `start` |
 | `POST /api/interviews/start` | `{ai, config, cv}` | SSE, tạo `sessionId` |
 | `POST /api/interviews/turn` | `{ai, sessionId, answer}` | SSE |
 | `POST /api/interviews/evaluate` | `{ai, sessionId, partial}` | JSON đánh giá |
@@ -407,6 +407,8 @@ type TranscriptTurn =
 Ba endpoint `GET` (`settings`, `sessions`, `sessions/[id]`) là endpoint dễ bị prerender nhất — xem §8.5.
 
 `start` và `turn` cùng đi qua `streamTurn()` nhưng khác bước chuẩn bị: `start` xác minh `{ai, config, cv}`, tạo phiên và lượt `user` mở đầu (`synthetic`) rồi stream câu hỏi thứ nhất; `turn` dùng `sessionId` nạp phiên/lịch sử từ DB, ghép câu trả lời mới và stream câu tiếp theo. Giữ hai endpoint riêng vì client gọi rõ ràng từng bước.
+
+Cả hai endpoint **từ chối `callMode: "direct"`** ở biên, bằng mã `unsupported_call_mode` — không phải `invalid_key`. Endpoint SSE chỉ tồn tại ở đường qua máy chủ (§10.2), và một người đang bật chế độ gọi trực tiếp cần biết **mình** đang chọn sai chỗ, chứ không phải phải đi tìm key của mình. Tương tự: đổi `provider`/`model` giữa phiên là `model_not_found`, vì §8.4 quy định hành vi là bắt đầu phiên mới chứ không phải đổi tại chỗ.
 
 `/upload` phục vụ PDF theo luồng CV đã chọn: đường trích text xử lý trên server; đường đọc trực tiếp chỉ dùng khi provider/model hỗ trợ và tham chiếu file đã được xác minh. Không đưa `file_id` thô trong body `start` — `cv.file.token` là token đã ký (§7.4).
 
@@ -424,7 +426,13 @@ data: {"type":"delta","text":" điểm qua kinh nghiệm gần đây của bạn
 data: {"type":"done","stopReason":"end_turn","assistantBlocks":[…],"sessionComplete":false,"usage":{…}}
 ```
 
-**Frame kết thúc đúng một trong hai**: `done` hoặc `error`. Không có trường hợp nào không có frame kết thúc.
+**Frame kết thúc đúng một trong hai**: `done` hoặc `error`.
+
+Định đề này áp cho **mọi luồng còn mở**. Ngoại lệ đã biết và không tránh được: client ngắt giữa chừng thì kết nối đã đóng, server không gửi được frame cho nó — và người dùng đã rời đi nên không cần.
+
+Cấu trúc code bắt buộc cho điều này là `turnStream(produce)`: nó giữ luồng, tự theo dõi đã phát frame kết thúc chưa, và **tự phát frame `error` thay** nếu `produce()` trả về hoặc ném mà chưa phát. Như vậy đảnh đề nằm trong **kiểu** chứ không nằm trong kỷ luật của người viết — thêm một nhánh thoát mới vào `produce()` cũng không tạo ra luồng thiếu frame cuối.
+
+`produce()` nhận một `sink` và **phát delta ngay khi tới**, không gom rồi phát một lượt. Gom delta thì khung `data:` vẫn chạy đúng hợp đồng, nhưng người dùng thấy cả câu trả lời xuất hiện trong một nhịp — hỏng FR-5 mà không hỏng bài kiểm tra giao thức nào.
 
 | Loại frame | Ý nghĩa |
 |---|---|
@@ -789,11 +797,29 @@ Người dùng **tự chọn** giữa "provider đọc thẳng" và "trích thà
 
 Ràng buộc: chỉ chạy trên máy chủ của ứng dụng, chỉ với tài liệu do chính người dùng tải lên, xoá ngay sau khi trích. Giới hạn dung lượng và số trang; kiểm tra magic bytes thay vì tin `Content-Type` của trình duyệt.
 
+Giới hạn dung lượng phải áp **trong khi đọc**, không phải sau: `request.formData()` nạp hết thân request vào bộ nhớ rồi mới cho ta kiểm tra, nên một body 15 MB đã nằm trong RAM vào lúc ta "phát hiện" nó quá lớn. Vì vậy `/upload` đọc multipart theo luồng có trần byte, và body chunked không có `Content-Length` cũng bị chặn như nhau.
+
+Node không có sẵn trình trích PDF, nên đường này dùng **`unpdf`** — bản pdf.js dành riêng cho server, không cần worker. Đây là dependency mới duy nhất của ứng dụng; quy tắc "không thêm dependency" ở §2.5 viết cho driver SQLite, vốn có sẵn dưới dạng builtin.
+
 Nếu trích không ra nội dung — phổ biến với PDF dạng ảnh — báo lỗi và cho chuyển sang dán văn bản. Không đẩy nội dung rỗng vào ngữ cảnh rồi im lặng.
 
-### 7.4 Vì sao không trả `file_id` thô
+### 7.4 CV đã tải lên sống ở đâu giữa `/upload` và `/start`
+
+Hai endpoint là hai request riêng, nên CV phải sống ở một chỗ trên máy chủ khoảng thời gian giữa chúng. Chỗ đó là bảng **`cv_uploads`**: mỗi lần tải lên ghi một hàng giữ text đã trích **hoặc** tham chiếu file ở phía provider, kèm thời điểm hết hạn 24 giờ.
+
+Token ký chỉ mang `uploadId` ngẫu nhiên, không mang nội dung: `cvSchema` giới hạn `token` ở 512 ký tự, trong khi text CV có thể tới 20.000.
+
+`file_id` thô nằm ở `cv_uploads`, **không** ở `sessions`: `GET /api/sessions/[id]` trả nguyên `SessionRecord` ra trình duyệt, nên đặt nó vào `sessions` là lộ đúng thứ mà mục dưới đây nói không được phép lộ. Phiên giữ `cv_text` đã trích và `cv_upload_id` để nhận biết nguồn CV; trong lúc hàng còn sống có thể dùng `file_id` để đọc PDF trực tiếp. `cv_upload_id` là tham chiếu lịch sử, không phải khóa ngoại: hàng tải lên phải xoá được mà không xoá phiên.
+
+Hàng `cv_uploads` bị xoá khi hết hạn, hoặc sớm hơn khi `start` dùng xong. Đây là dữ liệu người dùng nằm trên đĩa — chấp nhận được vì FR-18 đã chọn sẵn mô hình "mọi thứ ghi thẳng xuống máy chủ", và NFR-11 nói rõ ranh giới đó là gì.
+
+**Vì sao xoá sớm vẫn đủ.** Phiên giữ `cv_upload_id` *và* `cv_text`. Mọi lượt sau dựng lại khối CV ở `messages[0]` từ `cv_text`, nên phiên dài vẫn có CV sau khi hàng `cv_uploads` biến mất. Riêng đường **đọc thẳng** cần hàng còn sống vì `file_id` không nằm ở `sessions`; khi hàng đã bị dọn, lượt sau chuyển *có chủ đích* sang text đã trích — vẫn đủ nội dung nhưng không còn bố cục PDF. Đây là hạ tính năng đã biết, không phải lời hứa duy trì đọc PDF trực tiếp qua mọi lượt.
+
+### 7.5 Vì sao không trả `file_id` thô
 
 Files API của các hãng gắn file với **workspace của tổ chức, không gắn với phiên**. Người dùng có thể dán `file_id` của người khác vào request để AI đọc CV của họ. Endpoint upload trả **token đã ký HMAC**; server kiểm chữ ký trước khi dùng.
+
+Khoá ký là khoá **riêng của ứng dụng**, sinh một lần lúc khởi động server — không phải key của provider, và không đọc từ `process.env`, với đúng lý do của NFR-10: biến môi trường sót lại sẽ thành đường lấy dữ liệu ngoài ý muốn. Hệ quả được chấp nhận: token đã phát ra mất hiệu lực sau khi restart server, và người dùng phải tải CV lại. Đó là một lần tải lại file, không phải mất dữ liệu phiên.
 
 Dọn dẹp: file tồn tại vĩnh viễn phía provider cho tới khi xoá. Endpoint đánh giá gọi `deleteFile()` sau khi chấm (best-effort), kèm hạn tự hết hạn 24 giờ làm lưới an toàn. Ghi nhận đây là điểm cần lưu ý về quyền riêng tư.
 
@@ -819,7 +845,11 @@ interface SessionRepository {
 }
 ```
 
-`appendTurn` **không** có tham số sửa hay xoá — không phải để phong cách, mà vì `UNIQUE (session_id, seq)` ở §2.6 khiến vi phạm này hỏng ở tầng DB. Bất biản "chỉ append" của §4.5 giờ được **thực thi bằng ràng buộc dữ liệu**, không bằng quy ước. `expectedSeq` là kiểm tra tuần tự tuỳ chọn: route handler truyền `seq` của lượt cuối vừa đọc để ghi lượt `user` và lượt `assistant` kế tiếp trong một thao tác, lệch thì ghi trùng `seq` bị DB chặn thay vì tạo transcript rách. Mỗi `appendTurn` chạy `BEGIN IMMEDIATE`/`COMMIT` và rollback toàn bộ nếu ném lỗi.
+`appendTurn` **không** có tham số sửa hay xoá — không phải để phong cách, mà vì `UNIQUE (session_id, seq)` ở §2.6 khiến vi phạm này hỏng ở tầng DB. Bất biản "chỉ append" của §4.5 giờ được **thực thi bằng ràng buộc dữ liệu**, không bằng quy ước. Mỗi `appendTurn` chạy `BEGIN IMMEDIATE`/`COMMIT` và rollback toàn bộ nếu ném lỗi.
+
+**Một cặp lượt phải nguyên tử, và `appendTurn` không làm được việc đó.** Hai lần gọi là hai transaction: process chết giữa chúng thì DB giữ lại câu trả lời của người dùng mà không có câu hỏi đi kèm, và lượt sau sẽ dựng prompt từ một transcript rách. Vì vậy giai đoạn 2 thêm `appendExchange(sessionId, userTurn, assistantBlocks, expectedSeq)`: **một** `BEGIN IMMEDIATE` ghi cả hai lượt liền nhau, kiểm `status = 'active'`, và so `MAX(seq)` với `expectedSeq` — lệch thì rollback và ném `SessionConflict`. `start` dùng cùng cơ chế cho lượt `user` tổng hợp và câu hỏi đầu tiên, nên model hỏng thì không có phiên mồ côi.
+
+Hai request chồng nhau trên cùng một phiên được chặn trước khi gọi model bằng một khoá trong RAM theo `sessionId`; request thứ hai nhận `409`, chứ không phải cả hai đều mua token rồi đều stream một câu. Phần ghi DB nằm ngoài vòng lặp delta.
 
 #### Những gì được đổi
 
@@ -854,7 +884,9 @@ Nếu hai điều trên giữ được, byte gửi lên **không đổi** so v�
 
 ### 8.2 Số lượt do server tính
 
-Request **không** có trường `turnCount`. Server tự ánh xạ `config.length` sang số câu rồi đếm `SELECT COUNT(*) FROM turns WHERE session_id = ? AND role = 'user' AND synthetic = 0`, từ chối khi `asked + 1 > questionsTotal(length)`. Lượt `synthetic` do chính `start` ghi và được lưu ở cột riêng, nên bộ đếm không phải đoán lại từ nội dung lượt.
+Request **không** có trường `turnCount`. Server tự ánh xạ `config.length` sang số câu rồi đếm câu hỏi **đã hoàn tất**: `SELECT COUNT(*) FROM turns WHERE session_id = ? AND role = 'assistant'`. `start` ra câu số 1; `/turn` chỉ được ra câu `asked + 1` khi `asked < questionsTotal(length)`. Sau câu thứ 5 của phiên ngắn, lượt tiếp theo là `422`.
+
+> Công thức cũ đếm `role = 'user' AND synthetic = 0` rồi từ chối khi `asked + 1 > questionsTotal`. Công thức đó **lệch đúng một câu và cho phép hỏi câu thứ 6** trong phiên 5 câu: khi lượt thứ 5 tới, mới có 4 câu trả lời, `4 + 1 > 5` là sai nên lượt đi qua và sinh câu 6. Công thức đúng phải đếm thứ **đã hỏi xong**, tức lượt `assistant`, vì "số câu" trong FR-7 đếm câu đã hỏi chứ không đếm câu đã trả lời.
 
 Bản trước đếm trong transcript do client gửi lên — người dùng sửa transcript là sửa được số lượt. Bản này đếm thẳng trong DB: **client không còn gửi transcript** (FR-20), nên con đường sửa số lượt đóng lại hoàn toàn mà không cần thêm kiểm tra nào.
 
@@ -920,9 +952,13 @@ Task xác minh riêng: **T-0c.6**.
 | Nguy tắc | Cụ thể |
 |---|---|
 | Kiểm tra điều kiện dừng **trước** khi đọc nội dung | Từ chối và cắt cụt đều là HTTP 200; đọc một cách mù là lỗi |
-| Không lộ chi tiết cấu hình | Sai key, model không tồn tại, không có quyền — trả thông báo chung, ghi log đầy đủ |
+| Không lộ chi tiết cấu hình | Sai key, model không tồn tại, không có quyền — trả thông báo chung |
 | `redact()` trước khi ghi log | Bỏ `apiKey`, chuỗi trông như key trong URL, nội dung lỗi thô |
 | Mọi lỗi có `request_id` | Đối chiếu được khi người dùng báo sự cố |
+
+**Log được ghi gì.** Bản trước ghi *"trả thông báo chung, ghi log đầy đủ"* — câu đó **mâu thuẫn với NFR-11**: transcript, CV và báo cáo đều ghi thẳng nội dung người dùng xuống đĩa, nên `redact()` giữ nghĩa với chúng chứ không chỉ với key. Log chỉ ghi `request_id`, tên provider, mã lỗi đã **phân loại** (`invalid_key`, `model_not_found`, `billing`, `rate_limit`, `network`, `internal`) và số HTTP tương ứng. **Không** ghi response thô của provider, nội dung CV, câu trả lời, hay khối `blocks`.
+
+"Ghi log đầy đủ" ở đây nghĩa là *đầy đủ để chẩn đoán*, không phải *đầy đủ dữ liệu*. Mã lỗi đã phân loại cộng `request_id` là đủ để truy vết; nội dung người dùng thì không bao giờ.
 
 ### 9.2 Bảng ánh xạ
 
