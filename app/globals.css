@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/*  AI Mock Interview Studio · Design tokens (one-shot bundle)         */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Brand palette */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --secondary: #0f172a;
+  --tertiary: #10b981;
+  --neutral: #94a3b8;
+
+  /* Surface scale */
+  --bg-canvas: #090d16;
+  --bg-surface-subtle: #0f172a;
+  --bg-surface-elevated: #1e293b;
+  --bg-surface-overlay: #334155;
+
+  /* Borders */
+  --border-hairline: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.20);
+  --border-focus: rgba(79, 70, 229, 0.6);
+  --border-t1: rgba(148, 163, 184, 0.08);
+  --border-t2: rgba(148, 163, 184, 0.16);
+
+  /* Accents */
+  --warning: #f59e0b;
+  --destructive: #f43f5e;
+  --success: #10b981;
+
+  /* Text */
+  --text-primary: #d4e4fa;
+  --text-secondary: #c7c4d8;
+  --text-muted: #94a3b8;
+  --text-bright: #e2e8f0;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --gutter: 20px;
+  --margin: 32px;
+
+  /* Fonts */
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Glow accent */
+  --glow-active: 0 0 0 1px rgba(79, 70, 229, 0.4),
+                 0 0 24px -4px rgba(79, 70, 229, 0.15);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base resets                                                        */
+/* ------------------------------------------------------------------ */
+html, body { margin: 0; padding: 0; overscroll-behavior: none; }
+body {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: rgba(79, 70, 229, 0.45); color: var(--text-bright); }
+
+/* Scrollbars (subtle) */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.18); border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ------------------------------------------------------------------ */
+/*  Component primitives                                               */
+/* ------------------------------------------------------------------ */
+@layer components {
+  .glass-bar {
+    @apply fixed top-0 w-full z-50;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .nav-link {
+    @apply px-space-sm py-space-xs rounded-lg font-body-sm text-body-sm text-on-surface-variant transition-colors whitespace-nowrap;
+  }
+  .nav-link:hover { background: var(--bg-surface-elevated); color: var(--text-bright); }
+  .nav-link.active { background: var(--primary); color: white; }
+
+  .card {
+    background: var(--bg-surface-subtle);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-md);
+  }
+  .card-elevated {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-t2);
+    border-radius: var(--radius-md);
+  }
+  .card-section {
+    border-top: 1px solid var(--border-t1);
+  }
+
+  .label-caps {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .label-code-sm {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .label-code-lg {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-headline-sm text-headline-sm transition-all;
+    padding: 8px 16px;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-bright);
+  }
+  .btn-ghost:hover { background: rgba(30, 41, 59, 0.6); }
+  .btn-destructive {
+    background: transparent;
+    border: 1px solid rgba(244, 63, 94, 0.5);
+    color: var(--destructive);
+  }
+  .btn-destructive:hover { background: rgba(244, 63, 94, 0.08); }
+
+  .input {
+    @apply w-full rounded-lg transition-colors;
+    background: var(--bg-canvas);
+    color: var(--text-bright);
+    border: 1px solid var(--border-hairline);
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    background: var(--bg-surface-elevated);
+  }
+  .input-mono {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full;
+    padding: 2px 8px;
+    border: 1px solid var(--border-strong);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .chip .dot { width: 6px; height: 6px; border-radius: 9999px; }
+  .chip-neutral { color: var(--text-bright); border-color: var(--bg-surface-overlay); }
+  .chip-neutral .dot { background: var(--neutral); }
+  .chip-emerald { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
+  .chip-emerald .dot { background: var(--tertiary); }
+  .chip-amber { color: #fde68a; border-color: rgba(217, 119, 6, 0.3); }
+  .chip-amber .dot { background: #d97706; }
+  .chip-indigo { color: var(--primary); border-color: rgba(79, 70, 229, 0.4); }
+  .chip-indigo .dot { background: var(--primary); }
+  .chip-rose { color: var(--destructive); border-color: rgba(244, 63, 94, 0.4); }
+  .chip-rose .dot { background: var(--destructive); }
+
+  .pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .glow-active { box-shadow: var(--glow-active); }
+
+  .streaming-cursor::after {
+    content: "▍";
+    margin-left: 2px;
+    color: var(--primary);
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { to { opacity: 0; } }
+
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Markdown-style body for AI responses                              */
+/* ------------------------------------------------------------------ */
+.ai-prose p { margin: 0 0 0.6em; line-height: 1.6; }
+.ai-prose h1, .ai-prose h2, .ai-prose h3 { margin: 0.6em 0 0.3em; font-weight: 600; }
+.ai-prose h1 { font-size: 22px; }
+.ai-prose h2 { font-size: 18px; }
+.ai-prose h3 { font-size: 16px; }
+.ai-prose ul, .ai-prose ol { margin: 0 0 0.6em 1.2em; }
+.ai-prose ul { list-style: disc; }
+.ai-prose ol { list-style: decimal; }
+.ai-prose li { margin: 0.15em 0; }
+.ai-prose code { font-family: var(--font-mono); font-size: 13px; background: var(--bg-canvas); padding: 1px 6px; border-radius: 4px; color: #c3c0ff; }
+.ai-prose pre { background: var(--bg-canvas); border: 1px solid var(--border-hairline); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0 0 0.6em; }
+.ai-prose pre code { background: transparent; padding: 0; color: var(--text-bright); }
+.ai-prose blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-secondary); margin: 0 0 0.6em; }
+.ai-prose strong { color: var(--text-bright); }
+.ai-prose hr { border: 0; border-top: 1px solid var(--border-hairline); margin: 0.8em 0; }
+
+/* ------------------------------------------------------------------ */
+/*  Material Symbols font face — moved out of layout.tsx to avoid     */
+/*  React hydration mismatches when the inline <style> is HTML-        */
+/*  escaped server-side but not on the client.                          */
+/* ------------------------------------------------------------------ */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+}

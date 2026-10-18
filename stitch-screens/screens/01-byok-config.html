@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "inverse-surface": "#d4e4fa", "tertiary": "#4edea3", "surface-container-highest": "#273647", "surface": "#051424", "primary-container": "#4f46e5", "tertiary-fixed": "#6ffbbe", "secondary-fixed": "#dae2fd", "surface-container-high": "#1c2b3c", "outline": "#918fa1", "on-tertiary": "#003824", "secondary-container": "#3f465c", "on-error-container": "#ffdad6", "surface-tint": "#c3c0ff", "surface-container": "#122131", "secondary": "#bec6e0", "tertiary-container": "#006e4b", "on-surface": "#d4e4fa", "primary-fixed": "#e2dfff", "secondary-fixed-dim": "#bec6e0", "on-surface-variant": "#c7c4d8", "error-container": "#93000a", "error": "#ffb4ab", "on-tertiary-container": "#67f4b7", "inverse-primary": "#4d44e3", "primary-fixed-dim": "#c3c0ff", "surface-variant": "#273647", "background": "#051424", "on-primary-container": "#dad7ff", "surface-bright": "#2c3a4c", "surface-container-lowest": "#010f1f", "outline-variant": "#464555", "surface-dim": "#051424", "on-secondary-fixed-variant": "#3f465c", "on-secondary": "#283044", "inverse-on-surface": "#233143", "on-primary-fixed": "#0f0069", "on-primary": "#1d00a5", "on-tertiary-fixed-variant": "#005236", "on-background": "#d4e4fa", "surface-container-low": "#0d1c2d", "on-tertiary-fixed": "#002113", "on-error": "#690005", "on-secondary-fixed": "#131b2e", "tertiary-fixed-dim": "#4edea3", "on-secondary-container": "#adb4ce", "on-primary-fixed-variant": "#3323cc", "primary": "#c3c0ff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2.5rem", "margin-mobile": "1rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-lg": "1.5rem", "margin": "2rem", "space-md": "1rem", "gutter": "1.25rem" }, "fontFamily": { "body-lg": ["Geist"], "headline-sm": ["Geist"], "headline-lg-mobile": ["Geist"], "label-caps": ["JetBrains Mono"], "body-md": ["Geist"], "body-sm": ["Geist"], "display": ["Geist"], "headline-md": ["Geist"], "label-code-sm": ["JetBrains Mono"], "headline-lg": ["Geist"], "label-code-lg": ["JetBrains Mono"] }, "fontSize": { "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-caps": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "500" }], "label-code-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-code-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500" }] } } } };</script></head><body class="bg-background font-body-md text-on-surface min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-gutter flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg flex-shrink-0"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"><span class="material-symbols-outlined text-[20px]">psychology</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">InterviewAI Studio</span><span class="font-label-caps text-label-caps text-tertiary uppercase">Engine v2.4 · Local Runtime</span></div></div><div class="hidden xl:flex items-center gap-space-xs px-space-sm py-space-xs rounded-full bg-surface-container"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-label-caps text-label-caps text-on-surface-variant uppercase">AI Provider:</span><span class="font-label-code-sm text-label-code-sm text-tertiary">OpenAI GPT-4o</span></div></div><nav class="hidden lg:flex items-center gap-space-xs flex-1 justify-center max-w-4xl" data-active-classes="bg-primary-container text-on-primary-container font-headline-sm rounded-lg"><a class="px-space-sm py-space-xs font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors whitespace-nowrap" data-path="cau-hinh-ai-byok" href="#">1. Cấu hình AI (BYOK)</a><a class="px-space-sm py-space-xs font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors whitespace-nowrap" data-path="bat-dau-phong-van" href="#">2. Bắt đầu phỏng vấn</a><a class="px-space-sm py-space-xs font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors whitespace-nowrap" data-path="phien-dang-dien-ra" href="#">3. Phiên đang diễn ra</a><a class="px-space-sm py-space-xs font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors whitespace-nowrap" data-path="bao-cao-danh-gia" href="#">4. Báo cáo đánh giá</a><a class="px-space-sm py-space-xs font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors whitespace-nowrap" data-path="lich-su-du-lieu-sqlite" href="#">5. Lịch sử & Dữ liệu SQLite</a></nav><div class="flex items-center gap-space-md flex-shrink-0"><div class="hidden 2xl:flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container-lowest text-on-surface-variant"><span class="material-symbols-outlined text-[16px] text-tertiary">verified_user</span><span class="font-label-code-sm text-label-code-sm">BYOK Mode: Key lưu cục bộ trình duyệt</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-background flex-1"><div class="flex flex-col w-full">
+<div class="w-full px-gutter py-space-lg flex flex-col gap-space-xl max-w-7xl mx-auto">
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-3xl">
+<div class="flex items-center gap-space-xs">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high font-label-caps text-label-caps text-tertiary uppercase">BYOK Protocol • Client-Side Security</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">FR-12 · FR-16</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Cấu hình AI Provider & Khóa API (BYOK)</h1>
+<p class="font-body-md text-body-md text-secondary">Không yêu cầu đăng ký tài khoản tập trung. Bạn tự cấp API Key riêng — toàn bộ hội thoại kỹ thuật, mã nguồn giải thuật và đánh giá năng lực được truyền trực tiếp từ client đến AI provider mà không qua máy chủ trung gian.</p>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container-low p-space-sm rounded-xl">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface uppercase">Trạng thái bảo mật</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary" id="securityBadgeText">Bộ nhớ RAM / Session Active</span>
+</div>
+</div>
+</div>
+<!-- Security Advisory Alert (FR-13 & NFR-2) -->
+<div class="bg-surface-container-high rounded-xl p-space-md shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md flex-1">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex-shrink-0 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[24px]">shield_with_heart</span>
+</div>
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Cảnh báo an toàn: Cơ chế lưu trữ khóa trên thiết bị</span>
+<span class="px-space-xs py-0.5 rounded bg-error-container text-on-error-container font-label-caps text-label-caps uppercase">Khuyến cáo NFR-2</span>
+</div>
+<p class="font-body-sm text-body-sm text-secondary leading-relaxed">
+            Mặc định, API key lưu trong <code class="font-label-code-sm text-label-code-sm px-1.5 py-0.5 rounded bg-surface-container text-primary">localStorage</code> dưới dạng chuỗi văn bản thuần (plain text). Bất kỳ ai dùng chung profile trình duyệt hoặc tiện ích mở rộng (browser extensions) có quyền đọc storage đều có thể truy xuất.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container p-space-sm rounded-lg flex-shrink-0">
+<div class="flex flex-col text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface">Chỉ lưu trong phiên (Session-only)</span>
+<span class="font-label-caps text-label-caps text-tertiary uppercase">Không ghi xuống đĩa cứng</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="sessionOnlyToggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+<!-- Provider Selection (FR-12) -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-caps text-label-caps text-tertiary uppercase">Bước 1</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Lựa chọn AI Provider tương thích</h2>
+</div>
+<span class="font-label-code-sm text-label-code-sm text-on-surface-variant">Hỗ trợ 4 cơ chế runtime</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md" id="providerGrid">
+<!-- Anthropic -->
+<div class="provider-card cursor-pointer p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex flex-col justify-between gap-space-md shadow-sm" data-provider="anthropic">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">terminal</span>
+</div>
+<span class="check-icon hidden text-tertiary material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Anthropic</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Claude 3.5 Sonnet / 3.5 Haiku</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-tertiary">Direct PDF</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-secondary">Structured</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-primary">Streaming</span>
+</div>
+</div>
+<!-- OpenAI -->
+<div class="provider-card cursor-pointer p-space-md rounded-xl bg-surface-container-high transition-all flex flex-col justify-between gap-space-md shadow-sm" data-provider="openai">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[24px]">psychology</span>
+</div>
+<span class="check-icon text-tertiary material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">OpenAI</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">GPT-4o / GPT-4o mini</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-tertiary">Direct PDF</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-tertiary">JSON Schema</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-primary">Streaming</span>
+</div>
+</div>
+<!-- Google Gemini -->
+<div class="provider-card cursor-pointer p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex flex-col justify-between gap-space-md shadow-sm" data-provider="gemini">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[24px]">diamond</span>
+</div>
+<span class="check-icon hidden text-tertiary material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Google Gemini</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Gemini 1.5 Pro / Flash</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-tertiary">Direct PDF</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-secondary">Multi-modal</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-primary">Streaming</span>
+</div>
+</div>
+<!-- Custom (OpenAI Compatible) -->
+<div class="provider-card cursor-pointer p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high transition-all flex flex-col justify-between gap-space-md shadow-sm" data-provider="custom">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">hub</span>
+</div>
+<span class="check-icon hidden text-tertiary material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Tùy chỉnh (Self-Hosted)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Ollama / vLLM / Groq proxy</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-outline">No PDF OCR</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-secondary">Strict OpenAI</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-lowest font-label-caps text-label-caps text-primary">Streaming</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Configuration Canvas Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Inputs & Validation -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Custom Base URL Container (Toggled via JS) -->
+<div class="hidden flex-col gap-space-sm bg-surface-container p-space-md rounded-xl" id="customEndpointBox">
+<div class="flex items-center justify-between">
+<label class="font-label-caps text-label-caps text-secondary uppercase flex items-center gap-space-xs" for="customBaseUrlInput">
+<span>Endpoint Base URL (HTTPS Bắt buộc)</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high text-primary font-label-code-sm">NFR-8 Validated</span>
+</label>
+<span class="font-label-caps text-label-caps text-outline">OpenAI Compatible Path</span>
+</div>
+<div class="relative flex items-center">
+<span class="absolute left-3 text-secondary material-symbols-outlined text-[18px]">dns</span>
+<input class="w-full bg-surface-container-lowest text-on-surface font-label-code-lg text-label-code-lg pl-10 pr-space-md py-space-sm rounded-lg focus:outline-none focus:bg-surface-container-high transition-colors placeholder:text-outline-variant" id="customBaseUrlInput" placeholder="https://api.groq.com/openai/v1" type="text"/>
+</div>
+<div class="font-body-sm text-body-sm text-secondary flex items-start gap-space-xs" id="urlValidationMsg">
+<span class="material-symbols-outlined text-[16px] text-tertiary flex-shrink-0 mt-0.5">verified_user</span>
+<span>Hệ thống áp dụng sandbox chặn toàn bộ IP nội bộ (<code class="font-label-code-sm text-label-code-sm">localhost, 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16</code>) để ngăn ngừa tấn công SSRF. Lưu ý: Endpoint tự dựng thường không hỗ trợ phân tích PDF trực tiếp hoặc Structured Reasoning schema.</span>
+</div>
+</div>
+<!-- API Key Input Section (FR-12 & FR-13) -->
+<div class="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-caps text-label-caps text-tertiary uppercase">Bước 2</span>
+<label class="font-headline-sm text-headline-sm text-on-surface" for="apiKeyField">API Key của Provider</label>
+</div>
+<div class="flex items-center gap-space-xs font-label-code-sm text-label-code-sm text-secondary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span id="detectedProviderLabel">Định dạng phát hiện: sk-proj-... (OpenAI)</span>
+</div>
+</div>
+<div class="relative flex items-center">
+<input class="w-full bg-surface-container-lowest text-on-surface font-label-code-lg text-label-code-lg pl-space-md pr-28 py-space-sm rounded-lg focus:outline-none focus:bg-surface-container-high transition-colors tracking-wider" id="apiKeyField" placeholder="Nhập chuỗi khóa bí mật (sk-...)" type="password" value="sk-proj-9A8df920fKLS9382103829103840291938"/>
+<div class="absolute right-2 flex items-center gap-1">
+<button class="w-8 h-8 rounded flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-container-high transition-colors" id="toggleMaskBtn" title="Hiện/Ẩn Key" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-secondary hover:text-error hover:bg-surface-container-high transition-colors" id="clearKeyBtn" title="Xóa Key khỏi ô nhập" type="button">
+<span class="material-symbols-outlined text-[18px]">backspace</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-sm pt-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-code-sm text-label-code-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">memory</span>
+<span>Lưu tạm trong RAM trình duyệt cho đến khi đóng tab</span>
+</div>
+<button class="flex items-center justify-center gap-space-xs px-space-md py-space-xs rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright transition-colors font-label-code-lg text-label-code-lg shadow-sm" id="testKeyBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">network_check</span>
+<span>Kiểm tra kết nối (Test Key)</span>
+</button>
+</div>
+<!-- Connection Verification Feedback Banner -->
+<div class="p-space-sm rounded-lg bg-surface-container-lowest flex items-center justify-between gap-space-sm" id="testResultBox">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-code-sm text-label-code-sm text-on-surface font-medium">Kết nối thành công (HTTP 200 OK)</span>
+<span class="font-body-sm text-body-sm text-secondary">Phản hồi endpoint: <code class="text-tertiary font-label-code-sm">v1/models</code> • Độ trễ: 46ms • Quota: Đang hoạt động</span>
+</div>
+</div>
+<span class="font-label-caps text-label-caps text-outline uppercase">Handshake Verified</span>
+</div>
+</div>
+<!-- Model Management Area (FR-14 & FR-16) -->
+<div class="bg-surface-container p-space-lg rounded-xl flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-caps text-label-caps text-tertiary uppercase">Bước 3</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Lựa chọn & Tùy chỉnh Model (Model ID)</h2>
+</div>
+<button class="flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-high text-primary hover:text-on-surface hover:bg-primary-container transition-colors font-label-caps text-label-caps uppercase" id="fetchModelsBtn" type="button">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+<span>Lấy danh sách Model (Fetch Models)</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Dropdown from API -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase" for="modelSelectDropdown">Danh mục phát hiện tự động</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest text-on-surface font-label-code-lg text-label-code-lg pl-space-sm pr-10 py-space-sm rounded-lg focus:outline-none focus:bg-surface-container-high cursor-pointer" id="modelSelectDropdown">
+<option selected="" value="gpt-4o">gpt-4o (Omni Balanced - Khuyên dùng)</option>
+<option value="gpt-4o-mini">gpt-4o-mini (Tốc độ cao & Tiết kiệm token)</option>
+<option value="o1-preview">o1-preview (Reasoning chuyên sâu thuật toán)</option>
+<option value="o1-mini">o1-mini (Reasoning toán học & code nhanh)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-secondary pointer-events-none text-[20px]">expand_more</span>
+</div>
+</div>
+<!-- Manual Override (FR-16) -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-caps text-label-caps text-secondary uppercase" for="customModelInput">Hoặc nhập Model ID thủ công (Không khóa cứng)</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest text-on-surface font-label-code-lg text-label-code-lg px-space-sm py-space-sm rounded-lg focus:outline-none focus:bg-surface-container-high placeholder:text-outline-variant" id="customModelInput" placeholder="Ví dụ: gpt-4o-2024-11-20 hoặc mistral-large" type="text"/>
+</div>
+</div>
+</div>
+<!-- Model Parameter Fine-tuning -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-space-xs">
+<div class="flex flex-col gap-space-xs bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary uppercase">Temperature</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary" id="tempVal">0.40</span>
+</div>
+<input class="w-full accent-primary-container cursor-pointer" id="tempRange" max="1" min="0" step="0.05" type="range" value="0.4"/>
+<span class="font-body-sm text-body-sm text-outline">Độ chính xác cao, ít bịa đặt</span>
+</div>
+<div class="flex flex-col gap-space-xs bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary uppercase">Max Output Tokens</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary">4,096</span>
+</div>
+<input class="w-full accent-primary-container cursor-pointer" max="8192" min="1024" step="512" type="range" value="4096"/>
+<span class="font-body-sm text-body-sm text-outline">Đủ cho code diff và phân tích rubric</span>
+</div>
+<div class="flex flex-col gap-space-xs bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary uppercase">Top P</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary">0.95</span>
+</div>
+<input class="w-full accent-primary-container cursor-pointer" max="1" min="0.1" step="0.05" type="range" value="0.95"/>
+<span class="font-body-sm text-body-sm text-outline">Nucleus sampling tiêu chuẩn</span>
+</div>
+</div>
+</div>
+<!-- Master Action Buttons -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-md py-space-sm">
+<button class="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container text-error hover:bg-error-container hover:text-on-error-container transition-colors font-headline-sm text-headline-sm" id="resetStorageBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+<span>Xóa toàn bộ cấu hình cục bộ</span>
+</button>
+<div class="w-full sm:w-auto flex items-center gap-space-sm">
+<button class="w-full sm:w-auto flex items-center justify-center gap-space-sm px-space-xl py-space-sm rounded-lg bg-primary-container text-on-primary-container hover:bg-inverse-primary transition-all font-headline-sm text-headline-sm shadow-md" id="saveBtn" type="button">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+<span>Lưu & Sẵn sàng phỏng vấn</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Interactive Diagnostic Telemetry & Privacy Audit -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Live Telemetry Card -->
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col gap-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-tertiary uppercase">Session Telemetry</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high font-label-code-sm text-label-code-sm text-secondary">Local Only</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="flex justify-between items-center py-1">
+<span class="font-body-sm text-body-sm text-secondary">Active Architecture</span>
+<span class="font-label-code-sm text-label-code-sm text-on-surface">Client-to-LLM Mesh</span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="font-body-sm text-body-sm text-secondary">SQLite Server Sync</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary">Zero-Key Retention (WAL)</span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="font-body-sm text-body-sm text-secondary">Client Sandbox</span>
+<span class="font-label-code-sm text-label-code-sm text-on-surface">Strict CSP Enabled</span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="font-body-sm text-body-sm text-secondary">Estimated Token Fee</span>
+<span class="font-label-code-sm text-label-code-sm text-primary">0.00$ (Direct BYOK)</span>
+</div>
+</div>
+<!-- Minimal SVG Latency Sparkline Graph -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-outline uppercase">Độ trễ phản hồi (ms)</span>
+<span class="font-label-code-sm text-label-code-sm text-tertiary">Min: 38ms • Avg: 46ms</span>
+</div>
+<div class="w-full h-16 bg-surface-container-lowest rounded-lg p-space-xs flex items-end">
+<svg class="w-full h-full text-tertiary overflow-visible" preserveaspectratio="none" viewbox="0 0 240 60">
+<polyline fill="none" points="0,48 24,42 48,46 72,32 96,38 120,24 144,30 168,18 192,26 216,14 240,20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></polyline>
+<circle class="fill-current text-tertiary" cx="216" cy="14" r="3"></circle>
+</svg>
+</div>
+</div>
+</div>
+<!-- Capability Matrix Checklist -->
+<div class="bg-surface-container p-space-md rounded-xl flex flex-col gap-space-sm">
+<span class="font-label-caps text-label-caps text-secondary uppercase">Khả năng đáp ứng yêu cầu</span>
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<div class="flex items-center gap-space-sm p-space-xs rounded bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Stream phỏng vấn thời gian thực</span>
+</div>
+<div class="flex items-center gap-space-sm p-space-xs rounded bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Chấm điểm Rubric định dạng JSON</span>
+</div>
+<div class="flex items-center gap-space-sm p-space-xs rounded bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Trực tiếp đọc CV PDF kỹ thuật</span>
+</div>
+<div class="flex items-center gap-space-sm p-space-xs rounded bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Không phụ thuộc máy chủ trung gian</span>
+</div>
+</div>
+</div>
+<!-- Security Notice -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-primary flex-shrink-0">info</span>
+<p class="font-body-sm text-body-sm text-secondary">
+            Khi chuyển đổi giữa các Provider, hệ thống sẽ tự động cập nhật schema prompt phỏng vấn tương ứng nhằm tối ưu hóa chất lượng câu hỏi phân cấp L3-Junior, L5-Senior và Staff.
+          </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Logic Hook -->
+<script>
+    (function initBYOKCanvas() {
+      const providerCards = document.querySelectorAll('.provider-card');
+      const customBox = document.getElementById('customEndpointBox');
+      const apiKeyInput = document.getElementById('apiKeyField');
+      const toggleMaskBtn = document.getElementById('toggleMaskBtn');
+      const clearKeyBtn = document.getElementById('clearKeyBtn');
+      const testKeyBtn = document.getElementById('testKeyBtn');
+      const testResultBox = document.getElementById('testResultBox');
+      const sessionOnlyToggle = document.getElementById('sessionOnlyToggle');
+      const securityBadgeText = document.getElementById('securityBadgeText');
+      const detectedLabel = document.getElementById('detectedProviderLabel');
+      const modelSelect = document.getElementById('modelSelectDropdown');
+      const customModelInput = document.getElementById('customModelInput');
+      const fetchModelsBtn = document.getElementById('fetchModelsBtn');
+      const saveBtn = document.getElementById('saveBtn');
+      const resetStorageBtn = document.getElementById('resetStorageBtn');
+      const tempRange = document.getElementById('tempRange');
+      const tempVal = document.getElementById('tempVal');
+
+      // Provider Models Map
+      const providerModels = {
+        anthropic: [
+          { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet (Chuyên sâu Coding & System)' },
+          { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (Phản hồi siêu tốc)' }
+        ],
+        openai: [
+          { id: 'gpt-4o', label: 'gpt-4o (Omni Balanced - Khuyên dùng)' },
+          { id: 'gpt-4o-mini', label: 'gpt-4o-mini (Tốc độ cao & Tiết kiệm token)' },
+          { id: 'o1-preview', label: 'o1-preview (Reasoning chuyên sâu thuật toán)' },
+          { id: 'o1-mini', label: 'o1-mini (Reasoning toán học & code nhanh)' }
+        ],
+        gemini: [
+          { id: 'gemini-1.5-pro-latest', label: 'Gemini 1.5 Pro (Context lớn 2M tokens)' },
+          { id: 'gemini-1.5-flash-latest', label: 'Gemini 1.5 Flash (Phản hồi tức thì)' }
+        ],
+        custom: [
+          { id: 'custom-model-local', label: 'Phát hiện tự động từ Base URL v1/models' }
+        ]
+      };
+
+      // Provider selection
+      providerCards.forEach(card => {
+        card.addEventListener('click', () => {
+          providerCards.forEach(c => {
+            c.classList.remove('bg-surface-container-high', 'shadow-md');
+            c.classList.add('bg-surface-container');
+            const check = c.querySelector('.check-icon');
+            if (check) check.classList.add('hidden');
+          });
+
+          card.classList.remove('bg-surface-container');
+          card.classList.add('bg-surface-container-high', 'shadow-md');
+          const activeCheck = card.querySelector('.check-icon');
+          if (activeCheck) activeCheck.classList.remove('hidden');
+
+          const provider = card.getAttribute('data-provider');
+          
+          if (provider === 'custom') {
+            customBox.classList.remove('hidden');
+            customBox.classList.add('flex');
+            detectedLabel.textContent = 'Định dạng: Tùy biến (OpenAI Compatible)';
+          } else {
+            customBox.classList.add('hidden');
+            customBox.classList.remove('flex');
+            if (provider === 'anthropic') detectedLabel.textContent = 'Định dạng: sk-ant-...';
+            if (provider === 'openai') detectedLabel.textContent = 'Định dạng: sk-proj-...';
+            if (provider === 'gemini') detectedLabel.textContent = 'Định dạng: AIzaSy...';
+          }
+
+          // Populate Models
+          modelSelect.innerHTML = '';
+          const models = providerModels[provider] || [];
+          models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.label;
+            modelSelect.appendChild(opt);
+          });
+        });
+      });
+
+      // Masking toggle
+      toggleMaskBtn.addEventListener('click', () => {
+        const isPassword = apiKeyInput.type === 'password';
+        apiKeyInput.type = isPassword ? 'text' : 'password';
+        const icon = toggleMaskBtn.querySelector('span');
+        icon.textContent = isPassword ? 'visibility_off' : 'visibility';
+      });
+
+      // Clear key
+      clearKeyBtn.addEventListener('click', () => {
+        apiKeyInput.value = '';
+        apiKeyInput.focus();
+      });
+
+      // Session toggle logic
+      sessionOnlyToggle.addEventListener('change', () => {
+        if (sessionOnlyToggle.checked) {
+          securityBadgeText.textContent = 'Bộ nhớ RAM / Session Active';
+          securityBadgeText.className = 'font-label-code-sm text-label-code-sm text-tertiary';
+        } else {
+          securityBadgeText.textContent = 'Lưu đĩa (localStorage plain text)';
+          securityBadgeText.className = 'font-label-code-sm text-label-code-sm text-error';
+        }
+      });
+
+      // Temperature slider
+      tempRange.addEventListener('input', (e) => {
+        tempVal.textContent = parseFloat(e.target.value).toFixed(2);
+      });
+
+      // Test connection mock
+      testKeyBtn.addEventListener('click', () => {
+        const oldHtml = testKeyBtn.innerHTML;
+        testKeyBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Đang kiểm tra...</span>';
+        testKeyBtn.disabled = true;
+
+        setTimeout(() => {
+          testKeyBtn.innerHTML = oldHtml;
+          testKeyBtn.disabled = false;
+          testResultBox.classList.remove('hidden');
+        }, 600);
+      });
+
+      // Fetch models mock
+      fetchModelsBtn.addEventListener('click', () => {
+        const oldHtml = fetchModelsBtn.innerHTML;
+        fetchModelsBtn.innerHTML = '<span class="material-symbols-outlined text-[14px] animate-spin">refresh</span><span>Đang tải...</span>';
+        setTimeout(() => {
+          fetchModelsBtn.innerHTML = oldHtml;
+          alert('Đã cập nhật danh sách model mới nhất từ nhà cung cấp!');
+        }, 500);
+      });
+
+      // Save confirmation
+      saveBtn.addEventListener('click', () => {
+        const selectedModel = customModelInput.value.trim() || modelSelect.value;
+        const storageType = sessionOnlyToggle.checked ? 'sessionStorage' : 'localStorage';
+        alert('Cấu hình đã sẵn sàng!\nModel: ' + selectedModel + '\nCơ chế: ' + storageType + '\nSẵn sàng khởi động phỏng vấn kỹ thuật.');
+      });
+
+      // Reset
+      resetStorageBtn.addEventListener('click', () => {
+        if (confirm('Bạn có chắc muốn xóa toàn bộ API Key và cài đặt đã lưu trong trình duyệt?')) {
+          apiKeyInput.value = '';
+          customModelInput.value = '';
+          alert('Toàn bộ cấu hình cục bộ đã được xóa an toàn.');
+        }
+      });
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(0,0,0,0.04)] py-space-sm mt-auto"><div class="w-full px-gutter flex flex-col sm:flex-row items-center justify-between gap-space-xs text-on-surface-variant"><div class="flex items-center gap-space-sm font-label-code-sm text-label-code-sm"><div class="flex items-center gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span><span class="text-tertiary">SQLite Server-side: Connected</span></div><span class="text-outline">|</span><span class="text-secondary">interview_sessions.db (WAL mode active)</span></div><div class="flex items-center gap-space-sm font-label-caps text-label-caps text-on-surface-variant uppercase"><span>Latency: 42ms</span><span>•</span><span>Sandbox Encrypted</span><span>•</span><span>Zero Cloud Retention</span></div></div></footer></body></html>

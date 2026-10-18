@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+dist/
+
+# Local SQLite database & WAL/SHM sidecars (BYOK keys never enter here)
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Misc
+.env.local
+.env.*.local
+.DS_Store
+*.log
+
+# IDE / editor / build caches
+.idea/
+.vscode/
+tsconfig.tsbuildinfo
