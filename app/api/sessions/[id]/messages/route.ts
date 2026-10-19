@@ -129,17 +129,16 @@ export async function POST(req: Request, { params }: RouteParams) {
         });
 
         // Persist user turn first so the history is durable even if streaming aborts.
-        const userTurnId = `mt_${params.id}_u${nextUserTurn}`;
         exec(
-          `INSERT OR REPLACE INTO message_turns (id, session_id, turn_number, role, content, raw_blocks_json, created_at)
-           VALUES (?, ?, ?, 'user', ?, NULL, unixepoch())`,
-          [userTurnId, params.id, nextUserTurn, body.answer || "(opener — no prior answer)"],
+          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, created_at)
+           VALUES (?, ?, 'user', ?, NULL, unixepoch())`,
+          [params.id, nextUserTurn, body.answer || "(opener — no prior answer)"],
         );
         // Persist the synthesised prompt that the AI saw — useful for replay.
         exec(
-          `INSERT OR REPLACE INTO message_turns (id, session_id, turn_number, role, content, raw_blocks_json, created_at)
-           VALUES (?, ?, ?, 'system', ?, NULL, unixepoch())`,
-          [`mt_${params.id}_u${nextUserTurn}_ctx`, params.id, nextUserTurn, userPrompt],
+          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, created_at)
+           VALUES (?, ?, 'system', ?, NULL, unixepoch())`,
+          [params.id, nextUserTurn, userPrompt],
         );
 
         // Stream the AI response.
@@ -195,12 +194,11 @@ ${body.answer}
         }
 
         // Persist assistant turn.
-        const asstTurnId = `mt_${params.id}_a${nextUserTurn}`;
         exec(
-          `INSERT OR REPLACE INTO message_turns (id, session_id, turn_number, role, content, raw_blocks_json, latency_ms, prompt_tokens, completion_tokens, finish_reason, micro_rubric, created_at)
-           VALUES (?, ?, ?, 'assistant', ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, latency_ms, prompt_tokens, completion_tokens, finish_reason, micro_rubric, created_at)
+           VALUES (?, ?, 'assistant', ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
           [
-            asstTurnId, params.id, nextUserTurn, fullText,
+            params.id, nextUserTurn, fullText,
             meta ? JSON.stringify(meta.raw_blocks) : null,
             meta?.latency_ms ?? null,
             meta?.prompt_tokens ?? null,
