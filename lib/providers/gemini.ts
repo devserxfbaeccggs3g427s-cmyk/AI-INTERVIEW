@@ -3,7 +3,7 @@
  * Yields the SDK-free textual delta directly. Keeping the implementation tiny
  * means the rest of the app stays provider-agnostic.
  */
-import { parseSseStream, safeRawBlocks, type Provider, type ChatMessage } from "./types";
+import { parseSseStream, safeRawBlocks, type Provider, type ChatMessage, type StreamHandle } from "./types";
 import type { ModelConfig } from "../types";
 
 function geminiUrl(cfg: ModelConfig): string {
@@ -98,39 +98,44 @@ export const geminiProvider: Provider = {
     let completion_tokens: number | undefined;
     let finish_reason: string | undefined;
 
+    let resolveMeta!: (value: Awaited<StreamHandle["meta"]>) => void;
+    const meta: StreamHandle["meta"] = new Promise((resolve) => {
+      resolveMeta = resolve;
+    });
     const textStream = (async function* () {
-      for await (const evt of parseSseStream(res.body!)) {
-        let parsed: Record<string, unknown>;
-        try {
-          parsed = JSON.parse(evt);
-        } catch {
-          continue;
+      try {
+        for await (const evt of parseSseStream(res.body!)) {
+          let parsed: Record<string, unknown>;
+          try {
+            parsed = JSON.parse(evt);
+          } catch {
+            continue;
+          }
+          const candidates = parsed.candidates as
+            | { content?: { parts?: { text?: string }[] }; finishReason?: string }[]
+            | undefined;
+          const cand = candidates?.[0];
+          const text = cand?.content?.parts?.map((p) => p.text ?? "").join("");
+          if (text) yield text;
+          if (cand?.finishReason) finish_reason = cand.finishReason;
+          const usage = parsed.usageMetadata as
+            | { promptTokenCount?: number; candidatesTokenCount?: number }
+            | undefined;
+          if (usage?.promptTokenCount !== undefined) prompt_tokens = usage.promptTokenCount;
+          if (usage?.candidatesTokenCount !== undefined) completion_tokens = usage.candidatesTokenCount;
         }
-        const candidates = parsed.candidates as
-          | { content?: { parts?: { text?: string }[] }; finishReason?: string }[]
-          | undefined;
-        const cand = candidates?.[0];
-        const text = cand?.content?.parts?.map((p) => p.text ?? "").join("");
-        if (text) yield text;
-        if (cand?.finishReason) finish_reason = cand.finishReason;
-        const meta = parsed.usageMetadata as
-          | { promptTokenCount?: number; candidatesTokenCount?: number }
-          | undefined;
-        if (meta?.promptTokenCount !== undefined) prompt_tokens = meta.promptTokenCount;
-        if (meta?.candidatesTokenCount !== undefined) completion_tokens = meta.candidatesTokenCount;
+        blocks.usage = { prompt_tokens, completion_tokens, finish_reason };
+        resolveMeta({
+          latency_ms: Date.now() - t0,
+          prompt_tokens,
+          completion_tokens,
+          finish_reason,
+          raw_blocks: safeRawBlocks(blocks),
+        });
+      } catch (error) {
+        resolveMeta({ latency_ms: Date.now() - t0, raw_blocks: safeRawBlocks(blocks) });
+        throw error;
       }
-    })();
-
-    const meta = (async () => {
-      for await (const _ of textStream) void _;
-      blocks.usage = { prompt_tokens, completion_tokens, finish_reason };
-      return {
-        latency_ms: Date.now() - t0,
-        prompt_tokens,
-        completion_tokens,
-        finish_reason,
-        raw_blocks: safeRawBlocks(blocks),
-      };
     })();
 
     return { textStream, meta };

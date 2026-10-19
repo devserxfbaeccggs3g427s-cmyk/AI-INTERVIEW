@@ -37,6 +37,40 @@ export default function ActiveSessionPage({ params }: Props) {
   const [bootErr, setBootErr] = useState<string | null>(null);
   const [showEarlyStopConfirm, setShowEarlyStopConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inFlightRef = useRef(false);
+
+  const hydrateSession = (json: { session: SessionRow; turns: MessageTurnRow[] }) => {
+    setSession(json.session);
+    const answered = json.turns.filter((t) => t.role === "user").length;
+    const asked = json.turns.filter((t) => t.role === "assistant").length;
+    setPlan({ planned: json.session.planned_rounds, completed: answered, turn: Math.min(asked || 1, json.session.planned_rounds) });
+    const ui: UiMessage[] = [];
+    for (const t of json.turns) {
+      if (t.role === "assistant") {
+        ui.push({
+          id: `${t.id}`, role: "interviewer", content: t.content,
+          difficulty: difficultyForRound(t.turn_number, json.session.planned_rounds),
+          coaching: null,
+          turnNumber: t.turn_number, ts: t.id,
+        });
+      } else if (t.role === "user") {
+        ui.push({ id: `${t.id}`, role: "candidate", content: t.content, turnNumber: t.turn_number, ts: t.id });
+      }
+    }
+    for (const t of json.turns) {
+      if (t.role === "assistant" && t.micro_rubric) {
+        try {
+          const rubric = JSON.parse(t.micro_rubric);
+          const question = ui.find((m) => m.role === "interviewer" && m.turnNumber === t.turn_number);
+          if (question) question.coaching = rubric;
+        } catch { /* Ignore malformed historical feedback. */ }
+      }
+    }
+    setMessages(ui.sort((a, b) => a.turnNumber - b.turnNumber || (a.role === "interviewer" ? -1 : 1)));
+    if (json.session.status === "completed") setStage("completed");
+    else if (json.session.status === "evaluating") setStage("evaluating");
+    else setStage("ready");
+  };
 
   // Initial load
   useEffect(() => {
@@ -46,34 +80,7 @@ export default function ActiveSessionPage({ params }: Props) {
         const res = await fetch(`/api/sessions/${params.id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        if (!alive) return;
-        setSession(json.session);
-        setPlan({
-          planned: json.session.planned_rounds,
-          completed: json.turns.filter((t: MessageTurnRow) => t.role === "user").length,
-          turn: json.turns.filter((t: MessageTurnRow) => t.role === "user").length + 1,
-        });
-        const ui: UiMessage[] = [];
-        let lastQ = 0;
-        for (const t of json.turns as MessageTurnRow[]) {
-          if (t.role === "assistant") {
-            lastQ = t.turn_number;
-            ui.push({
-              id: `${t.id}`,
-              role: "interviewer",
-              content: t.content,
-              difficulty: difficultyForRound(t.turn_number ?? 1, json.session.planned_rounds),
-              turnNumber: t.turn_number,
-              ts: t.id,
-            });
-          } else if (t.role === "user" && t.turn_number === lastQ) {
-            ui.push({ id: `${t.id}`, role: "candidate", content: t.content, turnNumber: t.turn_number, ts: t.id });
-          }
-        }
-        setMessages(ui);
-        if (json.session.status === "completed") setStage("completed");
-        else if (json.session.status === "evaluating") setStage("evaluating");
-        else setStage("ready");
+        if (alive) hydrateSession(json);
       } catch (e) {
         if (!alive) return;
         setBootErr((e as Error).message);
@@ -88,22 +95,29 @@ export default function ActiveSessionPage({ params }: Props) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const sendAnswer = async (earlyStop = false) => {
-    if (streaming) return;
-    if (!session) return;
-    if (!answer.trim() && !earlyStop) return;
+  const sendMessage = async (opening: boolean, earlyStop = false) => {
+    if (inFlightRef.current || !session || stage !== "ready") return;
+    if (opening ? messages.some((m) => m.role === "interviewer") :
+        !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)) return;
+    const submittedAnswer = opening ? "" : answer.trim();
+    if (!opening && !submittedAnswer && !earlyStop) return;
+    inFlightRef.current = true;
 
-    // Optimistically show candidate's message
     const candidateUiId = `cand-${Date.now()}`;
-    if (answer.trim()) {
-      setMessages((m) => [...m, { id: candidateUiId, role: "candidate", content: answer, turnNumber: plan?.turn ?? 1, ts: Date.now() }]);
+    if (submittedAnswer) {
+      setMessages((m) => [...m, { id: candidateUiId, role: "candidate", content: submittedAnswer, turnNumber: plan?.turn ?? 1, ts: Date.now() }]);
     }
 
+    const willFinalize = !opening && (earlyStop || (plan?.completed ?? 0) + 1 >= (plan?.planned ?? 8));
     const placeholderId = `int-${Date.now()}`;
-    setMessages((m) => [...m, { id: placeholderId, role: "interviewer", content: "", streaming: true,
-      difficulty: difficultyForRound(plan?.turn ?? 1, plan?.planned ?? 8), turnNumber: plan?.turn ?? 1, ts: Date.now() }]);
+    if (!willFinalize) {
+      const questionTurn = opening ? 1 : (plan?.completed ?? 0) + 2;
+      setMessages((m) => [...m, { id: placeholderId, role: "interviewer", content: "", streaming: true,
+        difficulty: difficultyForRound(questionTurn, plan?.planned ?? 8), turnNumber: questionTurn, ts: Date.now() }]);
+    }
 
     let accum = "";
+    let persisted = false;
     try {
       await submit({
         sessionId: session.id,
@@ -114,52 +128,51 @@ export default function ActiveSessionPage({ params }: Props) {
         temperature: cfg.temperature,
         maxTokens: cfg.maxTokens,
         topP: cfg.topP,
-        answer: answer.trim() || "(no answer — early stop requested)",
+        answer: submittedAnswer,
         earlyStop,
       }, {
-        onStart: ({ turn, plan: p, mode }) => {
+        onStart: ({ turn, plan: p }) => {
           setPlan({ planned: p.planned, completed: p.completed, turn });
-          setStage("ready");
         },
         onDelta: (chunk) => {
           accum += chunk;
           setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, content: accum } : mm));
         },
         onCoaching: (rubric) => {
-          setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, coaching: rubric } : mm));
+          const scoredTurn = (plan?.completed ?? 0) + 1;
+          setMessages((m) => m.map((mm) => mm.role === "interviewer" && mm.turnNumber === scoredTurn ? { ...mm, coaching: rubric } : mm));
         },
         onPersisted: ({ userTurn, assistantTurn }) => {
-          setPlan((p) => p ? { ...p, completed: userTurn, turn: userTurn + 1 } : p);
+          persisted = true;
+          setPlan((p) => p ? { ...p, completed: userTurn, turn: Math.min(assistantTurn, p.planned) } : p);
         },
         onDone: ({ reason }) => {
           setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, streaming: false } : mm));
           if (reason === "evaluating") {
             setStage("evaluating-then-redirect");
-            // poll until session status flips to "completed"
-            let attempts = 0;
-            const tick = setInterval(async () => {
-              attempts++;
-              try {
-                const r = await fetch(`/api/sessions/${params.id}`);
-                const j = await r.json();
-                if (j.session?.status === "completed") {
-                  clearInterval(tick);
-                  router.push(`/report/${params.id}`);
-                } else if (j.session?.status === "failed") {
-                  clearInterval(tick);
-                  setStage("ready");
-                }
-              } catch { /* ignore */ }
-              if (attempts > 60) { clearInterval(tick); setStage("ready"); }
-            }, 1500);
+            router.push(`/report/${params.id}`);
           }
         },
       });
+      if (persisted) setAnswer("");
     } catch {
-      // error already set by hook
-      setMessages((m) => m.filter((mm) => mm.id !== placeholderId));
+      // Error is displayed by the streaming hook. Discard unpersisted deltas and reload the durable transcript.
+      try {
+        const res = await fetch(`/api/sessions/${params.id}`);
+        if (res.ok) {
+          const json = await res.json();
+          hydrateSession(json);
+          if (persisted || json.turns.some((t: MessageTurnRow) => t.role === "user" && t.turn_number === (plan?.completed ?? 0) + 1)) {
+            setAnswer("");
+          }
+        } else {
+          setMessages((m) => m.filter((mm) => mm.id !== placeholderId && mm.id !== candidateUiId));
+        }
+      } catch {
+        setMessages((m) => m.filter((mm) => mm.id !== placeholderId && mm.id !== candidateUiId));
+      }
     } finally {
-      setAnswer("");
+      inFlightRef.current = false;
       setShowEarlyStopConfirm(false);
     }
   };
@@ -250,6 +263,11 @@ export default function ActiveSessionPage({ params }: Props) {
               <div className="card p-space-md text-center text-on-surface-variant">
                 <span className="material-symbols-outlined text-[36px] text-primary">play_circle</span>
                 <p className="mt-2">Bấm "Bắt đầu" để AI đặt câu hỏi mở đầu.</p>
+                {stage === "ready" ? (
+                  <button type="button" onClick={() => sendMessage(true)} disabled={streaming || inFlightRef.current} className="btn btn-primary mt-space-md">
+                    <span className="material-symbols-outlined text-[18px]">play_arrow</span> Bắt đầu
+                  </button>
+                ) : null}
               </div>
             ) : null}
             {messages.map((m) => <Bubble key={m.id} msg={m} />)}
@@ -267,8 +285,8 @@ export default function ActiveSessionPage({ params }: Props) {
                 <span className="label-caps text-on-surface-variant uppercase">Câu trả lời của bạn</span>
                 <span className="label-code-sm text-on-surface-variant">{answer.length} / {MAX_ANSWER}</span>
               </div>
-              {plan && plan.completed > 0 ? (
-                <button onClick={() => setShowEarlyStopConfirm((v) => !v)} className="btn btn-ghost text-error" style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}>
+              {plan && plan.completed > 0 && plan.completed < plan.planned && stage === "ready" ? (
+                <button onClick={() => setShowEarlyStopConfirm((v) => !v)} disabled={streaming} className="btn btn-ghost text-error" style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}>
                   <span className="material-symbols-outlined text-[18px]">stop_circle</span> Dừng sớm & chấm điểm
                 </button>
               ) : null}
@@ -278,7 +296,8 @@ export default function ActiveSessionPage({ params }: Props) {
               placeholder="Trả lời câu hỏi phỏng vấn… (tối đa 4.000 ký tự)"
               value={answer}
               onChange={(e) => setAnswer(e.target.value.slice(0, MAX_ANSWER))}
-              disabled={streaming || stage === "evaluating-then-redirect" || stage === "completed"}
+              disabled={streaming || stage !== "ready" ||
+                !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)}
               maxLength={MAX_ANSWER}
             />
             {showEarlyStopConfirm ? (
@@ -288,7 +307,7 @@ export default function ActiveSessionPage({ params }: Props) {
                 </span>
                 <div className="flex gap-space-sm">
                   <button onClick={() => setShowEarlyStopConfirm(false)} className="btn btn-ghost">Hủy</button>
-                  <button onClick={() => sendAnswer(true)} className="btn btn-destructive">Dừng & chấm điểm</button>
+                  <button onClick={() => sendMessage(false, true)} disabled={streaming} className="btn btn-destructive">Dừng & chấm điểm</button>
                 </div>
               </div>
             ) : null}
@@ -304,8 +323,9 @@ export default function ActiveSessionPage({ params }: Props) {
                   </button>
                 ) : null}
                 <button
-                  onClick={() => sendAnswer(false)}
-                  disabled={streaming || !answer.trim() || stage !== "ready"}
+                  onClick={() => sendMessage(false)}
+                  disabled={streaming || !answer.trim() || stage !== "ready" ||
+                    !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)}
                   className="btn btn-primary"
                 >
                   <span className="material-symbols-outlined text-[18px]">send</span> Gửi

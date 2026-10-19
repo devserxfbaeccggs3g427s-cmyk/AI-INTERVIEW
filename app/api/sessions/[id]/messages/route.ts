@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { exec, query, queryOne } from "@/lib/db";
+import { exec, getDb, query, queryOne } from "@/lib/db";
 import { withCredentials, getProvider } from "@/lib/providers";
 import {
   buildSystemPrompt,
@@ -53,8 +53,8 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   const session = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [params.id]);
   if (!session) return NextResponse.json({ ok: false, error: "Session not found" }, { status: 404 });
-  if (session.status === "completed")
-    return NextResponse.json({ ok: false, error: "Session already completed" }, { status: 409 });
+  if (session.status !== "active")
+    return NextResponse.json({ ok: false, error: "Session is not active" }, { status: 409 });
 
   if (body.answer.length > MAX_ANSWER_CHARS) {
     return NextResponse.json(
@@ -74,9 +74,27 @@ export async function POST(req: Request, { params }: RouteParams) {
     [params.id],
   );
 
+  const questions = priorTurns.filter((t) => t.role === "assistant");
   const completedUserTurns = priorTurns.filter((t) => t.role === "user").length;
-  const nextUserTurn = completedUserTurns + 1;
-  const isFinalize = !!body.finalize || !!body.earlyStop || nextUserTurn >= session.planned_rounds;
+  const isOpener = questions.length === 0 && completedUserTurns === 0 && !body.answer.trim();
+  const stopWithoutAnswer = !!body.earlyStop && !body.answer.trim() && completedUserTurns > 0;
+  if (questions.length === completedUserTurns && completedUserTurns > 0) {
+    return NextResponse.json({ ok: false, error: "Wait for the next question before submitting an answer" }, { status: 409 });
+  }
+  if (isOpener && (body.earlyStop || body.finalize)) {
+    return NextResponse.json({ ok: false, error: "Start the interview before evaluating" }, { status: 400 });
+  }
+  if (!isOpener && !stopWithoutAnswer &&
+      (questions.length !== completedUserTurns + 1 || !body.answer.trim())) {
+    return NextResponse.json({ ok: false, error: "Wait for a question before submitting an answer" }, { status: 409 });
+  }
+  if (stopWithoutAnswer && questions.length !== completedUserTurns + 1) {
+    return NextResponse.json({ ok: false, error: "Interview has no unanswered question" }, { status: 409 });
+  }
+
+  const answeredTurn = isOpener || stopWithoutAnswer ? completedUserTurns : completedUserTurns + 1;
+  const questionTurn = isOpener ? 1 : answeredTurn + 1;
+  const isFinalize = !isOpener && (!!body.finalize || !!body.earlyStop || answeredTurn >= session.planned_rounds);
 
   const cv = queryOne<{ text: string }>(
     `SELECT text FROM cv_extracts WHERE session_id = ? ORDER BY id DESC LIMIT 1`,
@@ -85,6 +103,7 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   const historyBlock = priorTurns
     .filter((t) => t.role === "user" || t.role === "assistant")
+    .sort((a, b) => a.turn_number - b.turn_number || (a.role === "assistant" ? -1 : 1))
     .map((t) => `[Turn ${t.turn_number} · ${t.role === "user" ? "Candidate" : "Interviewer"}]\n${t.content}`)
     .join("\n\n");
 
@@ -93,15 +112,14 @@ export async function POST(req: Request, { params }: RouteParams) {
     language: session.language,
     mode: session.mode,
     plannedRounds: session.planned_rounds,
-    turnNumber: nextUserTurn,
+    turnNumber: questionTurn,
     cvText: cv?.text,
   };
 
   const baseSystem = buildSystemPrompt(ctx);
-  const userPrompt =
-    nextUserTurn === 1 && priorTurns.length === 0
-      ? buildQuestionUserPrompt(ctx, "")
-      : `${historyBlock}\n\n[Candidate's latest answer]\n${body.answer}\n\n[Interviewer — produce the next question.]`;
+  const userPrompt = isOpener
+    ? buildQuestionUserPrompt(ctx, "")
+    : `${historyBlock}\n\n[Candidate's latest answer]\n${body.answer}\n\n[Interviewer — produce the next question for round ${questionTurn}/${session.planned_rounds}.]`;
 
   const cfg: ModelConfig = {
     provider: body.provider,
@@ -123,56 +141,36 @@ export async function POST(req: Request, { params }: RouteParams) {
       try {
         write({
           type: "start",
-          turn: nextUserTurn,
+          turn: isFinalize ? answeredTurn : questionTurn,
           plan: { planned: session.planned_rounds, completed: completedUserTurns },
           mode: session.mode,
         });
 
-        // Persist user turn first so the history is durable even if streaming aborts.
-        exec(
-          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, created_at)
-           VALUES (?, ?, 'user', ?, NULL, unixepoch())`,
-          [params.id, nextUserTurn, body.answer || "(opener — no prior answer)"],
-        );
-        // Persist the synthesised prompt that the AI saw — useful for replay.
-        exec(
-          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, created_at)
-           VALUES (?, ?, 'system', ?, NULL, unixepoch())`,
-          [params.id, nextUserTurn, userPrompt],
-        );
-
-        // Stream the AI response.
-        const handle = await provider.streamChat(
-          creds,
-          [
-            { role: "system", content: baseSystem },
-            { role: "user", content: userPrompt },
-          ],
-          { abortSignal: req.signal },
-        );
-
-        try {
+        let meta: Awaited<Awaited<ReturnType<typeof provider.streamChat>>["meta"]> | null = null;
+        if (!isFinalize) {
+          const handle = await provider.streamChat(
+            creds,
+            [
+              { role: "system", content: baseSystem },
+              { role: "user", content: userPrompt },
+            ],
+            { abortSignal: req.signal },
+          );
           for await (const chunk of handle.textStream) {
             fullText += chunk;
             write({ type: "delta", text: chunk });
           }
-        } catch (e) {
-          write({ type: "error", message: (e as Error).message });
-          controller.close();
-          return;
+          if (!fullText.trim()) throw new Error("AI did not return a question");
+          try {
+            meta = await handle.meta;
+          } catch {
+            // Meta is best-effort; the user already has the question.
+            meta = null;
+          }
         }
 
-        let meta: Awaited<typeof handle.meta> | null = null;
-        try {
-          meta = await handle.meta;
-        } catch (e) {
-          // Meta is best-effort; the user already has the text.
-          meta = null;
-        }
-
-        // Coaching-mode per-turn micro-rubric. Single-shot completion, then parse.
         let coachingRubric: { score: number; strengths: string[]; improvements: string[] } | null = null;
-        if (session.mode === "coaching" && body.answer) {
+        if (session.mode === "coaching" && !isOpener && !stopWithoutAnswer) {
           const rubricPrompt = `You are a strict interview coach. Given the candidate's latest answer below, return ONLY a JSON object with this exact shape (no commentary, no markdown fences):
 {"score": <integer 0-100>, "strengths": [<short bullet>, <short bullet>], "improvements": [<short bullet>, <short bullet>]}
 
@@ -187,36 +185,67 @@ ${body.answer}
             ], { abortSignal: req.signal });
             const rubricText = await collectText(rubricHandle.textStream);
             coachingRubric = extractCoachingRubric(rubricText);
-            if (coachingRubric) write({ type: "coaching", ...coachingRubric });
           } catch {
             // Coaching is best-effort; ignore failures.
           }
         }
 
-        // Persist assistant turn.
-        exec(
-          `INSERT OR REPLACE INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, latency_ms, prompt_tokens, completion_tokens, finish_reason, micro_rubric, created_at)
-           VALUES (?, ?, 'assistant', ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
-          [
-            params.id, nextUserTurn, fullText,
-            meta ? JSON.stringify(meta.raw_blocks) : null,
-            meta?.latency_ms ?? null,
-            meta?.prompt_tokens ?? null,
-            meta?.completion_tokens ?? null,
-            meta?.finish_reason ?? null,
-            coachingRubric ? JSON.stringify(coachingRubric) : null,
-          ],
-        );
+        const db = getDb();
+        db.exec("BEGIN IMMEDIATE");
+        try {
+          const current = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [params.id]);
+          const currentTurns = query<MessageTurnRow>(
+            `SELECT * FROM message_turns WHERE session_id = ? ORDER BY turn_number, id`, [params.id],
+          );
+          const answered = currentTurns.filter((t) => t.role === "user").length;
+          const asked = currentTurns.filter((t) => t.role === "assistant").length;
+          if (current?.status !== "active" || answered !== completedUserTurns || asked !== questions.length) {
+            throw new Error("Session changed while generating the question. Refresh and try again.");
+          }
 
-        if (isFinalize) {
-          exec(`UPDATE sessions SET status = 'evaluating', ended_at = unixepoch() WHERE id = ?`, [params.id]);
+          if (!isOpener && !stopWithoutAnswer) {
+            exec(
+              `INSERT INTO message_turns (session_id, turn_number, role, content, created_at)
+               VALUES (?, ?, 'user', ?, unixepoch())`,
+              [params.id, answeredTurn, body.answer.trim()],
+            );
+            if (coachingRubric) {
+              exec(
+                `UPDATE message_turns SET micro_rubric = ? WHERE session_id = ? AND turn_number = ? AND role = 'assistant'`,
+                [JSON.stringify(coachingRubric), params.id, answeredTurn],
+              );
+            }
+          }
+          if (!isFinalize) {
+            exec(
+              `INSERT INTO message_turns (session_id, turn_number, role, content, created_at)
+               VALUES (?, ?, 'system', ?, unixepoch())`,
+              [params.id, questionTurn, userPrompt],
+            );
+            exec(
+              `INSERT INTO message_turns (session_id, turn_number, role, content, raw_blocks_json, latency_ms, prompt_tokens, completion_tokens, finish_reason, created_at)
+               VALUES (?, ?, 'assistant', ?, ?, ?, ?, ?, ?, unixepoch())`,
+              [
+                params.id, questionTurn, fullText,
+                meta ? JSON.stringify(meta.raw_blocks) : null,
+                meta?.latency_ms ?? null,
+                meta?.prompt_tokens ?? null,
+                meta?.completion_tokens ?? null,
+                meta?.finish_reason ?? null,
+              ],
+            );
+          }
+          if (isFinalize) {
+            exec(`UPDATE sessions SET status = 'evaluating', ended_at = unixepoch() WHERE id = ?`, [params.id]);
+          }
+          db.exec("COMMIT");
+        } catch (e) {
+          db.exec("ROLLBACK");
+          throw e;
         }
 
-        write({
-          type: "persisted",
-          userTurn: nextUserTurn,
-          assistantTurn: nextUserTurn,
-        });
+        if (coachingRubric) write({ type: "coaching", ...coachingRubric });
+        write({ type: "persisted", userTurn: answeredTurn, assistantTurn: isFinalize ? questions.length : questionTurn });
 
         if (isFinalize) {
           try {
@@ -232,6 +261,7 @@ ${body.answer}
             });
           } catch (e) {
             write({ type: "error", message: `Evaluation failed: ${(e as Error).message}` });
+            return;
           }
         }
 

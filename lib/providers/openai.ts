@@ -2,7 +2,7 @@
  * OpenAI provider — direct REST against chat/completions (legacy), streaming via SSE.
  * Compatible with both chat.completions and most OpenAI-compatible providers.
  */
-import { parseSseStream, safeRawBlocks, type Provider, type ChatMessage } from "./types";
+import { parseSseStream, safeRawBlocks, type Provider, type StreamHandle } from "./types";
 import type { ModelConfig } from "../types";
 
 function openaiUrl(_cfg: ModelConfig): string {
@@ -81,33 +81,38 @@ export const openaiProvider: Provider = {
     let completion_tokens: number | undefined;
     let finish_reason: string | undefined;
 
+    let resolveMeta!: (value: Awaited<StreamHandle["meta"]>) => void;
+    const meta: StreamHandle["meta"] = new Promise((resolve) => {
+      resolveMeta = resolve;
+    });
     const textStream = (async function* () {
-      for await (const evt of parseSseStream(res.body!)) {
-        let parsed: Record<string, unknown>;
-        try {
-          parsed = JSON.parse(evt);
-        } catch {
-          continue;
+      try {
+        for await (const evt of parseSseStream(res.body!)) {
+          let parsed: Record<string, unknown>;
+          try {
+            parsed = JSON.parse(evt);
+          } catch {
+            continue;
+          }
+          const choice = (parsed.choices as { delta?: { content?: string }; finish_reason?: string }[] | undefined)?.[0];
+          if (choice?.delta?.content) yield choice.delta.content;
+          if (choice?.finish_reason) finish_reason = choice.finish_reason;
+          const usage = (parsed as { usage?: { prompt_tokens?: number; completion_tokens?: number } }).usage;
+          if (usage?.prompt_tokens !== undefined) prompt_tokens = usage.prompt_tokens;
+          if (usage?.completion_tokens !== undefined) completion_tokens = usage.completion_tokens;
         }
-        const choice = (parsed.choices as { delta?: { content?: string }; finish_reason?: string }[] | undefined)?.[0];
-        if (choice?.delta?.content) yield choice.delta.content;
-        if (choice?.finish_reason) finish_reason = choice.finish_reason;
-        const usage = (parsed as { usage?: { prompt_tokens?: number; completion_tokens?: number } }).usage;
-        if (usage?.prompt_tokens !== undefined) prompt_tokens = usage.prompt_tokens;
-        if (usage?.completion_tokens !== undefined) completion_tokens = usage.completion_tokens;
+        blocks.usage = { prompt_tokens, completion_tokens, finish_reason };
+        resolveMeta({
+          latency_ms: Date.now() - t0,
+          prompt_tokens,
+          completion_tokens,
+          finish_reason,
+          raw_blocks: safeRawBlocks(blocks),
+        });
+      } catch (error) {
+        resolveMeta({ latency_ms: Date.now() - t0, raw_blocks: safeRawBlocks(blocks) });
+        throw error;
       }
-    })();
-
-    const meta = (async () => {
-      for await (const _ of textStream) void _;
-      blocks.usage = { prompt_tokens, completion_tokens, finish_reason };
-      return {
-        latency_ms: Date.now() - t0,
-        prompt_tokens,
-        completion_tokens,
-        finish_reason,
-        raw_blocks: safeRawBlocks(blocks),
-      };
     })();
 
     return { textStream, meta };
