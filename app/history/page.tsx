@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Chip } from "@/components/Chip";
+import { PROVIDER_IDS, PROVIDER_REGISTRY } from "@/lib/providers/registry";
 
 interface SessionListItem {
   id: string;
@@ -133,7 +134,7 @@ export default function HistoryPage() {
 
       <div className="card p-space-md flex flex-col gap-space-md">
         <div className="flex flex-wrap items-end gap-space-sm">
-          <Filter label="Provider" value={provider} onChange={setProvider} options={[["all", "Tất cả"], ["anthropic", "Anthropic"], ["openai", "OpenAI"], ["gemini", "Gemini"], ["custom", "Custom"]]} />
+          <Filter label="Provider" value={provider} onChange={setProvider} options={[["all", "Tất cả"], ...PROVIDER_IDS.map((id): [string, string] => [id, PROVIDER_REGISTRY[id].title])]} />
           <Filter label="Trạng thái" value={status} onChange={setStatus} options={[["all", "Tất cả"], ["active", "Active"], ["evaluating", "Evaluating"], ["completed", "Completed"], ["failed", "Failed"]]} />
           <Filter label="Chế độ" value={mode} onChange={setMode} options={[["all", "Tất cả"], ["strict", "Strict"], ["coaching", "Coaching"]]} />
           <Filter label="Sắp xếp" value={sort} onChange={setSort} options={[["newest", "Mới nhất"], ["score", "Điểm cao"], ["duration", "Thời lượng"]]} />

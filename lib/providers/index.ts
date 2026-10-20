@@ -9,19 +9,20 @@
  * SECURITY: this dispatcher must NEVER log cfg._key / cfg._base, never cache
  * them, and never let them outlive the caller scope.
  */
-import type { ModelConfig, ProviderId } from "../types";
+import type { ModelConfig } from "../types";
 import { anthropicProvider } from "./anthropic";
 import { openaiProvider } from "./openai";
 import { geminiProvider } from "./gemini";
 import { customProvider } from "./custom";
+import { isProviderEnabled, getProviderSpec, type ProviderId } from "./registry";
 import type { Provider } from "./types";
 
-export const providers: Record<ProviderId, Provider> = {
+export const providers = {
   anthropic: anthropicProvider,
   openai: openaiProvider,
   gemini: geminiProvider,
   custom: customProvider,
-};
+} satisfies Record<ProviderId, Provider>;
 
 export function withCredentials(
   cfg: ModelConfig,
@@ -32,6 +33,7 @@ export function withCredentials(
 }
 
 export function getProvider(id: ProviderId): Provider {
+  if (!isProviderEnabled(id)) throw new Error(getProviderSpec(id).disabledReason);
   const p = providers[id];
   if (!p) throw new Error(`Provider not implemented: ${id}`);
   return p;

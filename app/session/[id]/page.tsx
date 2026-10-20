@@ -6,6 +6,7 @@ import { useByok } from "@/components/ByokConfigContext";
 import { Chip } from "@/components/Chip";
 import { DifficultyBadge, difficultyForRound } from "@/components/DifficultyBadge";
 import { useStreamingChat } from "@/lib/useStreamingChat";
+import { sessionKeyError } from "@/lib/session-key";
 import { renderMarkdown } from "@/lib/markdown";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 
@@ -33,9 +34,13 @@ export default function ActiveSessionPage({ params }: Props) {
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [answer, setAnswer] = useState("");
   const [plan, setPlan] = useState<{ planned: number; completed: number; turn: number } | null>(null);
-  const [stage, setStage] = useState<"loading" | "ready" | "error" | "evaluating" | "completed" | "evaluating-then-redirect">("loading");
+  const [stage, setStage] = useState<"loading" | "ready" | "error" | "evaluating" | "completed" | "failed">("loading");
   const [bootErr, setBootErr] = useState<string | null>(null);
   const [showEarlyStopConfirm, setShowEarlyStopConfirm] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [evaluationPending, setEvaluationPending] = useState(false);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inFlightRef = useRef(false);
 
@@ -67,9 +72,42 @@ export default function ActiveSessionPage({ params }: Props) {
       }
     }
     setMessages(ui.sort((a, b) => a.turnNumber - b.turnNumber || (a.role === "interviewer" ? -1 : 1)));
+    setShowEarlyStopConfirm(false);
     if (json.session.status === "completed") setStage("completed");
     else if (json.session.status === "evaluating") setStage("evaluating");
+    else if (json.session.status === "failed") setStage("failed");
     else setStage("ready");
+    setEvaluationPending(false);
+    if (json.session.status === "completed") setEvaluationError(null);
+  };
+
+  useEffect(() => {
+    if (stage !== "evaluating") return;
+    const timer = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/sessions/${params.id}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        setSession(data.session);
+        if (data.session.status !== "evaluating") hydrateSession(data);
+        else setPlan((p) => p ? { ...p, completed: data.turns.filter((t: MessageTurnRow) => t.role === "user").length } : p);
+      } catch { /* Keep the current status; the user can reload. */ }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [stage, params.id]);
+
+  const checkEvaluationStatus = async () => {
+    setCheckingStatus(true);
+    try {
+      const response = await fetch(`/api/sessions/${params.id}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      hydrateSession(await response.json());
+      setEvaluationError(null);
+    } catch {
+      setEvaluationError("Không kiểm tra được trạng thái phiên. Vui lòng thử lại.");
+    } finally {
+      setCheckingStatus(false);
+    }
   };
 
   // Initial load
@@ -96,7 +134,10 @@ export default function ActiveSessionPage({ params }: Props) {
   }, [messages]);
 
   const sendMessage = async (opening: boolean, earlyStop = false) => {
-    if (inFlightRef.current || !session || stage !== "ready") return;
+    if (inFlightRef.current || !session || stage !== "ready" || finalizing) return;
+    const keyError = sessionKeyError(cfg, session);
+    if (keyError) { setBootErr(keyError); return; }
+    setBootErr(null);
     if (opening ? messages.some((m) => m.role === "interviewer") :
         !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)) return;
     const submittedAnswer = opening ? "" : answer.trim();
@@ -109,6 +150,12 @@ export default function ActiveSessionPage({ params }: Props) {
     }
 
     const willFinalize = !opening && (earlyStop || (plan?.completed ?? 0) + 1 >= (plan?.planned ?? 8));
+    setShowEarlyStopConfirm(false);
+    setEvaluationError(null);
+    if (willFinalize) {
+      setFinalizing(true);
+      setEvaluationPending(true);
+    }
     const placeholderId = `int-${Date.now()}`;
     if (!willFinalize) {
       const questionTurn = opening ? 1 : (plan?.completed ?? 0) + 2;
@@ -121,13 +168,13 @@ export default function ActiveSessionPage({ params }: Props) {
     try {
       await submit({
         sessionId: session.id,
-        provider: cfg.provider,
-        model: cfg.model,
-        baseUrl: cfg.baseUrl,
+        provider: session.provider,
+        model: session.model,
+        baseUrl: session.base_url ?? undefined,
         apiKey: cfg.apiKey,
-        temperature: cfg.temperature,
-        maxTokens: cfg.maxTokens,
-        topP: cfg.topP,
+        temperature: session.temperature,
+        maxTokens: session.max_tokens,
+        topP: session.top_p,
         answer: submittedAnswer,
         earlyStop,
       }, {
@@ -144,24 +191,33 @@ export default function ActiveSessionPage({ params }: Props) {
         },
         onPersisted: ({ userTurn, assistantTurn }) => {
           persisted = true;
+          if (willFinalize) {
+            setEvaluationPending(false);
+            setStage("evaluating");
+          }
           setPlan((p) => p ? { ...p, completed: userTurn, turn: Math.min(assistantTurn, p.planned) } : p);
         },
         onDone: ({ reason }) => {
           setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, streaming: false } : mm));
-          if (reason === "evaluating") {
-            setStage("evaluating-then-redirect");
+          if (reason === "complete") {
+            setStage("completed");
             router.push(`/report/${params.id}`);
           }
         },
       });
       if (persisted) setAnswer("");
     } catch {
-      // Error is displayed by the streaming hook. Discard unpersisted deltas and reload the durable transcript.
+      // Discard unpersisted deltas and reload the durable transcript after errors or cancellation.
+      if (willFinalize) {
+        setEvaluationPending(false);
+        setEvaluationError("Không thể xác nhận kết quả chấm điểm. Hãy kiểm tra trạng thái phiên.");
+      }
       try {
         const res = await fetch(`/api/sessions/${params.id}`);
         if (res.ok) {
           const json = await res.json();
           hydrateSession(json);
+          if (json.session.status === "completed") setEvaluationError(null);
           if (persisted || json.turns.some((t: MessageTurnRow) => t.role === "user" && t.turn_number === (plan?.completed ?? 0) + 1)) {
             setAnswer("");
           }
@@ -170,10 +226,12 @@ export default function ActiveSessionPage({ params }: Props) {
         }
       } catch {
         setMessages((m) => m.filter((mm) => mm.id !== placeholderId && mm.id !== candidateUiId));
+        if (willFinalize) setEvaluationError("Không kiểm tra được trạng thái phiên. Vui lòng tải lại trang trước khi gửi tiếp.");
       }
     } finally {
       inFlightRef.current = false;
-      setShowEarlyStopConfirm(false);
+      setFinalizing(false);
+      if (willFinalize) setEvaluationPending(false);
     }
   };
 
@@ -192,6 +250,8 @@ export default function ActiveSessionPage({ params }: Props) {
 
   if (!session) return null;
 
+  const evaluatingStale = stage === "evaluating" &&
+    (session.evaluation_started_at == null || Date.now() - session.evaluation_started_at * 1000 > 120_000);
   const pct = plan ? Math.round((plan.completed / plan.planned) * 100) : 0;
 
   return (
@@ -264,15 +324,28 @@ export default function ActiveSessionPage({ params }: Props) {
                 <span className="material-symbols-outlined text-[36px] text-primary">play_circle</span>
                 <p className="mt-2">Bấm "Bắt đầu" để AI đặt câu hỏi mở đầu.</p>
                 {stage === "ready" ? (
-                  <button type="button" onClick={() => sendMessage(true)} disabled={streaming || inFlightRef.current} className="btn btn-primary mt-space-md">
+                  <button type="button" onClick={() => sendMessage(true)} disabled={streaming || finalizing || inFlightRef.current} className="btn btn-primary mt-space-md">
                     <span className="material-symbols-outlined text-[18px]">play_arrow</span> Bắt đầu
                   </button>
                 ) : null}
               </div>
             ) : null}
             {messages.map((m) => <Bubble key={m.id} msg={m} />)}
-            {error ? <ErrorBanner message={error.message} /> : null}
-            {stage === "evaluating" || stage === "evaluating-then-redirect" ? <EvaluatingBanner /> : null}
+            {bootErr && stage === "ready" ? <ErrorBanner message={bootErr} /> : null}
+            {error && stage === "ready" && !finalizing ? <ErrorBanner message={error.message} /> : null}
+            {evaluationError && stage === "evaluating" && !evaluationPending && !evaluatingStale ? <ErrorBanner message={evaluationError} /> : null}
+            {evaluationPending ? <EvaluatingBanner pending /> : null}
+            {stage === "evaluating" && !evaluatingStale && !evaluationPending ? <EvaluatingBanner /> : null}
+            {(stage === "evaluating" && evaluatingStale || stage === "failed") && !evaluationPending ? (
+              <div className="card p-space-md flex flex-col gap-space-sm" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
+                <span className="font-headline-sm text-headline-sm text-error">Chấm điểm chưa hoàn tất</span>
+                <span className="font-body-sm text-body-sm text-on-surface">Câu trả lời đã lưu. Bạn có thể thử chấm điểm lại mà không cần gửi lại câu trả lời.</span>
+                <div className="flex gap-space-sm">
+                  <a className="btn btn-primary" href={`/report/${params.id}`}>Thử chấm điểm lại</a>
+                  <button className="btn btn-ghost" onClick={checkEvaluationStatus} disabled={checkingStatus}>Kiểm tra trạng thái</button>
+                </div>
+              </div>
+            ) : null}
             {stage === "completed" ? <CompletedBanner sessionId={params.id} /> : null}
           </div>
         </div>
@@ -285,7 +358,7 @@ export default function ActiveSessionPage({ params }: Props) {
                 <span className="label-caps text-on-surface-variant uppercase">Câu trả lời của bạn</span>
                 <span className="label-code-sm text-on-surface-variant">{answer.length} / {MAX_ANSWER}</span>
               </div>
-              {plan && plan.completed > 0 && plan.completed < plan.planned && stage === "ready" ? (
+              {plan && plan.completed > 0 && plan.completed < plan.planned && stage === "ready" && !finalizing ? (
                 <button onClick={() => setShowEarlyStopConfirm((v) => !v)} disabled={streaming} className="btn btn-ghost text-error" style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}>
                   <span className="material-symbols-outlined text-[18px]">stop_circle</span> Dừng sớm & chấm điểm
                 </button>
@@ -296,11 +369,11 @@ export default function ActiveSessionPage({ params }: Props) {
               placeholder="Trả lời câu hỏi phỏng vấn… (tối đa 4.000 ký tự)"
               value={answer}
               onChange={(e) => setAnswer(e.target.value.slice(0, MAX_ANSWER))}
-              disabled={streaming || stage !== "ready" ||
+              disabled={streaming || finalizing || stage !== "ready" ||
                 !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)}
               maxLength={MAX_ANSWER}
             />
-            {showEarlyStopConfirm ? (
+            {showEarlyStopConfirm && stage === "ready" && !streaming && !finalizing ? (
               <div className="card p-space-sm flex items-center justify-between" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
                 <span className="font-body-sm text-body-sm text-error">
                   Dừng sớm sẽ tạo báo cáo ngay với số câu đã trả lời. Bạn có chắc?
@@ -317,14 +390,14 @@ export default function ActiveSessionPage({ params }: Props) {
                 <span>API Key không bao giờ chạm vào SQLite / log</span>
               </div>
               <div className="flex gap-space-sm">
-                {streaming ? (
+                {streaming && !finalizing ? (
                   <button onClick={stop} className="btn btn-ghost">
                     <span className="material-symbols-outlined text-[18px]">stop</span> Dừng stream
                   </button>
                 ) : null}
                 <button
                   onClick={() => sendMessage(false)}
-                  disabled={streaming || !answer.trim() || stage !== "ready" ||
+                  disabled={streaming || finalizing || !answer.trim() || stage !== "ready" ||
                     !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)}
                   className="btn btn-primary"
                 >
@@ -461,13 +534,13 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-function EvaluatingBanner() {
+function EvaluatingBanner({ pending = false }: { pending?: boolean }) {
   return (
-    <div className="card p-space-md flex items-center gap-space-sm glow-active">
+    <div className="card p-space-md flex items-center gap-space-sm glow-active" role="status">
       <span className="material-symbols-outlined text-primary animate-spin">progress_activity</span>
       <div className="flex flex-col">
-        <span className="font-headline-sm text-headline-sm text-on-surface">AI đang chấm điểm tổng kết…</span>
-        <span className="label-code-sm text-on-surface-variant">Đánh giá 4 tiêu chí · Structured JSON · Auto-repair</span>
+        <span className="font-headline-sm text-headline-sm text-on-surface">{pending ? "Đang lưu câu trả lời để chấm điểm…" : "AI đang chấm điểm tổng kết…"}</span>
+        <span className="label-code-sm text-on-surface-variant">{pending ? "Đừng gửi lại câu trả lời; kết quả sẽ được đồng bộ." : "Đánh giá 4 tiêu chí · Vui lòng chờ báo cáo."}</span>
       </div>
     </div>
   );

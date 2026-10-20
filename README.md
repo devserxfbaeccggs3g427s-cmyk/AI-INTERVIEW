@@ -68,7 +68,7 @@ npm run dev
 # → http://localhost:3000
 ```
 
-`.env.example` covers all env vars; copy it to `.env.local` if you want to override.
+`.env.example` covers all env vars; copy it to `.env.local` if you want to override. To enable Custom, set `NEXT_PUBLIC_PROVIDER_ENABLE=anthropic,openai,gemini,custom` and restart `next dev` (rebuild for production: `NEXT_PUBLIC_*` is baked into the client bundle). Custom accepts `https://api.groq.com/openai/v1` or `http://localhost:11434` (adds `/v1` automatically); for local/private hosts set `ALLOW_PRIVATE_BASE_URL=1` on the server. Public endpoints must use HTTPS; HTTP is only for local/private hosts when explicitly opted in.
 
 ## BYOK security model (NFR-2 / NFR-10 / NFR-11)
 
@@ -78,7 +78,7 @@ npm run dev
 | `localStorage` / session | Client only. UI toggle (default: sessionStorage).            |
 | SQLite (`data/...db`)    | Sessions, turns, CV, evaluations, model configs. **No key.** |
 | Server logs              | `safeRawBlocks()` regex-redacts `sk-…`, `sk-ant-…`, `AIza…` before write. |
-| Custom endpoint URL      | `validateCustomBaseUrl()` blocks loopback / RFC1918 unless `ALLOW_PRIVATE_BASE_URL=1`.|
+| Custom endpoint URL      | Persisted with the session; outbound requests check the URL and actual DNS/socket address, disallow redirects and metadata/link-local hosts. |
 
 ## 5 screens
 
@@ -108,7 +108,8 @@ npm run dev
 ## Security & operations
 
 - The instance is **single-tenant / no auth**. Do not expose port 3000 to the public internet without a reverse proxy + firewall.
-- `ALLOW_PRIVATE_BASE_URL=1` is **only** for local development (Ollama at `http://localhost:11434`). It still blocks the AWS metadata IP `169.254.169.254`.
+- `ALLOW_PRIVATE_BASE_URL=1` permits custom endpoints on local/private networks (e.g. Ollama at `http://localhost:11434`) and can expose internal services to anyone able to call this unauthenticated app. Leave it unset in public deployments. Link-local and metadata addresses remain blocked even with opt-in.
+- A custom API key is sent directly to the user-selected endpoint; only enter endpoints you trust. The key is not persisted in SQLite, and custom requests never fall back to OpenAI.
 - `VACUUM` periodically if you do a lot of wipes. `backup` exports a portable SQL script.
 - `import` re-executes the SQL. It does **not** validate the schema — only feed it files you created via `backup`.
 - WAL files (`*.db-wal`, `*.db-shm`) live next to the DB; ship all three for crash-safety.

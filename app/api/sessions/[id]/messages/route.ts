@@ -1,34 +1,24 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exec, getDb, query, queryOne } from "@/lib/db";
-import { withCredentials, getProvider } from "@/lib/providers";
+import { getProvider } from "@/lib/providers";
+import { modelConfigInput, parseModelConfig } from "@/lib/providers/parse";
+import { resolveSessionConfig } from "@/lib/providers/session-config";
 import {
   buildSystemPrompt,
   buildQuestionUserPrompt,
-  buildEvaluationPrompt,
   type InterviewContext,
 } from "@/lib/prompts";
-import { parseEvaluation } from "@/lib/zod-schemas";
-import {
-  MAX_ANSWER_CHARS,
-  requireApiKey,
-  validateCustomBaseUrl,
-} from "@/lib/validate";
-import type { MessageTurnRow, SessionRow, ModelConfig, ProviderId } from "@/lib/types";
+import { claimEvaluation, runEvaluation } from "@/lib/evaluation";
+import { MAX_ANSWER_CHARS } from "@/lib/validate";
+import type { MessageTurnRow, SessionRow } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface RouteParams { params: { id: string } }
 
-const Body = z.object({
-  apiKey: z.string().max(500).optional(),
-  baseUrl: z.string().max(500).optional(),
-  provider: z.enum(["anthropic", "openai", "gemini", "custom"]),
-  model: z.string().min(1).max(200),
-  temperature: z.number().min(0).max(1).default(0.4),
-  maxTokens: z.number().int().min(64).max(32000).default(4096),
-  topP: z.number().min(0).max(1).default(0.95),
+const Body = modelConfigInput.extend({
   answer: z.string().min(0).max(MAX_ANSWER_CHARS + 200),
   finalize: z.boolean().optional(),
   earlyStop: z.boolean().optional(),
@@ -47,14 +37,18 @@ function sse(obj: unknown): string {
 }
 
 export async function POST(req: Request, { params }: RouteParams) {
-  let body: z.infer<typeof Body>;
-  try { body = Body.parse(await req.json()); }
-  catch (e) { return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 400 }); }
+  const apiKey = req.headers.get("x-api-key") ?? undefined;
+  const parsed = parseModelConfig(await req.json().catch(() => null), apiKey, Body);
+  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  const { body, cfg } = parsed;
 
   const session = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [params.id]);
   if (!session) return NextResponse.json({ ok: false, error: "Session not found" }, { status: 404 });
   if (session.status !== "active")
     return NextResponse.json({ ok: false, error: "Session is not active" }, { status: 409 });
+  const sessionConfig = resolveSessionConfig(session, cfg);
+  if (!sessionConfig.ok) return NextResponse.json({ ok: false, error: sessionConfig.error }, { status: 409 });
+  const creds = sessionConfig.cfg;
 
   if (body.answer.length > MAX_ANSWER_CHARS) {
     return NextResponse.json(
@@ -62,13 +56,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       { status: 400 },
     );
   }
-  if (body.provider === "custom") {
-    const err = validateCustomBaseUrl(body.baseUrl ?? "");
-    if (err) return NextResponse.json({ ok: false, error: err }, { status: 400 });
-  }
-  const keyErr = requireApiKey(body.provider, body.apiKey);
-  if (keyErr) return NextResponse.json({ ok: false, error: keyErr }, { status: 400 });
-
   const priorTurns = query<MessageTurnRow>(
     `SELECT * FROM message_turns WHERE session_id = ? ORDER BY turn_number, id`,
     [params.id],
@@ -121,23 +108,17 @@ export async function POST(req: Request, { params }: RouteParams) {
     ? buildQuestionUserPrompt(ctx, "")
     : `${historyBlock}\n\n[Candidate's latest answer]\n${body.answer}\n\n[Interviewer — produce the next question for round ${questionTurn}/${session.planned_rounds}.]`;
 
-  const cfg: ModelConfig = {
-    provider: body.provider,
-    model: body.model,
-    base_url: body.baseUrl ?? null,
-    temperature: body.temperature,
-    max_tokens: body.maxTokens,
-    top_p: body.topP,
-  };
-  const provider = getProvider(body.provider);
-  const creds = withCredentials(cfg, body.apiKey, body.baseUrl);
+  const provider = getProvider(creds.provider);
 
   const stream = new ReadableStream({
     async start(controller) {
       const enc = new TextEncoder();
-      const write = (e: unknown) => controller.enqueue(enc.encode(sse(e)));
+      const write = (e: unknown) => {
+        try { controller.enqueue(enc.encode(sse(e))); } catch { /* Client disconnected; finish persisted work. */ }
+      };
 
       let fullText = "";
+      let evaluationAttempt: string | null = null;
       try {
         write({
           type: "start",
@@ -170,7 +151,7 @@ export async function POST(req: Request, { params }: RouteParams) {
         }
 
         let coachingRubric: { score: number; strengths: string[]; improvements: string[] } | null = null;
-        if (session.mode === "coaching" && !isOpener && !stopWithoutAnswer) {
+        if (session.mode === "coaching" && !isFinalize && !isOpener && !stopWithoutAnswer) {
           const rubricPrompt = `You are a strict interview coach. Given the candidate's latest answer below, return ONLY a JSON object with this exact shape (no commentary, no markdown fences):
 {"score": <integer 0-100>, "strengths": [<short bullet>, <short bullet>], "improvements": [<short bullet>, <short bullet>]}
 
@@ -236,7 +217,10 @@ ${body.answer}
             );
           }
           if (isFinalize) {
-            exec(`UPDATE sessions SET status = 'evaluating', ended_at = unixepoch() WHERE id = ?`, [params.id]);
+            evaluationAttempt = claimEvaluation(params.id);
+            if (!evaluationAttempt) throw new Error("Could not start evaluation");
+          } else if (req.signal.aborted) {
+            throw new Error("Question generation was cancelled");
           }
           db.exec("COMMIT");
         } catch (e) {
@@ -247,27 +231,25 @@ ${body.answer}
         if (coachingRubric) write({ type: "coaching", ...coachingRubric });
         write({ type: "persisted", userTurn: answeredTurn, assistantTurn: isFinalize ? questions.length : questionTurn });
 
-        if (isFinalize) {
+        if (evaluationAttempt) {
           try {
             await runEvaluation({
               sessionId: params.id,
-              provider: body.provider,
-              model: body.model,
-              baseUrl: body.baseUrl,
-              apiKey: body.apiKey,
-              temperature: body.temperature,
-              maxTokens: body.maxTokens,
-              topP: body.topP,
-            });
-          } catch (e) {
-            write({ type: "error", message: `Evaluation failed: ${(e as Error).message}` });
+              provider: creds.provider,
+              model: creds.model,
+              baseUrl: creds._base,
+              apiKey,
+              maxTokens: creds.max_tokens,
+            }, evaluationAttempt);
+          } catch {
+            write({ type: "error", message: "Không thể chấm điểm. Câu trả lời đã được lưu; bạn có thể thử lại." });
             return;
           }
         }
 
         write({
           type: "done",
-          reason: isFinalize ? "evaluating" : "next",
+          reason: isFinalize ? "complete" : "next",
           sessionId: params.id,
         });
       } catch (e) {
@@ -308,99 +290,4 @@ function extractCoachingRubric(text: string): { score: number; strengths: string
   } catch {
     return null;
   }
-}
-
-/* ------- Evaluation runner (used from /messages when finalised and from /evaluate) ------ */
-export async function runEvaluation(args: {
-  sessionId: string;
-  provider: ProviderId;
-  model: string;
-  baseUrl?: string;
-  apiKey?: string;
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-}) {
-  const session = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [args.sessionId]);
-  if (!session) throw new Error("Session not found");
-
-  const turns = query<MessageTurnRow>(
-    `SELECT * FROM message_turns WHERE session_id = ? ORDER BY turn_number, id`,
-    [args.sessionId],
-  );
-  // Build per-turn (question, answer, micro_rubric) tuples.
-  const byTurn = new Map<number, { question?: string; answer?: string; micro_rubric?: string }>();
-  for (const t of turns) {
-    if (t.role === "user" || t.role === "assistant") {
-      const bucket = byTurn.get(t.turn_number) ?? {};
-      if (t.role === "user") bucket.answer = t.content;
-      if (t.role === "assistant") {
-        bucket.question = t.content;
-        if (t.micro_rubric) {
-          try {
-            const r = JSON.parse(t.micro_rubric) as { strengths?: string[]; improvements?: string[]; score?: number };
-            const parts: string[] = [];
-            if (r.strengths?.length) parts.push(`Điểm tốt: ${r.strengths.join("; ")}`);
-            if (r.improvements?.length) parts.push(`Cải thiện: ${r.improvements.join("; ")}`);
-            if (typeof r.score === "number") parts.push(`/100`);
-            if (parts.length) bucket.micro_rubric = parts.join(" · ");
-          } catch { /* skip */ }
-        }
-      }
-      byTurn.set(t.turn_number, bucket);
-    }
-  }
-  const turnList = Array.from(byTurn.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([, v]) => ({ question: v.question ?? "", answer: v.answer ?? "", micro_rubric: v.micro_rubric }));
-
-  const cfg: ModelConfig = {
-    provider: args.provider,
-    model: args.model,
-    base_url: args.baseUrl ?? null,
-    temperature: 0.2,
-    max_tokens: Math.max(args.maxTokens, 4096),
-    top_p: 0.9,
-  };
-  const provider = getProvider(args.provider);
-  const creds = withCredentials(cfg, args.apiKey, args.baseUrl);
-
-  const prompt = buildEvaluationPrompt({
-    role: session.role,
-    language: session.language,
-    turns: turnList,
-  });
-
-  const handle = await provider.streamChat(creds, [
-    { role: "system", content: prompt },
-    { role: "user", content: "Respond with JSON only. No commentary." },
-  ], {});
-  const text = await collectText(handle.textStream);
-  // meta is best-effort; we don't need it for eval.
-
-  const parsed = parseEvaluation(text);
-  if (!parsed.ok) {
-    exec(
-      `INSERT OR REPLACE INTO evaluations (session_id, report_json, overall_score, recommendation, schema_valid, repair_attempts, created_at)
-       VALUES (?, ?, 0, 'Needs Improvement', 0, 0, unixepoch())`,
-      [args.sessionId, JSON.stringify({ raw: text, error: parsed.error })],
-    );
-    exec(`UPDATE sessions SET status = 'failed' WHERE id = ?`, [args.sessionId]);
-    throw new Error(parsed.error);
-  }
-
-  const data = parsed.data;
-  exec(
-    `INSERT OR REPLACE INTO evaluations (session_id, report_json, overall_score, recommendation, schema_valid, repair_attempts, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, unixepoch())`,
-    [
-      args.sessionId,
-      JSON.stringify(data),
-      data.overall_score,
-      data.recommendation,
-      parsed.repaired ? 0 : 1,
-      parsed.repaired ? 1 : 0,
-    ],
-  );
-  exec(`UPDATE sessions SET status = 'completed' WHERE id = ?`, [args.sessionId]);
 }

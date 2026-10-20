@@ -1,12 +1,10 @@
 /**
  * Anthropic provider — direct REST against messages-v1, streaming via SSE.
  *
- * Important: the inner AsyncIterable must be safely iterable from both the
- * caller (textStream) and the meta-collection path. We tee() a single
- * underlying generator so that meta can drain concurrently without starving
- * the caller.
+ * Text and metadata are collected while consuming one provider response stream.
+ * The metadata promise resolves when the text iterator finishes.
  */
-import { parseSseStream, safeRawBlocks, type Provider, type ChatMessage } from "./types";
+import { parseSseStream, safeRawBlocks, type Provider, type ChatMessage, type StreamHandle } from "./types";
 import type { ModelConfig } from "../types";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
@@ -74,44 +72,40 @@ export const anthropicProvider: Provider = {
       throw new Error(`Anthropic HTTP ${res.status}: ${txt.slice(0, 300)}`);
     }
 
-    // Internal generator — runs the SSE loop once, accumulating usage metadata.
     const blocks: Record<string, unknown> = { provider: "anthropic", model: cfg.model };
     const usage = { prompt_tokens: undefined as number | undefined, completion_tokens: undefined as number | undefined, finish_reason: undefined as string | undefined };
-
-    async function* source() {
-      for await (const evt of parseSseStream(res.body!)) {
-        let parsed: Record<string, unknown>;
-        try { parsed = JSON.parse(evt); } catch { continue; }
-        if (parsed.type === "content_block_delta" && parsed.delta) {
-          const d = parsed.delta as { type?: string; text?: string };
-          if (d.type === "text_delta" && typeof d.text === "string") yield d.text;
-        } else if (parsed.type === "message_delta") {
-          const delta = parsed.delta as { stop_reason?: string };
-          if (delta?.stop_reason) usage.finish_reason = delta.stop_reason;
-        } else if (parsed.type === "message_start") {
-          const msg = parsed.message as { usage?: { input_tokens?: number; output_tokens?: number } };
-          usage.prompt_tokens = msg?.usage?.input_tokens;
-          usage.completion_tokens = msg?.usage?.output_tokens;
-          blocks.message_start = parsed.message;
-        } else if (parsed.type === "message_stop") {
-          blocks.message_stop = parsed;
+    let resolveMeta!: (value: { latency_ms: number; prompt_tokens?: number; completion_tokens?: number; finish_reason?: string; raw_blocks: Record<string, unknown> }) => void;
+    const meta = new Promise<Awaited<StreamHandle["meta"]>>((resolve) => { resolveMeta = resolve; });
+    const textStream = (async function* () {
+      try {
+        for await (const evt of parseSseStream(res.body!)) {
+          let parsed: Record<string, unknown>;
+          try { parsed = JSON.parse(evt); } catch { continue; }
+          if (parsed.type === "content_block_delta" && parsed.delta) {
+            const d = parsed.delta as { type?: string; text?: string };
+            if (d.type === "text_delta" && typeof d.text === "string") yield d.text;
+          } else if (parsed.type === "message_delta") {
+            const delta = parsed.delta as { stop_reason?: string };
+            if (delta?.stop_reason) usage.finish_reason = delta.stop_reason;
+          } else if (parsed.type === "message_start") {
+            const msg = parsed.message as { usage?: { input_tokens?: number; output_tokens?: number } };
+            usage.prompt_tokens = msg?.usage?.input_tokens;
+            usage.completion_tokens = msg?.usage?.output_tokens;
+            blocks.message_start = parsed.message;
+          } else if (parsed.type === "message_stop") {
+            blocks.message_stop = parsed;
+          }
         }
+      } finally {
+        blocks.usage = { prompt_tokens: usage.prompt_tokens, completion_tokens: usage.completion_tokens, finish_reason: usage.finish_reason };
+        resolveMeta({
+          latency_ms: Date.now() - t0,
+          prompt_tokens: usage.prompt_tokens,
+          completion_tokens: usage.completion_tokens,
+          finish_reason: usage.finish_reason,
+          raw_blocks: safeRawBlocks(blocks),
+        });
       }
-    }
-
-    // Tee into two iterators so the caller and the meta collector don't race.
-    const [a, b] = tee(source());
-    const textStream: AsyncIterable<string> = a;
-    const meta = (async () => {
-      for await (const _ of b) void _; // drain second leg
-      blocks.usage = { prompt_tokens: usage.prompt_tokens, completion_tokens: usage.completion_tokens, finish_reason: usage.finish_reason };
-      return {
-        latency_ms: Date.now() - t0,
-        prompt_tokens: usage.prompt_tokens,
-        completion_tokens: usage.completion_tokens,
-        finish_reason: usage.finish_reason,
-        raw_blocks: safeRawBlocks(blocks),
-      };
     })();
 
     return { textStream, meta };
@@ -135,46 +129,4 @@ function mustKey(cfg: ModelConfig): string {
   const k = (cfg as unknown as { _key?: string })._key;
   if (!k) throw new Error("Anthropic: missing API key (BYOK not provided)");
   return k;
-}
-
-/** Tee an AsyncIterable into two independent consumers. */
-function tee<T>(src: AsyncIterable<T>): [AsyncIterable<T>, AsyncIterable<T>] {
-  const queue: T[] = [];
-  const pending: Array<(v: IteratorResult<T>) => void> = [];
-  const pendingErr: Array<(e: unknown) => void> = [];
-  let done = false;
-  let err: unknown = null;
-
-  const pump = (async () => {
-    try {
-      for await (const v of src) {
-        const wait = pending.shift();
-        if (wait) wait({ value: v, done: false });
-        else queue.push(v);
-      }
-      done = true;
-      for (const w of pending) w({ value: undefined as unknown as T, done: true });
-    } catch (e) {
-      err = e;
-      for (const w of pendingErr) w(e);
-    }
-  })();
-
-  const make = (): AsyncIterable<T> => ({
-    [Symbol.asyncIterator]() {
-      return {
-        next: () => new Promise<IteratorResult<T>>((resolve, reject) => {
-          if (err) { reject(err); return; }
-          if (queue.length) { resolve({ value: queue.shift()!, done: false }); return; }
-          if (done) { resolve({ value: undefined as unknown as T, done: true }); return; }
-          pending.push(resolve);
-          pendingErr.push(reject);
-        }),
-      };
-    },
-  });
-
-  // Suppress unhandled rejection if neither leg ever iterates.
-  pump.catch(() => {});
-  return [make(), make()];
 }

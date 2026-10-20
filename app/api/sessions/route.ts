@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { exec, query } from "@/lib/db";
+import { modelConfigInput, parseModelConfig } from "@/lib/providers/parse";
 import type { SessionRow } from "@/lib/types";
-import { MAX_CV_CHARS, validateCustomBaseUrl, validateStartSessionInput } from "@/lib/validate";
+import { MAX_CV_CHARS, validateStartSessionInput } from "@/lib/validate";
 import { extractPdfFromDataUrl } from "@/lib/pdf";
 
 export const runtime = "nodejs";
@@ -46,14 +47,7 @@ export async function GET(req: Request) {
 }
 
 /* POST — create a new session (FR-1, FR-2, FR-3, FR-4). */
-const Body = z.object({
-  provider: z.enum(["anthropic", "openai", "gemini", "custom"]),
-  model: z.string().min(1).max(200),
-  baseUrl: z.string().max(500).optional(),
-  apiKey: z.string().max(500).optional(),
-  temperature: z.number().min(0).max(1).default(0.4),
-  maxTokens: z.number().int().min(64).max(32000).default(4096),
-  topP: z.number().min(0).max(1).default(0.95),
+const Body = modelConfigInput.extend({
   role: z.string().min(2).max(120),
   language: z.enum(["vi", "en"]),
   mode: z.enum(["strict", "coaching"]),
@@ -65,12 +59,9 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  let body: z.infer<typeof Body>;
-  try {
-    body = Body.parse(await req.json());
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 400 });
-  }
+  const parsed = parseModelConfig(await req.json().catch(() => null), undefined, Body, { allowMissingKey: true });
+  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  const { body, cfg } = parsed;
 
   // Field-level validation that needs aggregated context (e.g. role length after trim).
   const validationErr = validateStartSessionInput({
@@ -81,11 +72,6 @@ export async function POST(req: Request) {
     cv_source: body.cvSource,
   });
   if (validationErr) return NextResponse.json({ ok: false, error: validationErr }, { status: 400 });
-
-  if (body.provider === "custom") {
-    const err = validateCustomBaseUrl(body.baseUrl ?? "");
-    if (err) return NextResponse.json({ ok: false, error: err }, { status: 400 });
-  }
 
   const id = `sess_${randomUUID().replace(/-/g, "").slice(0, 14)}`;
 
@@ -99,12 +85,12 @@ export async function POST(req: Request) {
         body.language,
         body.mode,
         body.plannedRounds,
-        body.provider,
-        body.model,
-        body.baseUrl ?? null,
-        body.temperature,
-        body.maxTokens,
-        body.topP,
+        cfg.provider,
+        cfg.model,
+        cfg.base_url ?? null,
+        cfg.temperature,
+        cfg.max_tokens,
+        cfg.top_p,
         body.cvSource,
         body.cvFilename ?? null,
       ],
@@ -135,7 +121,7 @@ export async function POST(req: Request) {
          max_tokens = excluded.max_tokens,
          top_p = excluded.top_p,
          updated_at = unixepoch()`,
-      [body.provider, body.model, body.baseUrl ?? null, body.temperature, body.maxTokens, body.topP],
+      [cfg.provider, cfg.model, cfg.base_url ?? null, cfg.temperature, cfg.max_tokens, cfg.top_p],
     );
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });

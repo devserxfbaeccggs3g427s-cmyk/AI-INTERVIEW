@@ -5,7 +5,7 @@
  * response stream from /api/sessions/[id]/messages.
  *
  * It does NOT log the API key; the key is held in React state and sent
- * only with the request body, then forgotten.
+ * only with a request header, then forgotten.
  */
 import { useCallback, useRef, useState } from "react";
 import type { ProviderId } from "@/components/ByokConfigContext";
@@ -27,8 +27,6 @@ export function useStreamingChat() {
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
-    abortRef.current = null;
-    setStreaming(false);
   }, []);
 
   const submit = useCallback(async (args: {
@@ -50,12 +48,11 @@ export function useStreamingChat() {
     try {
       const res = await fetch(`/api/sessions/${args.sessionId}/messages`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(args.apiKey ? { "x-api-key": args.apiKey } : {}) },
         body: JSON.stringify({
           provider: args.provider,
           model: args.model,
           baseUrl: args.baseUrl,
-          apiKey: args.apiKey,
           temperature: args.temperature,
           maxTokens: args.maxTokens,
           topP: args.topP,
@@ -73,10 +70,8 @@ export function useStreamingChat() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+      let finished = false;
+      const readFrames = () => {
         let idx: number;
         while ((idx = buffer.indexOf("\n\n")) >= 0) {
           const frame = buffer.slice(0, idx);
@@ -85,28 +80,40 @@ export function useStreamingChat() {
             if (!line.startsWith("data: ")) continue;
             const payload = line.slice(6).trim();
             if (!payload) continue;
-            try {
-              const evt = JSON.parse(payload);
-              if (evt.type === "start") handlers.onStart?.(evt);
-              else if (evt.type === "delta") handlers.onDelta?.(evt.text);
-              else if (evt.type === "coaching") handlers.onCoaching?.(evt);
-              else if (evt.type === "persisted") handlers.onPersisted?.(evt);
-              else if (evt.type === "done") handlers.onDone?.(evt);
-              else if (evt.type === "error") throw new Error(evt.message);
-            } catch (e) {
-              if (e instanceof SyntaxError) continue;
-              throw e;
-            }
+            let evt: unknown;
+            try { evt = JSON.parse(payload); } catch { continue; }
+            if (!evt || typeof evt !== "object" || !("type" in evt)) continue;
+            if (evt.type === "start") handlers.onStart?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onStart"]>>[0]);
+            else if (evt.type === "delta") handlers.onDelta?.((evt as unknown as { text: string }).text);
+            else if (evt.type === "coaching") handlers.onCoaching?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onCoaching"]>>[0]);
+            else if (evt.type === "persisted") handlers.onPersisted?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onPersisted"]>>[0]);
+            else if (evt.type === "done") {
+              finished = true;
+              handlers.onDone?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onDone"]>>[0]);
+            } else if (evt.type === "error") throw new Error((evt as { message?: string }).message ?? "Không thể hoàn thành yêu cầu.");
           }
         }
+      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+        readFrames();
       }
+      buffer += decoder.decode().replace(/\r\n/g, "\n");
+      if (buffer.trim()) {
+        buffer += "\n\n";
+        readFrames();
+      }
+      if (!finished) throw new Error("Kết nối bị ngắt trước khi tác vụ hoàn tất. Vui lòng kiểm tra trạng thái phiên.");
     } catch (e) {
+      if (ctrl.signal.aborted) throw e;
       const err = e as Error & { status?: number };
       setError({ message: err.message, status: err.status });
       throw e;
     } finally {
       setStreaming(false);
-      abortRef.current = null;
+      if (abortRef.current === ctrl) abortRef.current = null;
     }
   }, []);
 

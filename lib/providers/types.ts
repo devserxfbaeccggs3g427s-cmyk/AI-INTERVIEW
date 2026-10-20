@@ -69,11 +69,6 @@ export function safeRawBlocks(blocks: unknown): Record<string, unknown> {
   );
 }
 
-/** Attach credentials to a ModelConfig for the duration of one request. */
-export function withCredentials(cfg: ModelConfig, apiKey?: string, baseUrl?: string): AuthedConfig {
-  return { ...cfg, _key: apiKey, _base: baseUrl };
-}
-
 /** Common SSE chunk parser — handles multi-line `data: ...` and `data: [DONE]`. */
 export async function* parseSseStream(
   body: ReadableStream<Uint8Array>,
@@ -81,21 +76,27 @@ export async function* parseSseStream(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n");
 
-    let newlineIdx;
-    while ((newlineIdx = buffer.indexOf("\n\n")) >= 0) {
-      const chunk = buffer.slice(0, newlineIdx);
-      buffer = buffer.slice(newlineIdx + 2);
-      for (const line of chunk.split("\n")) {
-        if (!line.startsWith("data:")) continue;
-        const payload = line.slice(5).trim();
-        if (!payload || payload === "[DONE]") continue;
-        yield payload;
+      let newlineIdx;
+      while ((newlineIdx = buffer.indexOf("\n\n")) >= 0) {
+        const chunk = buffer.slice(0, newlineIdx);
+        buffer = buffer.slice(newlineIdx + 2);
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          yield payload;
+        }
       }
     }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
   }
 }

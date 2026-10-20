@@ -3,7 +3,9 @@
  * Kept framework-agnostic so we can reuse them in both Server Components and route handlers.
  */
 
-export type ProviderId = "anthropic" | "openai" | "gemini" | "custom";
+import type { ProviderId } from "./providers/registry";
+export type { ProviderId } from "./providers/registry";
+
 export type InterviewLanguage = "vi" | "en";
 export type InterviewMode = "strict" | "coaching";
 export type InterviewStatus = "active" | "evaluating" | "completed" | "failed";
@@ -30,6 +32,8 @@ export interface SessionRow extends ModelConfig {
   cv_filename: string | null;
   created_at: number;
   ended_at: number | null;
+  evaluation_started_at: number | null;
+  evaluation_attempt_id: string | null;
   rubric_json: string | null;
   error_count: number;
   /** Joined-in evaluation summary (if any). */
@@ -63,28 +67,6 @@ export interface CVExtractRow {
   created_at: number;
 }
 
-/** Per-provider catalogue used by the BYOK model picker (FR-14, FR-16). */
-export const PROVIDER_MODELS: Record<ProviderId, { id: string; label: string }[]> = {
-  anthropic: [
-    { id: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Coding & System)" },
-    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (siêu tốc)" },
-    { id: "claude-3-opus-20240229", label: "Claude 3 Opus (chiều sâu)" },
-  ],
-  openai: [
-    { id: "gpt-4o", label: "GPT-4o (Omni Balanced)" },
-    { id: "gpt-4o-mini", label: "GPT-4o mini (tốc độ / tiết kiệm)" },
-    { id: "o1-preview", label: "o1-preview (Reasoning)" },
-    { id: "o1-mini", label: "o1-mini (Reasoning nhanh)" },
-  ],
-  gemini: [
-    { id: "gemini-1.5-pro-latest", label: "Gemini 1.5 Pro (2M tokens)" },
-    { id: "gemini-1.5-flash-latest", label: "Gemini 1.5 Flash (tức thì)" },
-  ],
-  custom: [
-    { id: "custom-model-local", label: "Tự nhập Model ID — fetch từ Base URL" },
-  ],
-};
-
 export const ROUND_LENGTHS = [5, 8, 12] as const;
 export type RoundLength = (typeof ROUND_LENGTHS)[number];
 
@@ -98,13 +80,3 @@ export const ROLE_CHIPS: ReadonlyArray<{ label: string; value: string }> = [
   { label: "Product Manager (Technical)", value: "Technical Product Manager (TPM)" },
   { label: "DevOps / SRE", value: "Site Reliability Engineer (DevOps/SRE)" },
 ];
-
-/** Best-effort labelling of which provider a key looks like (FR-13 format detection). */
-export function detectKeyProvider(apiKey: string): ProviderId | "unknown" {
-  const k = apiKey.trim();
-  if (!k) return "unknown";
-  if (k.startsWith("sk-ant-") || k.startsWith("ant-")) return "anthropic";
-  if (k.startsWith("sk-proj-") || k.startsWith("sk-")) return "openai";
-  if (k.startsWith("AIza")) return "gemini";
-  return "unknown";
-}

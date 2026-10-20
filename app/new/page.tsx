@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useByok } from "@/components/ByokConfigContext";
 import { Chip } from "@/components/Chip";
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { getProviderSpec, isProviderEnabled } from "@/lib/providers/registry";
 
 const ROLE_SUGGESTIONS = [
   "Senior Frontend (React/TS)",
@@ -42,7 +43,7 @@ export default function StartInterviewPage() {
 
   // Block submit if no BYOK config
   useEffect(() => {
-    if (hydrated && (!cfg.model || (cfg.provider !== "custom" && !cfg.apiKey))) {
+    if (hydrated && (!cfg.model || (getProviderSpec(cfg.provider).requiresApiKey && !cfg.apiKey))) {
       // Soft warning — don't force redirect; show inline.
     }
   }, [hydrated, cfg]);
@@ -70,15 +71,16 @@ export default function StartInterviewPage() {
     if (cvSource === "paste" && cvText.length > MAX_CV_CHARS) { setError(`CV vượt quá ${MAX_CV_CHARS} ký tự`); return; }
     if (cvSource === "pdf" && !pdfDataUrl) { setError("Vui lòng chọn file PDF"); return; }
     if (!cfg.model) { setError("Bạn chưa cấu hình Model ở màn 1"); router.push("/"); return; }
-    if (cfg.provider !== "custom" && !cfg.apiKey) { setError("Bạn chưa nhập API Key ở màn 1"); router.push("/"); return; }
+    if (!isProviderEnabled(cfg.provider)) { setError(getProviderSpec(cfg.provider).disabledReason); return; }
+    if (getProviderSpec(cfg.provider).requiresApiKey && !cfg.apiKey) { setError("Bạn chưa nhập API Key ở màn 1"); router.push("/"); return; }
+    if (getProviderSpec(cfg.provider).requiresBaseUrl && !cfg.baseUrl.trim()) { setError("Vui lòng nhập Base URL ở màn cấu hình."); return; }
 
     setSubmitting(true);
     try {
       const body: Record<string, unknown> = {
         provider: cfg.provider,
         model: cfg.model,
-        baseUrl: cfg.baseUrl || undefined,
-        apiKey: cfg.apiKey || undefined,
+        baseUrl: cfg.baseUrl.trim() || undefined,
         temperature: cfg.temperature,
         maxTokens: cfg.maxTokens,
         topP: cfg.topP,

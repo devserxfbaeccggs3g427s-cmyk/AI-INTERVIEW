@@ -20,8 +20,8 @@ export const geminiProvider: Provider = {
     if (!k) return { ok: false, detail: "API Key is required" };
     try {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(k)}`,
-        { signal: AbortSignal.timeout(8000) },
+        "https://generativelanguage.googleapis.com/v1beta/models",
+        { headers: { "x-goog-api-key": k }, signal: AbortSignal.timeout(8000) },
       );
       const ms = Date.now() - t0;
       if (r.ok) return { ok: true, detail: `HTTP ${r.status} • ${ms}ms` };
@@ -40,7 +40,8 @@ export const geminiProvider: Provider = {
     if (!k) return [];
     try {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(k)}`,
+        "https://generativelanguage.googleapis.com/v1beta/models",
+        { headers: { "x-goog-api-key": k } },
       );
       if (!r.ok) return [];
       const body = (await r.json()) as { models: { name: string }[] };

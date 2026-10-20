@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useByok, detectedProviderFromKey, type ByokConfig, type ProviderId } from "@/components/ByokConfigContext";
+import { useByok, detectedProviderFromKey, type ByokConfig } from "@/components/ByokConfigContext";
 import { Chip } from "@/components/Chip";
 import { ProviderIcon } from "@/components/ProviderIcon";
-
-const PROVIDERS: { id: ProviderId; title: string; subtitle: string; tags: { label: string; tone: "emerald" | "neutral" | "indigo" | "amber" }[] }[] = [
-  { id: "anthropic", title: "Anthropic",         subtitle: "Claude 3.5 Sonnet / 3.5 Haiku",  tags: [{ label: "Direct PDF", tone: "emerald" }, { label: "Streaming", tone: "indigo" }] },
-  { id: "openai",    title: "OpenAI",            subtitle: "GPT-4o / GPT-4o mini / o1",     tags: [{ label: "Direct PDF", tone: "emerald" }, { label: "JSON Schema", tone: "emerald" }, { label: "Streaming", tone: "indigo" }] },
-  { id: "gemini",    title: "Google Gemini",     subtitle: "Gemini 1.5 Pro / Flash",         tags: [{ label: "Direct PDF", tone: "emerald" }, { label: "Multi-modal", tone: "neutral" }, { label: "Streaming", tone: "indigo" }] },
-  { id: "custom",    title: "Tùy chỉnh (Self-Hosted)", subtitle: "Ollama / vLLM / Groq proxy", tags: [{ label: "No PDF OCR", tone: "neutral" }, { label: "OpenAI compat", tone: "neutral" }, { label: "Streaming", tone: "indigo" }] },
-];
+import { ENABLED_PROVIDER_IDS, getProviderSpec, isProviderEnabled, PROVIDER_IDS, PROVIDER_REGISTRY } from "@/lib/providers/registry";
 
 interface ModelRow { id: string; label?: string }
 
@@ -25,6 +19,8 @@ export default function ByokConfigPage() {
   const [modelNote, setModelNote] = useState<string>("");
 
   const detected = useMemo(() => detectedProviderFromKey(cfg.apiKey), [cfg.apiKey]);
+  const providerSpec = getProviderSpec(cfg.provider);
+  const providerEnabled = isProviderEnabled(cfg.provider);
 
   // Whenever provider / key / base changes, try to fetch models.
   const fetchModels = useCallback(async () => {
@@ -32,18 +28,19 @@ export default function ByokConfigPage() {
     try {
       const res = await fetch("/api/models", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provider: cfg.provider, model: cfg.model, baseUrl: cfg.baseUrl, apiKey: cfg.apiKey }),
+        headers: { "content-type": "application/json", "x-api-key": cfg.apiKey },
+        body: JSON.stringify({ provider: cfg.provider, model: cfg.model, baseUrl: cfg.baseUrl.trim() || undefined }),
       });
       const json = await res.json();
       if (Array.isArray(json.models) && json.models.length) {
         setModels(json.models);
-        if (!json.models.find((m: ModelRow) => m.id === cfg.model)) {
+        if (!json.warning && !json.models.find((m: ModelRow) => m.id === cfg.model)) {
           setCfg({ model: json.models[0].id });
         }
         if (json.warning) setModelNote(json.warning);
       } else {
-        setModelNote("Không lấy được danh sách — nhập Model ID thủ công.");
+        setModels([]);
+        setModelNote(json.error ?? "Không lấy được danh sách — nhập Model ID thủ công.");
       }
     } catch (e) {
       setModelNote(`Lỗi mạng: ${(e as Error).message}`);
@@ -53,7 +50,11 @@ export default function ByokConfigPage() {
   }, [cfg.provider, cfg.model, cfg.baseUrl, cfg.apiKey, setCfg]);
 
   useEffect(() => {
-    if (cfg.provider === "custom" && !cfg.baseUrl) return;
+    if (!providerEnabled) {
+      setModels([]);
+      setModelNote(providerSpec.disabledReason);
+      return;
+    }
     // Debounce
     const t = setTimeout(() => { void fetchModels(); }, 350);
     return () => clearTimeout(t);
@@ -65,12 +66,11 @@ export default function ByokConfigPage() {
     try {
       const res = await fetch("/api/test-key", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-api-key": cfg.apiKey },
         body: JSON.stringify({
           provider: cfg.provider,
           model: cfg.model,
-          baseUrl: cfg.baseUrl,
-          apiKey: cfg.apiKey,
+          baseUrl: cfg.baseUrl.trim() || undefined,
           temperature: cfg.temperature,
           maxTokens: cfg.maxTokens,
           topP: cfg.topP,
@@ -90,8 +90,8 @@ export default function ByokConfigPage() {
     }
   }, [cfg]);
 
-  const isCustom = cfg.provider === "custom";
-  const canTest = cfg.apiKey.length > 0 || isCustom;
+  const canTest = providerEnabled && (!providerSpec.requiresApiKey || cfg.apiKey.length > 0) &&
+    (!providerSpec.requiresBaseUrl || cfg.baseUrl.trim().length > 0);
 
   return (
     <div className="w-full px-gutter py-space-lg flex flex-col gap-space-xl max-w-7xl mx-auto">
@@ -103,18 +103,22 @@ export default function ByokConfigPage() {
         hydrated={hydrated}
       />
 
-      <Section step="Bước 1" title="Lựa chọn AI Provider tương thích" right={<span className="label-code-sm text-on-surface-variant">Hỗ trợ 4 cơ chế runtime</span>}>
+      <Section step="Bước 1" title="Lựa chọn AI Provider tương thích" right={<span className="label-code-sm text-on-surface-variant">{ENABLED_PROVIDER_IDS.length} provider đang khả dụng · {PROVIDER_IDS.length - ENABLED_PROVIDER_IDS.length} tạm tắt</span>}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
-          {PROVIDERS.map((p) => {
-            const active = cfg.provider === p.id;
+          {PROVIDER_IDS.map((id) => {
+            const p = PROVIDER_REGISTRY[id];
+            const active = cfg.provider === id;
+            const enabled = isProviderEnabled(id);
             return (
               <button
-                key={p.id}
-                onClick={() => setCfg({ provider: p.id })}
+                key={id}
+                onClick={() => setCfg({ provider: id, model: p.models[0].id, apiKey: id === cfg.provider ? cfg.apiKey : "" })}
+                disabled={!enabled}
+                title={enabled ? undefined : p.disabledReason}
                 className={`text-left p-space-md rounded-xl transition-all flex flex-col justify-between gap-space-md ${
                   active
                     ? "bg-surface-elevated glow-active"
-                    : "bg-surface-subtle hover:bg-surface-elevated"
+                    : !enabled ? "bg-surface-subtle opacity-50 cursor-not-allowed" : "bg-surface-subtle hover:bg-surface-elevated"
                 }`}
                 style={{ border: `1px solid ${active ? "var(--border-focus)" : "var(--border-hairline)"}` }}
               >
@@ -122,20 +126,21 @@ export default function ByokConfigPage() {
                   <div className="flex items-center justify-between">
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        p.id === "openai" ? "bg-primary text-on-primary" : "bg-surface-overlay text-primary"
+                        p.preferred ? "bg-primary text-on-primary" : "bg-surface-overlay text-primary"
                       }`}
                     >
-                      <ProviderIcon provider={p.id} className="text-[24px]" />
+                      <ProviderIcon provider={id} className="text-[24px]" />
                     </div>
                     {active ? <span className="material-symbols-outlined text-[20px] text-tertiary">check_circle</span> : null}
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-headline-sm text-headline-sm text-on-surface">{p.title}</span>
+                    <span className="font-headline-sm text-headline-sm text-on-surface">{p.title}{!enabled ? " (tạm tắt)" : ""}</span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">{p.subtitle}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {p.tags.map((t, i) => <Chip key={i} tone={t.tone}>{t.label}</Chip>)}
+                  {!enabled ? <Chip tone="amber">Tạm khóa</Chip> : null}
                 </div>
               </button>
             );
@@ -145,10 +150,11 @@ export default function ByokConfigPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
         <div className="lg:col-span-8 flex flex-col gap-space-lg">
-          {isCustom ? (
+          {providerSpec.requiresBaseUrl ? (
             <CustomEndpointBox
               value={cfg.baseUrl}
               onChange={(v) => setCfg({ baseUrl: v })}
+              disabledReason={providerEnabled ? undefined : providerSpec.disabledReason}
             />
           ) : null}
 
@@ -163,12 +169,10 @@ export default function ByokConfigPage() {
             testMsg={testMsg}
             canTest={canTest}
             detectedLabel={
-              isCustom
-                ? "Tùy biến (OpenAI Compatible)"
+              providerSpec.requiresBaseUrl
+                ? providerSpec.keyHint
                 : detected
-                  ? detected === "anthropic" ? "Định dạng: sk-ant-…"
-                  : detected === "openai" ? "Định dạng: sk-proj-…"
-                  : "Định dạng: AIzaSy…"
+                  ? getProviderSpec(detected).keyHint
                   : "Chưa nhập key — chỉ dùng để test kết nối"
             }
           />
@@ -200,7 +204,7 @@ export default function ByokConfigPage() {
         <div className="lg:col-span-4 flex flex-col gap-space-md">
           <TelemetryCard />
           <CapabilityCard />
-          <SecurityNote />
+          <SecurityNote disabledReason={providerEnabled ? undefined : providerSpec.disabledReason} />
         </div>
       </div>
     </div>
@@ -291,13 +295,13 @@ function Section({ step, title, right, children }: { step: string; title: string
   );
 }
 
-function CustomEndpointBox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CustomEndpointBox({ value, onChange, disabledReason }: { value: string; onChange: (v: string) => void; disabledReason?: string }) {
   return (
     <div className="card p-space-md flex flex-col gap-space-sm">
       <div className="flex items-center justify-between">
         <label className="label-caps text-on-surface uppercase flex items-center gap-space-xs" htmlFor="customBaseUrl">
-          <span>Endpoint Base URL (HTTPS bắt buộc)</span>
-          <span className="px-space-xs py-0.5 rounded bg-surface-elevated text-primary label-code-sm">NFR-8 Validated</span>
+          <span>Endpoint Base URL (HTTPS public / HTTP local)</span>
+          {disabledReason ? <span className="px-space-xs py-0.5 rounded bg-surface-elevated text-warning label-code-sm">Tạm tắt</span> : null}
         </label>
         <span className="label-caps text-on-surface-variant">OpenAI Compatible Path</span>
       </div>
@@ -314,10 +318,7 @@ function CustomEndpointBox({ value, onChange }: { value: string; onChange: (v: s
       </div>
       <p className="font-body-sm text-body-sm text-on-surface-variant flex items-start gap-space-xs">
         <span className="material-symbols-outlined text-[16px] text-tertiary flex-shrink-0 mt-0.5">verified_user</span>
-        <span>
-          Hệ thống áp dụng sandbox chặn toàn bộ IP nội bộ (localhost, 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16, 169.254.0.0/16)
-          để chống SSRF. Custom endpoint thường không hỗ trợ phân tích PDF trực tiếp hay structured JSON.
-        </span>
+        <span>{disabledReason ?? "Nhập host Ollama/LM Studio (tự thêm /v1) hoặc full /v1. Public phải HTTPS; HTTP local cần ALLOW_PRIVATE_BASE_URL=1 trên server. API key tùy chọn sẽ gửi đến endpoint này."}</span>
       </p>
     </div>
   );
@@ -561,13 +562,12 @@ function CapabilityCard() {
   );
 }
 
-function SecurityNote() {
+function SecurityNote({ disabledReason }: { disabledReason?: string }) {
   return (
     <div className="bg-surface-subtle p-space-md rounded-xl flex items-start gap-space-sm">
       <span className="material-symbols-outlined text-[20px] text-primary flex-shrink-0">info</span>
       <p className="font-body-sm text-body-sm text-on-surface-variant">
-        Khi chuyển đổi giữa các Provider, hệ thống tự động cập nhật schema prompt phỏng vấn tương ứng nhằm
-        tối ưu hóa chất lượng câu hỏi phân cấp L3-Junior → L5-Senior → Staff.
+        Chọn provider và nhập API key tương ứng. {disabledReason ?? "Các provider sẵn sàng cho phiên phỏng vấn."}
       </p>
     </div>
   );

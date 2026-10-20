@@ -14,7 +14,9 @@
  */
 import { useEffect, useState } from "react";
 import { Chip } from "@/components/Chip";
+import { useByok } from "@/components/ByokConfigContext";
 import { renderMarkdown } from "@/lib/markdown";
+import { sessionKeyError } from "@/lib/session-key";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 import type { EvaluationReport, Pillar, TurnEval } from "@/lib/zod-schemas";
 
@@ -39,41 +41,119 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
   const [report, setReport] = useState<EvaluationReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [checkedAt, setCheckedAt] = useState(Date.now());
+  const { cfg } = useByok();
 
   useEffect(() => {
-    (async () => {
+    let alive = true;
+    const refresh = async () => {
       try {
-        const [s, r] = await Promise.all([
-          fetch(`/api/sessions/${params.id}`).then((x) => x.json()),
-          fetch(`/api/sessions/${params.id}/report`).then((x) => x.json() as Promise<ApiResp>),
-        ]);
-        if (!s?.session) throw new Error("Session not found");
-        setSession(s.session);
-        setTurns(s.turns ?? []);
-        if (r?.ok && r.report) setReport(r.report);
+        const response = await fetch(`/api/sessions/${params.id}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (!data?.session) throw new Error("Session not found");
+        if (!alive) return;
+        setSession(data.session);
+        setTurns(data.turns ?? []);
+        setCheckedAt(Date.now());
+        if (data.session.status === "completed") {
+          const result = await fetch(`/api/sessions/${params.id}/report`, { cache: "no-store" });
+          const reportData = await result.json() as ApiResp;
+          if (alive && result.ok && reportData.ok && reportData.report) {
+            setReport(reportData.report);
+            setError(null);
+          } else if (alive) setError("Không tải được báo cáo đã hoàn tất. Vui lòng tải lại.");
+        } else {
+          setReport(null);
+          if (data.session.status !== "failed") setError(null);
+        }
       } catch (e) {
-        setError((e as Error).message);
+        if (alive) setError((e as Error).message);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    })();
+    };
+    void refresh();
+    const timer = setInterval(() => { void refresh(); }, 5000);
+    return () => { alive = false; clearInterval(timer); };
   }, [params.id]);
+
+  const retryEvaluation = async () => {
+    if (retrying || !session) return;
+    const keyError = sessionKeyError(cfg, session);
+    if (keyError) { setError(keyError); return; }
+    setRetrying(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/sessions/${params.id}/evaluate`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(cfg.apiKey ? { "x-api-key": cfg.apiKey } : {}) },
+        body: JSON.stringify({
+          provider: session.provider, model: session.model, baseUrl: session.base_url ?? undefined,
+          temperature: session.temperature, maxTokens: session.max_tokens, topP: session.top_p,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error ?? `HTTP ${response.status}`);
+      const [sessionResponse, reportResponse] = await Promise.all([
+        fetch(`/api/sessions/${params.id}`, { cache: "no-store" }),
+        fetch(`/api/sessions/${params.id}/report`, { cache: "no-store" }),
+      ]);
+      const sessionData = await sessionResponse.json();
+      const reportData = await reportResponse.json() as ApiResp;
+      if (!sessionResponse.ok || !reportResponse.ok || !reportData.ok || !reportData.report) {
+        throw new Error("Báo cáo chưa sẵn sàng. Vui lòng tải lại.");
+      }
+      setSession(sessionData.session);
+      setTurns(sessionData.turns ?? []);
+      setReport(reportData.report);
+      setCheckedAt(Date.now());
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+      try {
+        const latest = await fetch(`/api/sessions/${params.id}`, { cache: "no-store" });
+        if (latest.ok) {
+          const data = await latest.json();
+          setSession(data.session);
+          setTurns(data.turns ?? []);
+          setCheckedAt(Date.now());
+        }
+      } catch { /* Keep the retry error visible; polling can recover later. */ }
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   if (loading) {
     return <div className="w-full px-gutter py-space-xl text-center text-on-surface-variant">Đang tải báo cáo…</div>;
   }
-  if (error) {
-    return <div className="w-full px-gutter py-space-xl text-center text-error">{error}</div>;
+  if (!session) {
+    return <div className="w-full px-gutter py-space-xl text-center text-error">{error ?? "Không tải được phiên."}</div>;
   }
-  if (!session) return null;
   if (!report) {
+    const stale = session.status === "evaluating" &&
+      (session.evaluation_started_at == null || checkedAt - session.evaluation_started_at * 1000 > 120_000);
+    const canRetry = (session.status === "failed" || stale) && !retrying;
     return (
       <div className="w-full px-gutter py-space-xl text-center">
-        <h1 className="font-headline-lg text-headline-lg text-on-surface">Báo cáo chưa có</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">
+          {retrying ? "AI đang chấm điểm…" : canRetry ? "Chấm điểm chưa hoàn tất" : session.status === "evaluating" ? "AI đang chấm điểm…" : "Báo cáo chưa có"}
+        </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-space-sm">
-          Phiên này chưa được chấm điểm tổng kết. Nếu vừa kết thúc phiên, vui lòng đợi vài giây rồi tải lại.
+          {retrying ? "Câu trả lời đã được lưu; đang thử chấm điểm lại." :
+            canRetry ? "Câu trả lời đã được lưu. Bạn có thể thử chấm điểm lại với khóa API của mình." :
+            session.status === "evaluating" ? "Đang đợi báo cáo; trang sẽ tự cập nhật. Nếu quá thời hạn, bạn sẽ có thể thử lại." :
+            "Phiên này chưa được chấm điểm tổng kết."}
         </p>
-        <a className="btn btn-primary mt-space-md" href={`/session/${params.id}`}>Về phiên</a>
+        {error ? <p className="font-body-md text-body-md text-error mt-space-sm">{error}</p> : null}
+        {canRetry || retrying ? (
+          <button className="btn btn-primary mt-space-md" onClick={retryEvaluation} disabled={retrying}>
+            {retrying ? "Đang chấm điểm…" : "Thử chấm điểm lại"}
+          </button>
+        ) : null}
+        <a className="btn btn-ghost mt-space-md" href={`/session/${params.id}`}>Về phiên</a>
       </div>
     );
   }

@@ -1,14 +1,11 @@
-/**
- * Custom (OpenAI-compatible) provider.
- *
- * Reuses the OpenAI chat/completions wire format but with a user-supplied base URL.
- * Route handler MUST validate base URL against SSRF (lib/validate.ts) BEFORE
- * instantiating this provider.
- */
-import { openaiProvider } from "./openai";
-import type { Provider } from "./types";
+import { guardedRequest } from "../net/guarded-transport";
+import { createOpenAiCompatibleProvider } from "./openai-wire";
 
-export const customProvider: Provider = {
-  ...openaiProvider,
-  id: "custom",
-};
+export const customProvider = createOpenAiCompatibleProvider(
+  "custom",
+  (cfg) => {
+    if (!cfg._base) throw new Error("Custom provider requires a Base URL");
+    return cfg._base;
+  },
+  guardedRequest,
+);

@@ -28,6 +28,21 @@ function open(): DatabaseSync {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec(SCHEMA);
+  const version = db.prepare("PRAGMA user_version").get() as { user_version: number };
+  if (version.user_version === 0) {
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.exec("ALTER TABLE sessions ADD COLUMN evaluation_started_at INTEGER");
+      db.exec("ALTER TABLE sessions ADD COLUMN evaluation_attempt_id TEXT");
+      db.exec("PRAGMA user_version = 1");
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  } else if (version.user_version !== 1) {
+    throw new Error(`Unsupported database version: ${version.user_version}`);
+  }
   return db;
 }
 

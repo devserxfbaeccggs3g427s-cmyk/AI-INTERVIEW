@@ -1,12 +1,8 @@
 "use client";
 
-const ICON: Record<string, string> = {
-  anthropic: "terminal",
-  openai: "psychology",
-  gemini: "diamond",
-  custom: "hub",
-};
+import { isProviderId, PROVIDER_REGISTRY } from "@/lib/providers/registry";
 
 export function ProviderIcon({ provider, className = "" }: { provider: string; className?: string }) {
-  return <span className={`material-symbols-outlined ${className}`}>{ICON[provider] ?? "memory"}</span>;
+  const icon = isProviderId(provider) ? PROVIDER_REGISTRY[provider].icon : "memory";
+  return <span className={`material-symbols-outlined ${className}`}>{icon}</span>;
 }

@@ -10,6 +10,7 @@ data/
 *.db-shm
 
 # Misc
+.env
 .env.local
 .env.*.local
 .DS_Store
@@ -18,4 +19,5 @@ data/
 # IDE / editor / build caches
 .idea/
 .vscode/
+.claude/
 tsconfig.tsbuildinfo
