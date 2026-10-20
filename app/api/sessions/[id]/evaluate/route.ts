@@ -35,7 +35,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       model: cfg.model,
       baseUrl: cfg._base,
       apiKey,
-      maxTokens: cfg.max_tokens,
     }, attemptId);
     return NextResponse.json({ ok: true });
   } catch {

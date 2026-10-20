@@ -17,6 +17,7 @@ import { Chip } from "@/components/Chip";
 import { useByok } from "@/components/ByokConfigContext";
 import { renderMarkdown } from "@/lib/markdown";
 import { sessionKeyError } from "@/lib/session-key";
+import { EVALUATION_STALE_AFTER_MS } from "@/lib/evaluation-constants";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 import type { EvaluationReport, Pillar, TurnEval } from "@/lib/zod-schemas";
 
@@ -134,7 +135,7 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
   }
   if (!report) {
     const stale = session.status === "evaluating" &&
-      (session.evaluation_started_at == null || checkedAt - session.evaluation_started_at * 1000 > 120_000);
+      (session.evaluation_started_at == null || checkedAt - session.evaluation_started_at * 1000 > EVALUATION_STALE_AFTER_MS);
     const canRetry = (session.status === "failed" || stale) && !retrying;
     return (
       <div className="w-full px-gutter py-space-xl text-center">

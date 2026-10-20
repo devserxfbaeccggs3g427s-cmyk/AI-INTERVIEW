@@ -239,7 +239,6 @@ ${body.answer}
               model: creds.model,
               baseUrl: creds._base,
               apiKey,
-              maxTokens: creds.max_tokens,
             }, evaluationAttempt);
           } catch {
             write({ type: "error", message: "Không thể chấm điểm. Câu trả lời đã được lưu; bạn có thể thử lại." });

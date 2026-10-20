@@ -39,6 +39,8 @@ lib/
 ├─ db.ts                 — node:sqlite singleton + schema
 ├─ types.ts              — shared types (server + client safe)
 ├─ zod-schemas.ts        — evaluation report schema + auto-repair
+├─ evaluation.ts         — final-report runner (budget, truncation retry, audit log)
+├─ evaluation-constants.ts — eval timeouts + output budgets (client-safe)
 ├─ validate.ts           — input validation + SSRF guard
 ├─ pdf.ts                — PDF text extraction (server-only)
 ├─ prompts.ts            — system prompts (strict / coaching)
@@ -101,6 +103,7 @@ npm run dev
 | POST   | `/api/sessions/[id]/messages`       | **SSE** — submit answer, stream next question (+ coaching rubric) |
 | POST   | `/api/sessions/[id]/evaluate`       | Force evaluation (same runner that fires when `plannedRounds` reached) |
 | GET    | `/api/sessions/[id]/report`         | Parsed evaluation report |
+| GET    | `/api/sessions/[id]/attempts`       | Scoring audit trail (`?raw=1` includes the model's body) |
 | GET    | `/api/admin/db`                     | Path + counters |
 | POST   | `/api/admin/db`                     | `wipe-sessions` / `wipe-all` / `vacuum` / `backup` / `import` |
 | GET    | `/api/admin/schema`                 | Table list + DDL |

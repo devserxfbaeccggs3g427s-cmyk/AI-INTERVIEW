@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test lib/net/*.test.mjs && tsx --test lib/providers/*.test.ts"
+    "test": "node --test lib/net/*.test.mjs && tsx --test lib/*.test.ts lib/providers/*.test.ts"
   },
   "dependencies": {
     "next": "14.2.18",

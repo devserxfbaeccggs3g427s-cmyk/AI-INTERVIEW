@@ -140,6 +140,31 @@ CREATE TABLE IF NOT EXISTS evaluations (
 
 CREATE INDEX IF NOT EXISTS idx_evaluations_score  ON evaluations(overall_score DESC);
 
+-- Every final-evaluation attempt, successful or not. \`evaluations\` holds one
+-- row per session (the latest good report); this is the audit trail that makes
+-- "why did scoring fail?" answerable after the model's raw body has left memory.
+-- Both budget attempts of a single claim share attempt_id. No schema_version
+-- bump needed — CREATE TABLE IF NOT EXISTS runs on every boot.
+CREATE TABLE IF NOT EXISTS evaluation_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  attempt_id TEXT NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('completed','failed')),
+  -- Which output-token budget this round-trip was given.
+  max_tokens INTEGER,
+  -- 'length' / 'max_tokens' / 'MAX_TOKENS' means the JSON was cut off.
+  finish_reason TEXT,
+  response_chars INTEGER,
+  -- The model's untruncated output, so a parse failure can be diagnosed rather
+  -- than guessed at. Model text only — request headers and keys never land here.
+  raw_response TEXT,
+  error_message TEXT,
+  duration_ms INTEGER,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_attempts_session ON evaluation_attempts(session_id, id);
+
 -- Per-provider latest model/parameter prefs (FR-14). NEVER stores api_key.
 -- (NFR-2 / NFR-10: keys live in client memory only.)
 CREATE TABLE IF NOT EXISTS model_configs (

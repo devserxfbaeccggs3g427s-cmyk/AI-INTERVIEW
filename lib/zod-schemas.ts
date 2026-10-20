@@ -4,8 +4,9 @@
  * Used in three places:
  *   1. Provider prompt → guided JSON output (parse via safeParseStructured).
  *   2. Server-side validation of stored report_json before serving to the client.
- *   3. Auto-repair: if a model returns near-valid JSON we try one repair then store schema_valid=0
- *      and store the raw text alongside.
+ *   3. Auto-repair: if a model returns near-valid JSON we try one repair then store schema_valid=0.
+ *      The untruncated model body is kept in `evaluation_attempts` (see lib/evaluation.ts), so a
+ *      failure here is diagnosable after the fact rather than a dead end.
  */
 import { z } from "zod";
 

@@ -7,6 +7,7 @@ import { Chip } from "@/components/Chip";
 import { DifficultyBadge, difficultyForRound } from "@/components/DifficultyBadge";
 import { useStreamingChat } from "@/lib/useStreamingChat";
 import { sessionKeyError } from "@/lib/session-key";
+import { EVALUATION_STALE_AFTER_MS } from "@/lib/evaluation-constants";
 import { renderMarkdown } from "@/lib/markdown";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 
@@ -251,7 +252,7 @@ export default function ActiveSessionPage({ params }: Props) {
   if (!session) return null;
 
   const evaluatingStale = stage === "evaluating" &&
-    (session.evaluation_started_at == null || Date.now() - session.evaluation_started_at * 1000 > 120_000);
+    (session.evaluation_started_at == null || Date.now() - session.evaluation_started_at * 1000 > EVALUATION_STALE_AFTER_MS);
   const pct = plan ? Math.round((plan.completed / plan.planned) * 100) : 0;
 
   return (

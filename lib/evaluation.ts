@@ -3,10 +3,28 @@ import { exec, getDb, query, queryOne } from "@/lib/db";
 import { withCredentials, getProvider } from "@/lib/providers";
 import { buildEvaluationPrompt } from "@/lib/prompts";
 import type { MessageTurnRow, ModelConfig, ProviderId, SessionRow } from "@/lib/types";
+import type { AuthedConfig, Provider } from "@/lib/providers/types";
 import { parseEvaluation } from "@/lib/zod-schemas";
+import {
+  EVALUATION_MAX_TOKENS,
+  EVALUATION_RETRY_MAX_TOKENS,
+  EVALUATION_STALE_AFTER_MS,
+  EVALUATION_TIMEOUT_MS,
+} from "./evaluation-constants";
 
-export const EVALUATION_TIMEOUT_MS = 90_000;
-export const EVALUATION_STALE_AFTER_MS = 120_000;
+export { EVALUATION_STALE_AFTER_MS, EVALUATION_TIMEOUT_MS };
+
+/**
+ * Provider `finish_reason` values meaning "output was cut off before the JSON
+ * closed". OpenAI-compatible servers say `length`, Anthropic says
+ * `max_tokens`, Gemini says `MAX_TOKENS`. Treating these as ordinary parse
+ * failures is what made scoring look broken: the JSON was cut mid-object and
+ * the only symptom was "Invalid evaluation response".
+ */
+const TRUNCATED_BY_LENGTH = new Set(["length", "max_tokens", "MAX_TOKENS", "max_output_tokens"]);
+
+/** Guard against a runaway model filling SQLite with one enormous row. */
+const MAX_STORED_RAW_CHARS = 256_000;
 
 export interface EvaluationConfig {
   sessionId: string;
@@ -14,7 +32,6 @@ export interface EvaluationConfig {
   model: string;
   baseUrl?: string;
   apiKey?: string;
-  maxTokens: number;
 }
 
 export function evaluationIsStale(session: SessionRow): boolean {
@@ -36,6 +53,96 @@ export function claimEvaluation(sessionId: string, retry = false): string | null
      )`,
   ).run(attemptId, sessionId, Number(retry), Number(retry), staleBefore);
   return result.changes === 1 ? attemptId : null;
+}
+
+interface AttemptOutcome {
+  outcome: "completed" | "failed";
+  maxTokens: number;
+  finishReason?: string;
+  responseChars: number;
+  rawResponse?: string;
+  errorMessage?: string;
+  durationMs: number;
+}
+
+/**
+ * Appends to the audit trail. Both budget attempts of one claim share the same
+ * `attempt_id`, so the table shows every provider round-trip behind a single
+ * evaluation. Never throws: diagnostics must not be the reason scoring fails.
+ */
+function recordAttempt(sessionId: string, attemptId: string, row: AttemptOutcome): void {
+  try {
+    exec(
+      `INSERT INTO evaluation_attempts
+         (session_id, attempt_id, outcome, max_tokens, finish_reason, response_chars,
+          raw_response, error_message, duration_ms, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      [
+        sessionId, attemptId, row.outcome, row.maxTokens, row.finishReason ?? null,
+        row.responseChars,
+        row.rawResponse ? row.rawResponse.slice(0, MAX_STORED_RAW_CHARS) : null,
+        row.errorMessage ? row.errorMessage.slice(0, 2000) : null,
+        row.durationMs,
+      ],
+    );
+  } catch {
+    /* Best-effort audit log — never fail the evaluation over it. */
+  }
+}
+
+interface ModelResult {
+  text: string;
+  finishReason?: string;
+  latencyMs: number;
+}
+
+/** One provider round-trip against the report prompt. */
+async function callEvaluationModel(
+  provider: Provider,
+  creds: AuthedConfig,
+  prompt: string,
+  maxTokens: number,
+  signal: AbortSignal,
+): Promise<ModelResult> {
+  const handle = await provider.streamChat(
+    creds,
+    [
+      { role: "system", content: prompt },
+      { role: "user", content: "Respond with JSON only. No commentary." },
+    ],
+    // max_tokens is set in BOTH places on purpose: every current provider reads
+    // `opts.maxTokens ?? cfg.max_tokens`, and this keeps the budget correct if a
+    // future one only consults the config.
+    { abortSignal: signal, maxTokens },
+  );
+  let text = "";
+  for await (const chunk of handle.textStream) text += chunk;
+  // `meta` settles when the stream closes and carries finish_reason — the only
+  // reliable signal that a body was truncated rather than merely malformed.
+  let meta: Awaited<typeof handle.meta> | undefined;
+  try {
+    meta = await handle.meta;
+  } catch {
+    meta = undefined; // Best-effort; missing meta must not sink a good report.
+  }
+  return { text, finishReason: meta?.finish_reason, latencyMs: meta?.latency_ms ?? 0 };
+}
+
+/** Races `run` against `ms`, aborting the underlying request on timeout. */
+async function withTimeout<T>(ms: number, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const abort = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      abort.abort();
+      reject(new Error("Evaluation timed out"));
+    }, ms);
+  });
+  try {
+    return await Promise.race([run(abort.signal), expiry]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function runEvaluation(args: EvaluationConfig, attemptId: string): Promise<void> {
@@ -79,12 +186,12 @@ export async function runEvaluation(args: EvaluationConfig, attemptId: string): 
       }));
     if (!turnList.some((turn) => turn.answer)) throw new Error("No answered turns to evaluate");
 
-    const cfg: ModelConfig = {
+    const baseCfg: ModelConfig = {
       provider: args.provider,
       model: args.model,
       base_url: session.provider === "custom" ? session.base_url : null,
       temperature: 0.2,
-      max_tokens: Math.max(args.maxTokens, 4096),
+      max_tokens: EVALUATION_MAX_TOKENS,
       top_p: 0.9,
     };
     const prompt = buildEvaluationPrompt({
@@ -93,25 +200,58 @@ export async function runEvaluation(args: EvaluationConfig, attemptId: string): 
       turns: turnList,
     });
     const provider = getProvider(args.provider);
-    const abort = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        abort.abort();
-        reject(new Error("Evaluation timed out"));
-      }, EVALUATION_TIMEOUT_MS);
-    });
-    const text = await Promise.race([(async () => {
-      const handle = await provider.streamChat(withCredentials(cfg, args.apiKey, session.provider === "custom" ? args.baseUrl : undefined), [
-        { role: "system", content: prompt },
-        { role: "user", content: "Respond with JSON only. No commentary." },
-      ], { abortSignal: abort.signal });
-      let result = "";
-      for await (const chunk of handle.textStream) result += chunk;
-      return result;
-    })(), timeout]).finally(() => clearTimeout(timer));
-    const parsed = parseEvaluation(text);
-    if (!parsed.ok) throw new Error("Invalid evaluation response");
+
+    // Truncation is the dominant failure mode, so the first budget is generous
+    // and the second is a one-shot escalation. Escalate on a schema mismatch
+    // too: at temperature 0.2 a resample usually lands differently, and that is
+    // cheaper than making the user click "chấm điểm lại" again. Bounded at two
+    // round-trips per claim so a pathological provider cannot loop.
+    let parsed: ReturnType<typeof parseEvaluation> | null = null;
+    let lastFailure = "Evaluation produced no usable report";
+
+    for (const maxTokens of [EVALUATION_MAX_TOKENS, EVALUATION_RETRY_MAX_TOKENS]) {
+      const startedAt = Date.now();
+      let result: ModelResult;
+      try {
+        result = await withTimeout(EVALUATION_TIMEOUT_MS, (signal) =>
+          callEvaluationModel(
+            provider,
+            withCredentials({ ...baseCfg, max_tokens: maxTokens }, args.apiKey,
+              session.provider === "custom" ? args.baseUrl : undefined),
+            prompt, maxTokens, signal,
+          ));
+      } catch (error) {
+        // A timeout or transport failure is not budget-shaped: a bigger ceiling
+        // would not have helped, so record it and propagate immediately.
+        recordAttempt(args.sessionId, attemptId, {
+          outcome: "failed", maxTokens, responseChars: 0,
+          errorMessage: (error as Error).message, durationMs: Date.now() - startedAt,
+        });
+        throw error;
+      }
+
+      const attempt = parseEvaluation(result.text);
+      if (attempt.ok) {
+        parsed = attempt;
+        recordAttempt(args.sessionId, attemptId, {
+          outcome: "completed", maxTokens, finishReason: result.finishReason,
+          responseChars: result.text.length, rawResponse: result.text,
+          durationMs: Date.now() - startedAt,
+        });
+        break;
+      }
+
+      const truncated = TRUNCATED_BY_LENGTH.has(result.finishReason ?? "");
+      lastFailure = truncated
+        ? `Model stopped on length at ${maxTokens} tokens; JSON was incomplete.`
+        : `Response did not match the report schema: ${attempt.error}`;
+      recordAttempt(args.sessionId, attemptId, {
+        outcome: "failed", maxTokens, finishReason: result.finishReason,
+        responseChars: result.text.length, rawResponse: result.text,
+        errorMessage: lastFailure, durationMs: Date.now() - startedAt,
+      });
+    }
+    if (!parsed || !parsed.ok) throw new Error(lastFailure);
 
     const db = getDb();
     db.exec("BEGIN IMMEDIATE");
