@@ -94,6 +94,47 @@ test("rejectCrossOrigin fails closed without a configured public origin, before 
   }
 });
 
+test("rejectCrossOrigin short-circuits to a bypass when DISABLE_ORIGIN_CHECK is set", () => {
+  const previousBypass = process.env.DISABLE_ORIGIN_CHECK;
+  try {
+    // Even an unknown / mismatched / null origin must be allowed when the bypass is on,
+    // because that is the entire point: flipping one env knob disables the check in one place.
+    for (const value of ["1", "true", "TRUE", "True"]) {
+      process.env.DISABLE_ORIGIN_CHECK = value;
+      for (const origin of [
+        null, "", "null", "https://evil.example", "https://interview.example.com.evil.example",
+        "https://user@interview.example.com", `${PUBLIC}, https://evil.example`,
+      ]) {
+        const req = request(origin, {
+          host: "attacker.example", "x-forwarded-host": "attacker.example", "x-forwarded-proto": "http",
+        });
+        Object.defineProperty(req, "json", { value: () => { throw new Error("body was read"); } });
+        assert.equal(rejectCrossOrigin(req, null), null, `must bypass for ${JSON.stringify(origin)} with ${value}`);
+        assert.equal(req.bodyUsed, false, "bypass must not consume the body");
+      }
+    }
+  } finally {
+    if (previousBypass === undefined) delete process.env.DISABLE_ORIGIN_CHECK;
+    else process.env.DISABLE_ORIGIN_CHECK = previousBypass;
+  }
+});
+
+test("rejectCrossOrigin still enforces when DISABLE_ORIGIN_CHECK is unset or falsy", () => {
+  const previousBypass = process.env.DISABLE_ORIGIN_CHECK;
+  try {
+    for (const value of [undefined, "", "0", "false", "no", "off"]) {
+      if (value === undefined) delete process.env.DISABLE_ORIGIN_CHECK;
+      else process.env.DISABLE_ORIGIN_CHECK = value;
+      const denied = rejectCrossOrigin(request("https://evil.example"), PUBLIC);
+      assert.ok(denied, `must reject when bypass is ${JSON.stringify(value)}`);
+      assert.equal(denied.status, 403);
+    }
+  } finally {
+    if (previousBypass === undefined) delete process.env.DISABLE_ORIGIN_CHECK;
+    else process.env.DISABLE_ORIGIN_CHECK = previousBypass;
+  }
+});
+
 test("privateJson enforces private no-store and no-referrer even if caller supplies weaker headers", async () => {
   const response = privateJson({ ok: true }, {
     status: 202,

@@ -24,8 +24,19 @@ export function privateJson(body: unknown, init?: ResponseInit): Response {
   return Response.json(body, { ...init, headers });
 }
 
+/**
+ * Single bypass switch for the whole app. Set DISABLE_ORIGIN_CHECK=1 to skip
+ * origin enforcement across every API route in one place, without modifying
+ * each route handler. Default is fail-closed (unset / "0").
+ */
+function originCheckDisabled(): boolean {
+  const v = process.env.DISABLE_ORIGIN_CHECK;
+  return v === "1" || v?.toLowerCase() === "true";
+}
+
 /** Reject before reading the request body or accessing storage/providers. */
 export function rejectCrossOrigin(req: Request, expectedOrigin: string | null): Response | null {
+  if (originCheckDisabled()) return null;
   const origin = req.headers.get("origin");
   if (!expectedOrigin || !origin || origin !== expectedOrigin) {
     return privateJson({ ok: false, error: "Forbidden origin" }, { status: 403 });

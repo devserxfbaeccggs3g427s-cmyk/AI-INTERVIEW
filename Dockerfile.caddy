@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+#
+# Caddy image custom cho interview-ai-studio.
+#
+# Bundle sẵn `deploy/Caddyfile` + `deploy/caddy-entrypoint.sh` để VPS không
+# cần clone repo khi triển khai — chỉ pull 2 image (app + caddy) từ Docker Hub.
+#
+# Build:
+#   docker build -f Dockerfile.caddy \
+#     -t ngocnqph12806/interview-ai-studio-caddy:<tag> .
+
+FROM caddy:2
+
+# Bundle config + entrypoint từ thư mục deploy/ của repo (build context phải là root).
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY deploy/caddy-entrypoint.sh /etc/caddy/caddy-entrypoint.sh
+
+# Entry script mặc định trong image `caddy:2` gọi thẳng `caddy run`.
+# Ghi đè để chạy script xác minh bcrypt secret trước khi start Caddy.
+RUN chmod +x /etc/caddy/caddy-entrypoint.sh
+ENTRYPOINT ["/bin/sh", "/etc/caddy/caddy-entrypoint.sh"]

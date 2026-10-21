@@ -1,32 +1,402 @@
-# VPS ingress sample (T-01.1 only)
+# VPS deployment — interview-ai-studio
 
-This sample is **not a production release gate**. Verify server-side Origin/CSRF enforcement (T-01.2) independently, along with backup/restore and full ingress smoke tests. Do not expose a real-data instance until those gates are complete. Run one app replica per SQLite volume; no public app port is mapped. The app listens on port 12213 inside Docker; Caddy alone publishes TCP 80/443 and UDP 443 for HTTPS. Docker's `EXPOSE` is metadata, not a published port. Set the VPS firewall to permit only controlled SSH and 80/443; verify externally that 12213 is unreachable.
+Build 2 image trên local, đẩy cả 2 lên Docker Hub dưới cùng namespace `ngocnqph12806/`, rồi kéo về VPS — không clone git.
 
-## Prepare domain and auth secret
-
-Point a DNS name at the VPS, open 80/443 for automatic certificate issuance, and set `SITE_DOMAIN` to **only** its bare DNS name (e.g. `interview.example.com`; no scheme, slash, port, or wildcard). Compose supplies `PUBLIC_ORIGIN=https://${SITE_DOMAIN}` to the app at **runtime**; `lib/origin-guard.ts` requires this to match the browser's serialized HTTPS Origin exactly, and rejects every POST/DELETE when it does not. Do not use a CDN or extra TLS-terminating proxy without revisiting the forwarded-header trust model. Caddy certificate state persists in `caddy_data`.
-
-Generate a bcrypt hash interactively with a trusted Caddy CLI (`caddy hash-password` or `docker run --rm -it caddy:2 caddy hash-password`; the latter requires a running Docker daemon). Never type the plaintext password into shell arguments, history, a committed file, or a URL. Put a **single line** of the form `owner <bcrypt-hash>` in a root-controlled file outside the repository and Docker build context, e.g. `/etc/interview-studio/basic-auth.users`. It is imported inside the Caddy `basic_auth` block, so do not put a directive or braces in it. No actual credentials belong in this sample. Use a restrictive parent directory and file permissions (e.g. `install -d -m 0700 /etc/interview-studio`, then `chmod 0400` on the file; Docker's secret mount is readable inside Caddy's container). Ensure the file ends in a newline, is not empty, and is kept out of backup exports and version control. Set `AUTH_SNIPPET_PATH` to its **absolute** path. Compose refuses an unset path; the entrypoint refuses an absent, empty or malformed credential line before Caddy starts. Verify the hash using a non-production password before opening public access. The Compose definition itself never contains a hash or password.
-
-Start from the repository checkout (not from a copied Compose file):
-
-```sh
-export SITE_DOMAIN=interview.example.com
-export AUTH_SNIPPET_PATH=/etc/interview-studio/basic-auth.users
-docker compose -f deploy/compose.yaml config --quiet
-docker compose -f deploy/compose.yaml up -d --build
+```
+hub.docker.com/u/ngocnqph12806
+├── interview-ai-studio         ← app (Next.js standalone)
+└── interview-ai-studio-caddy   ← Caddy + bundle Caddyfile + entrypoint bcrypt guard
 ```
 
-Optionally set `NEXT_PUBLIC_PROVIDER_ENABLE` before **building** to opt into a permitted provider list. This is inlined into the Next.js client bundle; modifying it requires a rebuild. Never put credentials into any `NEXT_PUBLIC_*` value. `ALLOW_PRIVATE_BASE_URL=0` is fixed in this sample. The app's `/data` named volume holds the SQLite database plus WAL/SHM sidecars; keep the volume when replacing containers. Do not copy only an open `.db` file as a backup, and do not remove volumes with `down -v` unless intentionally destroying all data.
+## Sơ đồ trên VPS
 
-## Request sizing and CV handling
+```
+internet ── 443/80 ──► caddy (image custom)
+                          │
+                          │ nội bộ Docker network (KHÔNG public)
+                          ▼
+                   app (image: interview-ai-studio)
+                   port nội bộ 12213, /data → named volume app_data
+                                              │
+                                              ▼
+                              data/interview_sessions.db (+ WAL · SHM)
+```
 
-Size the reverse proxy for CV uploads: a pasted CV is capped at 20,000 characters (rejected with 400 if longer — never silently truncated), and a PDF is capped at **10 MiB decoded**, which is roughly **14 MiB** of base64 JSON request body. `POST /api/sessions/preview` and `POST /api/sessions` both accept that envelope, and both answer **413** when it is exceeded — raise any proxy `client_max_body_size` above 14 MiB or valid PDFs will fail at the edge instead of in the app. The Origin guard runs before the body is read, so an unauthenticated caller is rejected without the app buffering the upload.
+Lưu ý:
+- App là unauthenticated single-tenant. Caddy chặn basic-auth (file-mounted bcrypt secret) trước khi vào app.
+- Caddy **tự xin và xoay vòng Let's Encrypt**, **tắt access log** (request có thể chứa `x-api-key` / Authorization / CV), **strip mọi header identity** (`Authorization`, `X-Forwarded-*`, `Cookie`, `X-Original-*`). Không đặt CDN/TLS proxy khác phía trước — sẽ làm hỏng Origin guard của app.
+- Port `12213` không publish ra `0.0.0.0`.
+- Origin guard (`lib/origin-guard.ts`) check `PUBLIC_ORIGIN` runtime, sai 1 ký tự là mọi POST/DELETE bị từ chối. Dev có thể tắt chặn origin tập trung qua env `DISABLE_ORIGIN_CHECK=1` (đọc trong `lib/origin-guard.ts`), nhưng **tuyệt đối không đặt trên VPS** — instance này chưa auth, mở là lộ toàn bộ mutation.
 
-PDF bytes are parsed server-side and discarded: they are never written to SQLite, never logged, and never included in a backup export. What does leave the app is the extracted text (≤ 20,000 characters, of which the first 6,000 reach each prompt), sent to whichever provider endpoint the operator configured. Treat request bodies and any proxy access logs accordingly.
+## Yêu cầu
 
-## Check and recover
+- Tài khoản Docker Hub: `ngocnqph12806`.
+- VPS Ubuntu 22.04+ (kernel bất kỳ Docker hỗ trợ).
+- Domain + DNS: tạo A record `interview.your-domain.com` trỏ về IP VPS. Caddy cần verify để xin chứng chỉ.
+- Mở firewall chỉ `22`, `80`, `443`. Không mở `12213`.
+- Local: chỉ cần Docker (không cần Node).
 
-Before exposure, check an anonymous request to `/`, `/_next/*` and `/api/*` returns 401, a valid credential can reach those routes and stream SSE, and an outside host cannot connect to 12213. Check TLS renewal, redirects and the exact HTTPS Origin. The Dockerfile's healthcheck probes the app **inside its container**; it is not a public unauthenticated endpoint. Caddy disables access logging, strips proxy credentials/identity claims before upstream, sets private no-store responses and flushes SSE. Avoid enabling request headers/bodies or verbose debug logs: `x-api-key`, CV and backup payloads are sensitive. App errors and diagnostics still need separate privacy review.
+## Giai đoạn 1 — Build & push cả 2 image (chạy local / CI)
 
-Rotate access by preparing a new bcrypt line in a temporary file with the same restrictive permissions, atomically replacing the file at `AUTH_SNIPPET_PATH`, then restarting Caddy (`docker compose -f deploy/compose.yaml restart caddy`). Confirm the old password fails and the new one works; Caddy must not be bypassed during replacement. Keep a secure recovery channel (SSH + offline copy of deployment settings); if Caddy/auth/TLS breaks, close ingress at the firewall rather than publishing 12213. Recover certificate state from the Caddy volume or reissue after DNS and ports are repaired. Schedule SQLite-aware backups and test restoration on a separate volume. The browser can export/import versioned JSON for all six application tables, capped at 50 MiB of UTF-8 bytes; the file contains CV text, transcripts, raw model output and endpoint URLs. Encrypt it at rest, restrict filesystem permissions, keep it outside the repo/webroot, define retention and test a periodic restore drill on a disposable volume. For larger databases, stop/quiesce the app and use SQLite's backup mechanism or `VACUUM INTO` to obtain a consistent copy; do not copy just an open `.db` file while WAL is active. A legacy `.sql` dump is never accepted by the web API: convert it offline only on an isolated copy, review it, then export the resulting DB through a trusted migration path. The in-process restore maintenance gate assumes exactly one app process; do not add replicas sharing the SQLite volume without cross-process coordination. Before a release, practice replacing and rolling back a disposable database and confirm all six tables, sequences and foreign keys after restart; detect and alert on a full `/data` volume. Expect a restore to be refused with HTTP 409 if the database changed after the operator reviewed it — including an edit that leaves the row counts unchanged — in which case re-run the preview rather than retrying the same file. Browser backups do not replace an offline recovery copy.
+> **Quan trọng — kiến trúc CPU.** `docker build` mặc định lấy kiến trúc của máy build. Build trên Mac Apple Silicon (arm64) mà triển khai lên VPS Linux/amd64 sẽ fail với lỗi `no matching manifest for linux/amd64`. Luôn dùng `docker buildx build --platform ... --push` để vừa build đúng arch vừa đẩy lên Hub. Bump tag mới (vd `1.0.5`) thay vì đè tag cũ — manifest cũ đã tồn tại trên Hub khó rollback.
+
+```bash
+docker login -u ngocnqph12806
+
+cd "/Users/ngocshb/IdeaProjects/untitled folder"
+
+# Buildx builder dùng docker-container driver (mặc định của Docker Desktop đã sẵn sàng)
+docker buildx create --name multiarch --driver docker-container --use 2>/dev/null \
+  || docker buildx use multiarch
+
+TAG=1.0.5
+NEXT_PUBLIC_PROVIDER_ENABLE_LIST=anthropic,openai,gemini,custom
+SITE_DOMAIN_FOR_BUILD=interview.your-domain.com
+```
+
+### Cách A — multi-arch (khuyến nghị nếu có thể triển khai cả amd64 lẫn arm64)
+
+```bash
+# 1) Image app — Next.js standalone. NEXT_PUBLIC_* là build-arg → bake vào bundle.
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg NEXT_PUBLIC_PROVIDER_ENABLE=${NEXT_PUBLIC_PROVIDER_ENABLE_LIST} \
+  --build-arg NEXT_PUBLIC_BASE_URL=https://${SITE_DOMAIN_FOR_BUILD} \
+  -t ngocnqph12806/interview-ai-studio:${TAG} \
+  -t ngocnqph12806/interview-ai-studio:latest \
+  --push .
+
+# 2) Image caddy — bundle Caddyfile + caddy-entrypoint.sh.
+docker buildx build \
+  -f Dockerfile.caddy \
+  --platform linux/amd64,linux/arm64 \
+  -t ngocnqph12806/interview-ai-studio-caddy:${TAG} \
+  -t ngocnqph12806/interview-ai-studio-caddy:latest \
+  --push .
+```
+
+### Cách B — chỉ amd64 (nhanh hơn, dùng khi chắc chắn chỉ triển khai VPS x86)
+
+```bash
+docker buildx build \
+  --platform linux/amd64 \
+  --build-arg NEXT_PUBLIC_PROVIDER_ENABLE=${NEXT_PUBLIC_PROVIDER_ENABLE_LIST} \
+  --build-arg NEXT_PUBLIC_BASE_URL=https://${SITE_DOMAIN_FOR_BUILD} \
+  -t ngocnqph12806/interview-ai-studio:${TAG} \
+  -t ngocnqph12806/interview-ai-studio:latest \
+  --push .
+
+docker buildx build \
+  -f Dockerfile.caddy \
+  --platform linux/amd64 \
+  -t ngocnqph12806/interview-ai-studio-caddy:${TAG} \
+  -t ngocnqph12806/interview-ai-studio-caddy:latest \
+  --push .
+```
+
+Dùng `--push` của buildx (không `docker push` riêng) để nó tự dựng manifest list rồi đẩy 1 phát.
+
+### Kiểm tra manifest trên Hub
+
+```bash
+docker buildx imagetools inspect ngocnqph12806/interview-ai-studio:${TAG}
+docker buildx imagetools inspect ngocnqph12806/interview-ai-studio-caddy:${TAG}
+```
+
+Trong output phải thấy `linux/amd64` (và `linux/arm64` nếu chọn Cách A) trong khối `Manifests: [...]`. Nếu chỉ có `linux/arm64` nghĩa là build chưa đúng platform.
+
+Lưu ý build-arg:
+- `NEXT_PUBLIC_PROVIDER_ENABLE`: provider hiện trong dropdown. Bỏ `,custom` nếu không dùng OpenAI-compatible local.
+- `NEXT_PUBLIC_BASE_URL`: optional, dùng cho OAuth callback.
+- `ALLOW_PRIVATE_BASE_URL`, `PUBLIC_ORIGIN`, `DISABLE_ORIGIN_CHECK`, `INTERVIEW_DB_PATH` không đặt lúc build — set khi chạy container. `DISABLE_ORIGIN_CHECK` đọc runtime trong `lib/origin-guard.ts` (server-only), bật/tắt không cần rebuild image.
+
+## Giai đoạn 2 — Chuẩn bị VPS
+
+### 2.1. Cài Docker + Compose plugin
+
+```bash
+sudo apt update && sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update && sudo apt install -y \
+  docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+sudo usermod -aG docker $USER && newgrp docker
+docker --version && docker compose version
+```
+
+### 2.2. Firewall
+
+```bash
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+# 12213 không mở — chỉ Caddy nội bộ chạm được app
+```
+
+### 2.3. DNS
+
+A record `interview.your-domain.com` → IP VPS.
+
+```bash
+dig +short interview.your-domain.com
+```
+
+## Giai đoạn 3 — Deploy (chỉ pull image, không clone repo)
+
+### 3.1. Tạo secret basic-auth
+
+App chưa có auth → chặn ít nhất 1 lớp basic auth qua Caddy.
+
+```bash
+# Thư mục root-only
+sudo install -d -m 0700 /etc/interview-studio
+
+# Hash password (KHÔNG truyền plain vào shell history)
+docker run --rm -it caddy:2 caddy hash-password
+# dán password 2 lần, copy dòng bcrypt bắt đầu $2a$/$2b$/$2y$
+
+# Ghi 1 dòng duy nhất: "owner <bcrypt-hash>"
+echo "owner \$2a\$08\$......bcrypt-hash-53-ký-tự-base64......" \
+  | sudo tee /etc/interview-studio/basic-auth.users > /dev/null
+sudo chmod 0400 /etc/interview-studio/basic-auth.users
+```
+
+`caddy-entrypoint.sh` (đã bake trong image Caddy custom) enforce format: 1 dòng, `owner `<bcrypt>. Sai → Caddy từ chối start.
+
+### 3.2. Tạo file compose + env trên VPS
+
+Không clone git. Tạo 1 folder trên VPS chỉ chứa `docker-compose.yml` + `.env`:
+
+```bash
+sudo install -d -o $USER /opt
+mkdir -p /opt/interview-ai-studio && cd /opt/interview-ai-studio
+```
+
+Tạo file `docker-compose.yml`:
+
+```yaml
+# /opt/interview-ai-studio/docker-compose.yml
+services:
+  app:
+    image: ngocnqph12806/interview-ai-studio:1.0.0
+    pull_policy: always
+    environment:
+      PUBLIC_ORIGIN: https://${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+      ALLOW_PRIVATE_BASE_URL: ${ALLOW_PRIVATE_BASE_URL:-0}
+      INTERVIEW_DB_PATH: /data/interview_sessions.db
+    ports:
+      - "12213:12213"
+    volumes:
+      - interview-data:/data
+    networks: [backend]
+    restart: unless-stopped
+
+  caddy:
+    image: ngocnqph12806/interview-ai-studio-caddy:1.0.0
+    pull_policy: always
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    secrets:
+      - basic_auth_snippet
+    networks:
+      - edge
+      - backend
+    depends_on: [app]
+    restart: unless-stopped
+
+secrets:
+  basic_auth_snippet:
+    file: ${AUTH_SNIPPET_PATH:?Set AUTH_SNIPPET_PATH in .env}
+
+volumes:
+  interview-data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+  backend:
+```
+
+Tạo file `.env` cùng thư mục:
+
+```bash
+cat > /opt/interview-ai-studio/.env <<EOF
+SITE_DOMAIN=interview.your-domain.com
+AUTH_SNIPPET_PATH=/etc/interview-studio/basic-auth.users
+ALLOW_PRIVATE_BASE_URL=0
+EOF
+chmod 0600 /opt/interview-ai-studio/.env
+```
+
+`PUBLIC_ORIGIN` không đặt trong `.env` — compose tự dựng từ `SITE_DOMAIN`. Để bật cho phép custom URL trỏ về private IP (Ollama/LM Studio nội bộ), đổi `ALLOW_PRIVATE_BASE_URL=1`.
+
+### 3.3. Pull + chạy
+
+```bash
+cd /opt/interview-ai-studio
+
+docker compose pull        # pull cả 2 image từ Docker Hub
+docker compose up -d       # tạo network + named volumes, chạy app + caddy
+docker compose ps
+docker compose logs -f app
+docker compose logs -f caddy
+```
+
+Sau ~30s mở `https://interview.your-domain.com` — popup basic auth → đăng nhập bằng user `owner`.
+
+## Tổng kết cấu hình
+
+| Biến | Đặt ở đâu | Thời điểm đọc | Mục đích |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_PROVIDER_ENABLE` | `--build-arg` khi build image app | Build time | Provider hiện trong dropdown |
+| `NEXT_PUBLIC_BASE_URL` | `--build-arg` | Build time | Public URL, optional, OAuth callback |
+| `PUBLIC_ORIGIN` | Runtime env (compose tự dựng `https://${SITE_DOMAIN}`) | Mỗi request | Origin guard chống CSRF |
+| `ALLOW_PRIVATE_BASE_URL` | Runtime env, mặc định `"0"` | Mỗi request | Cho phép custom provider URL trỏ về private IP |
+| `INTERVIEW_DB_PATH` | Runtime env, mặc định `/data/interview_sessions.db` | Khi mở DB | Vị trí SQLite + WAL + SHM |
+| `DISABLE_ORIGIN_CHECK` | Dev-only, **không đặt trên VPS**. Mặc định `0` (fail-closed) | Mỗi request | Tắt chặn origin toàn app trong 1 chỗ (`lib/origin-guard.ts`). Chấp nhận `1`/`true`. Chỉ dùng local. |
+| `SITE_DOMAIN` | Biến cho compose/Caddy | Runtime | Domain TLS + sinh `PUBLIC_ORIGIN` |
+| `AUTH_SNIPPET_PATH` | Biến cho compose | Runtime | File basic-auth cho Caddy |
+
+## Kiểm tra sau khi lên
+
+```bash
+# Healthcheck nội bộ (chạy từ máy local, vì firewall chặn 12213 từ ngoài)
+docker exec interview-ai-studio-app-1 \
+  node -e "fetch('http://127.0.0.1:12213/').then(r=>process.exit(r.ok?0:1))"
+# expect exit code 0
+
+# Chứng chỉ TLS
+openssl s_client -connect interview.your-domain.com:443 -servername interview.your-domain.com \
+  </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer
+
+# Anonymous → 401
+curl -sS -o /dev/null -w "%{http_code}\n" https://interview.your-domain.com/
+
+# Có basic-auth → 200
+curl -sS -u owner:'your-plain-password' -o /dev/null -w "%{http_code}\n" \
+  https://interview.your-domain.com/
+
+# Port 12213 phải đóng từ ngoài
+nc -zv <VPS-IP> 12213    # expect connection refused
+```
+
+## Troubleshooting
+
+| Triệu chứng | Nguyên nhân / xử lý |
+| --- | --- |
+| `Error response from daemon: no matching manifest for linux/amd64 in the manifest list entries` khi `docker compose pull` | Image trên Hub chỉ có manifest cho `linux/arm64` (build từ Mac Apple Silicon, dùng `docker build` thường). Build lại với `docker buildx build --platform linux/amd64,linux/arm64 --push` (xem lại Giai đoạn 1) rồi bump tag mới trong `docker-compose.yml`. |
+| Caddy log: `Invalid Basic Auth secret; refusing to start Caddy` | File secret sai format (không phải 1 dòng, hash hỏng, thiếu newline cuối). Sửa file rồi `docker compose restart caddy`. |
+| Caddy xin TLS thất bại | DNS chưa trỏ về VPS, hoặc port 80/443 bị firewall chặn. Verify `dig +short` + `curl -I http://<domain>/.well-known/acme-challenge/...`. |
+| Browser hoặc curl trả `"Forbidden origin"` / `Invalid origin, request rejected` (POST/DELETE 403) | `lib/origin-guard.ts` so sánh `Origin` header với env `PUBLIC_ORIGIN`. Gọi thẳng `http://IP:12213/...` thường sai vì `PUBLIC_ORIGIN` đang là `https://<domain>`. Kiểm tra `docker exec interview-ai-studio-app-1 printenv PUBLIC_ORIGIN` — phải đúng scheme + host browser/curl gửi. Đường chính thức: mở app qua `https://interview.your-domain.com` (qua Caddy), không gọi thẳng port 12213. |
+| BYOK Test key fail với custom URL trỏ về IP nội bộ (vd `http://10.x.x.x:11434/v1`) | `ALLOW_PRIVATE_BASE_URL=0` (mặc định). Đổi thành `1` trong `/opt/interview-ai-studio/.env`, `docker compose up -d`. Link-local/metadata IP vẫn bị chặn. |
+| Dropdown provider thiếu `custom` | Quên `,custom` trong `--build-arg NEXT_PUBLIC_PROVIDER_ENABLE` lúc build. Build + push image app với tag mới, sửa tag trong `docker-compose.yml`, `docker compose pull app && docker compose up -d`. |
+| Custom URL → `http://localhost:11434` không gọi được | `ALLOW_PRIVATE_BASE_URL=0`. Đổi thành `1` trong `.env`, `docker compose up -d`. |
+| Container `app` restart vòng lặp | `docker compose logs app` xem chi tiết. Hay gặp khi volume `interview-data` chưa được tạo. Kiểm tra `docker volume ls`. |
+| `docker compose pull` 401/403 | Chưa `docker login` trên VPS, hoặc 1 trong 2 repo (`interview-ai-studio`, `interview-ai-studio-caddy`) chưa public. |
+| `interview-data` volume trống sau pull image mới | Volume độc lập với image → DB phải còn. Nếu trống, đã lỡ `down -v` trước đó. Phục hồi từ backup. |
+
+## Cập nhật phiên bản
+
+```bash
+# local
+docker login -u ngocnqph12806
+cd "/Users/ngocshb/IdeaProjects/untitled folder"
+NEW_TAG=1.1.0
+
+# Image app — bump tag mới (vd 1.1.0). Bám sát platform multi-arch hoặc amd64-only.
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg NEXT_PUBLIC_PROVIDER_ENABLE=anthropic,openai,gemini,custom \
+  --build-arg NEXT_PUBLIC_BASE_URL=https://interview.your-domain.com \
+  -t ngocnqph12806/interview-ai-studio:${NEW_TAG} \
+  -t ngocnqph12806/interview-ai-studio:latest \
+  --push .
+
+# Image caddy chỉ build lại khi Caddyfile / caddy-entrypoint.sh đổi.
+# Nếu không đổi, giữ nguyên tag hiện tại trên Hub.
+docker buildx build \
+  -f Dockerfile.caddy \
+  --platform linux/amd64,linux/arm64 \
+  -t ngocnqph12806/interview-ai-studio-caddy:${NEW_TAG} \
+  -t ngocnqph12806/interview-ai-studio-caddy:latest \
+  --push .
+
+# VPS
+cd /opt/interview-ai-studio
+# sửa tag trong docker-compose.yml -> ${NEW_TAG}
+docker compose pull
+docker compose up -d
+docker image prune   # dọn manifest cũ
+```
+
+`interview-data` named volume được giữ nguyên → database sống tiếp.
+
+## Sao lưu SQLite (an toàn khi WAL đang bật)
+
+App dùng `node:sqlite` ở chế độ WAL → **không copy trực tiếp `.db`** lúc container đang chạy. Dùng `.backup` API:
+
+```bash
+mkdir -p /opt/backups
+docker run --rm \
+  -v interview-ai-studio_app_data:/data:ro \
+  -v /opt/backups:/backup \
+  alpine sh -c "apk add sqlite && \
+    sqlite3 /data/interview_sessions.db \
+    \".backup /backup/interview_\$(date +%F).db\""
+```
+
+Hoặc bấm **Backup** trong trang `/history` (export JSON versioned 6 tables; bao gồm CV text, transcripts, raw model output, endpoint URLs). File chứa dữ liệu nhạy cảm — encrypt + chmod + đặt ngoài webroot.
+
+Để kiểm thử restore vào volume khác:
+
+```bash
+docker run --rm \
+  -v /opt/backups:/backup:ro \
+  -v interview-ai-studio_app_data:/target \
+  alpine sh -c "apk add sqlite && \
+    sqlite3 /target/restore.db \".restore /backup/interview_2026-10-21.db\" && \
+    chmod 0644 /target/restore.db"
+```
+
+> Backup/restore qua web API **từ chối** nếu `.sql` legacy hoặc DB đã đổi sau khi operator review → mã 409. Re-run preview, không retry nguyên file cũ.
+> In-process restore maintenance gate giả định đúng 1 app process — không add replica dùng chung volume.
+
+## Reset / rotate
+
+```bash
+# Dừng, xoá containers + network (GIỮ volume app_data)
+cd /opt/interview-ai-studio
+docker compose down
+
+# Xoá cả DB
+docker compose down -v
+
+# Rotate secret basic-auth
+HASH_NEW='$2a$08$...'    # từ `docker run --rm -it caddy:2 caddy hash-password`
+echo "owner ${HASH_NEW}" | sudo tee /etc/interview-studio/basic-auth.users > /dev/null
+sudo chmod 0400 /etc/interview-studio/basic-auth.users
+docker compose restart caddy
+```
+
+## Gate an ninh cần check trước khi lộ production data
+
+- Không đặt CDN/TLS proxy khác phía trước Caddy — `Caddyfile` đã strip mọi `X-Forwarded-*` / `Authorization` / `Cookie` / `X-Original-*` và set `Host`/`X-Forwarded-Host`/`X-Forwarded-For` từ chính nó. Lớp khác sẽ reset các header này → cần tái-evaluate.
+- Bật giám sát disk `/data` (volume + WAL sidecars đầy → healthcheck fail).
+- Bật alert khi `docker compose ps` thấy `caddy` hoặc `app` restart nhiều lần — cert không xoay được hoặc DB corrupted.
+- Định kỳ `docker compose logs caddy 2>&1 | grep -i error` để bắt certificate renewal fail.
+- `INTERVIEW_DB_PATH` mặc định `/data/interview_sessions.db` đã mount qua `app_data` named volume — không đổi sang đường dẫn khác khi chưa migrate.
