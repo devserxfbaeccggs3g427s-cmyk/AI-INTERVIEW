@@ -5,6 +5,14 @@ import Link from "next/link";
 import { Chip } from "@/components/Chip";
 import { PROVIDER_IDS, PROVIDER_REGISTRY } from "@/lib/providers/registry";
 
+/** Rows requested per page. Matches the server default so the counter math is exact. */
+const PAGE_SIZE = 50;
+
+/** GET /api/sessions response shape (cursor pagination, T-05.1).
+ *  `total` is read defensively below: the server is not required to report a
+ *  grand total yet, and every field is treated as optional at runtime. */
+type ApiListResponse = { sessions: SessionListItem[]; nextCursor: string | null; hasMore: boolean; limit: number };
+
 interface SessionListItem {
   id: string;
   role: string;
@@ -63,11 +71,24 @@ export default function HistoryPage() {
   const [items, setItems] = useState<SessionListItem[]>([]);
   const [db, setDb] = useState<DbStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  /** A background/page load while rows are already on screen. Distinct from
+   *  `loading` so the table can say "Đang tải trang tiếp…" instead of implying
+   *  the (still populated) list is empty. */
+  const [pageLoading, setPageLoading] = useState<boolean>(false);
   const [provider, setProvider] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [mode, setMode] = useState<string>("all");
   const [sort, setSort] = useState<string>("newest");
   const [q, setQ] = useState<string>("");
+  /** Network-facing copy of `q`: the input echoes keystrokes instantly, the
+   *  request only fires once the user pauses (see the debounce effect). */
+  const [debouncedQ, setDebouncedQ] = useState<string>(q);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [total, setTotal] = useState<number | null>(null);
+  /** Rows already shown on previous pages — the base of the "Đang hiển thị a–b" counter. */
+  const [pageOffset, setPageOffset] = useState<number>(0);
   const [busy, setBusy] = useState<string | null>(null);
   const busyRef = useRef(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -79,6 +100,18 @@ export default function HistoryPage() {
   const selectedFileRef = useRef<File | null>(null);
   const selectionVersion = useRef(0);
   const [now, setNow] = useState(() => Date.now());
+  /** Synchronous mirror of `cursor`: Next/Prev mutate it before calling
+   *  reload() in the same tick, where the state value captured by the
+   *  useCallback closure is still one render behind. */
+  const cursorRef = useRef<string | null>(null);
+  /** In-flight request controller; a newer reload() aborts the older one. */
+  const abortRef = useRef<AbortController | null>(null);
+  /** Monotonic request id: a response is applied only if it is still the newest. */
+  const fetchSeqRef = useRef(0);
+  /** Pages walked through, innermost last. Each entry keeps the cursor that
+   *  fetched that page AND the offset it was rendered at, so Prev restores
+   *  both without a second parallel stack. */
+  const cursorHistoryRef = useRef<{ cursor: string | null; offset: number }[]>([]);
 
   useEffect(() => {
     if (!restorePreview) return;
@@ -87,21 +120,32 @@ export default function HistoryPage() {
   }, [restorePreview]);
 
   const reload = useCallback(async (): Promise<boolean> => {
+    // AbortController is the primary race guard; the sequence number is
+    // belt-and-suspenders for the window where the response is already in
+    // flight and cannot be cancelled any more.
+    const seq = ++fetchSeqRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
+    setPageLoading(true);
     try {
       const u = new URL("/api/sessions", window.location.origin);
       if (provider !== "all") u.searchParams.set("provider", provider);
       if (status !== "all") u.searchParams.set("status", status);
       if (mode !== "all") u.searchParams.set("mode", mode);
-      if (q.trim()) u.searchParams.set("q", q.trim());
+      if (debouncedQ.trim()) u.searchParams.set("q", debouncedQ.trim());
       if (sort !== "newest") u.searchParams.set("sort", sort);
+      u.searchParams.set("limit", String(PAGE_SIZE));
+      if (cursorRef.current) u.searchParams.set("cursor", cursorRef.current);
 
       // Each fetch is wrapped so a transient failure on one route
       // (server restart, dev hot-reload, etc.) does not abort the other
-      // and does not throw an unhandled rejection into React.
+      // and does not throw an unhandled rejection into React. Aborts land
+      // here as a caught failure too — the checks below tell them apart.
       const safeFetch = async <T,>(url: string): Promise<{ ok: true; data: T } | { ok: false }> => {
         try {
-          const res = await fetch(url);
+          const res = await fetch(url, { signal: controller.signal });
           if (!res.ok) return { ok: false };
           return { ok: true, data: (await res.json()) as T };
         } catch {
@@ -110,22 +154,86 @@ export default function HistoryPage() {
       };
 
       const [r, d] = await Promise.all([
-        safeFetch<{ sessions?: SessionListItem[] }>(u.toString()),
+        safeFetch<ApiListResponse & { total?: number }>(u.toString()),
         safeFetch<DbStatus>("/api/admin/db"),
       ]);
+      // Stale answer: a newer reload() has already started (or we were
+      // aborted). Drop it instead of overwriting fresher rows with older ones.
+      if (seq !== fetchSeqRef.current || controller.signal.aborted) return false;
       // A failed fetch must never be rendered as "zero rows": after a restore
-      // that would read as if the operator had just wiped their data.
-      if (r.ok) setItems(r.data?.sessions ?? []);
+      // that would read as if the operator had just wiped their data. Equally,
+      // `items` is only replaced once the new response arrives, so a fast
+      // filter change keeps showing the previous rows instead of a flash of
+      // an empty table.
+      if (r.ok) {
+        const data = r.data;
+        setItems(data?.sessions ?? []);
+        setNextCursor(typeof data?.nextCursor === "string" && data.nextCursor ? data.nextCursor : null);
+        setHasMore(data?.hasMore === true);
+        setTotal(typeof data?.total === "number" && data.total >= 0 ? data.total : null);
+      }
       if (d.ok) setDb(d.data);
       const ok = r.ok && d.ok;
       setLoadFailed(!ok);
       return ok;
     } finally {
-      setLoading(false);
+      // Only the newest request owns the spinner.
+      if (seq === fetchSeqRef.current) {
+        setLoading(false);
+        setPageLoading(false);
+      }
     }
-  }, [provider, status, mode, sort, q]);
+  }, [provider, status, mode, sort, debouncedQ]);
 
+  // Debounce the search box. The input still echoes every keystroke (`q`); only
+  // the debounced copy reaches the request.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(q), 250);
+    return () => window.clearTimeout(timer);
+  }, [q]);
+
+  // Any filter/sort/search change invalidates the cursor: back to page 1.
+  // Declared BEFORE the reload effect on purpose — effects run in source order
+  // within a commit, so the ref reset below is already visible to the reload()
+  // the same commit fires. The state update is not applied yet, but reload()
+  // reads cursorRef.current, so the request is issued with cursor = null. A
+  // setCursor(null) landing one render late would be harmless anyway: it can
+  // only make the in-flight older request stale, and that one is aborted by the
+  // next reload() regardless.
+  useEffect(() => {
+    cursorRef.current = null;
+    cursorHistoryRef.current.length = 0;
+    setCursor(null);
+    setPageOffset(0);
+  }, [provider, status, mode, sort, debouncedQ]);
+
+  // `reload` depends on the same values as the reset effect above, so every
+  // filter/sort/search change re-fires the fetch after the cursor is cleared.
   useEffect(() => { void reload(); }, [reload]);
+
+  // Never leave a request running after unmount.
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
+
+  // Prev walks back through the cursor stack (a real "one page back" button)
+  // rather than resetting to page 1; the offset travels with the cursor so the
+  // "Đang hiển thị a–b" counter is exact in both directions.
+  const goNext = () => {
+    if (busyRef.current || pageLoading || !hasMore || !nextCursor) return;
+    cursorHistoryRef.current.push({ cursor: cursorRef.current, offset: pageOffset });
+    cursorRef.current = nextCursor;
+    setCursor(nextCursor);
+    setPageOffset(pageOffset + items.length);
+    void reload();
+  };
+
+  const goPrev = () => {
+    if (busyRef.current || pageLoading || !cursorRef.current) return;
+    const prev = cursorHistoryRef.current.pop() ?? { cursor: null, offset: 0 };
+    cursorRef.current = prev.cursor;
+    setCursor(prev.cursor);
+    setPageOffset(prev.offset);
+    void reload();
+  };
 
   const beginBusy = (action: string) => {
     if (busyRef.current) return false;
@@ -323,6 +431,36 @@ export default function HistoryPage() {
         </div>
       ) : null}
 
+      {/* Pager. Counter shows the current page range (pageOffset + 1 – pageOffset + rows);
+          with `total` reported by the server it appends the grand total. Hidden entirely on
+          an empty first page so the table never shows a lonely control row. */}
+      {items.length > 0 || hasMore || cursor !== null ? (
+        <div className="flex items-center justify-between text-on-surface-variant label-code-sm">
+          <span>
+            Đang hiển thị {pageOffset + 1}–{pageOffset + items.length}
+            {total != null ? ` / ${total}` : ""}
+          </span>
+          <div className="flex items-center gap-space-sm">
+            <button
+              className="btn btn-ghost"
+              disabled={busy !== null || pageLoading || !cursor}
+              onClick={goPrev}
+              aria-label="Trang trước"
+            >
+              ← Trước
+            </button>
+            <button
+              className="btn btn-ghost"
+              disabled={busy !== null || pageLoading || !hasMore}
+              onClick={goNext}
+              aria-label="Trang sau"
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Sessions table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
@@ -335,11 +473,21 @@ export default function HistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr><td colSpan={9} className="px-space-md py-space-md text-on-surface-variant">Đang tải…</td></tr>
-              ) : items.length === 0 ? (
+              {/* First load: nothing on screen yet, so the spinner replaces the body. */}
+              {loading && items.length === 0 ? (
+                <tr><td colSpan={9} role="status" className="px-space-md py-space-md text-on-surface-variant">Đang tải…</td></tr>
+              ) : null}
+              {/* Page/filter change: previous rows stay mounted underneath, the strip
+                  above them says work is in progress instead of blanking the table. */}
+              {pageLoading && items.length > 0 ? (
+                <tr><td colSpan={9} role="status" className="px-space-md py-space-sm text-on-surface-variant">
+                  {pageOffset > 0 ? "Đang tải trang tiếp…" : "Đang tải…"}
+                </td></tr>
+              ) : null}
+              {!loading && !pageLoading && items.length === 0 ? (
                 <tr><td colSpan={9} className="px-space-md py-space-md text-on-surface-variant">Chưa có phiên nào.</td></tr>
-              ) : items.map((s) => (
+              ) : null}
+              {items.map((s) => (
                 <tr key={s.id} className="border-b hover:bg-surface-elevated transition-colors" style={{ borderColor: "var(--border-hairline)" }}>
                   <td className="px-space-md py-space-sm"><span className="label-code-sm text-on-surface">{s.id}</span></td>
                   <td className="px-space-md py-space-sm"><span className="font-body-md text-body-md text-on-surface">{s.role}</span></td>
