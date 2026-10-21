@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { exec, query, runInTransaction } from "@/lib/db";
+import { exec, runInTransaction } from "@/lib/db";
 import { modelConfigInput, parseModelConfig } from "@/lib/providers/parse";
-import type { SessionRow } from "@/lib/types";
+import { listSessions } from "@/lib/sessions-list";
 import { MAX_CV_CHARS, validateStartSessionInput } from "@/lib/validate";
 import { extractPdfPreview, fingerprintPaste, MAX_PDF_DATA_URL_CHARS, PdfError } from "@/lib/pdf";
 // Type-only: erased at compile time, so this never drags lib/pdf's "server-only" import
@@ -15,40 +15,29 @@ import { enterOperation } from "@/lib/maintenance";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* GET — paginated history list (FR-18) */
+/* GET — paginated history list (FR-18).
+ *
+ * T-05.1: pagination is keyset-based (see lib/sessions-list.ts), not OFFSET-based.
+ * This handler only parses the query string and shapes the envelope; the SQL and
+ * cursor handling live in one place so they cannot drift apart. */
 export async function GET(req: Request) {
   const u = new URL(req.url);
-  const provider = u.searchParams.get("provider") || "all";
-  const status = u.searchParams.get("status") || "all";
-  const mode = u.searchParams.get("mode") || "all";
-  const q = (u.searchParams.get("q") || "").trim();
-  const sort = u.searchParams.get("sort") || "newest";
-  const limit = Math.min(100, Math.max(1, Number(u.searchParams.get("limit") || 50)));
+  const requestedLimit = Number(u.searchParams.get("limit") ?? 50);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(100, Math.max(1, Math.floor(requestedLimit)))
+    : 50;
 
-  const clauses: string[] = [];
-  const params: unknown[] = [];
-  if (provider !== "all") { clauses.push("s.provider = ?"); params.push(provider); }
-  if (status !== "all")    { clauses.push("s.status = ?");   params.push(status); }
-  if (mode !== "all")      { clauses.push("s.mode = ?");     params.push(mode); }
-  if (q)                   { clauses.push("(s.id LIKE ? OR s.role LIKE ? OR s.cv_filename LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const { sessions, nextCursor, hasMore } = listSessions({
+    provider: u.searchParams.get("provider") || "all",
+    status: u.searchParams.get("status") || "all",
+    mode: u.searchParams.get("mode") || "all",
+    q: (u.searchParams.get("q") || "").trim(),
+    sort: u.searchParams.get("sort") || "newest",
+    limit,
+    cursor: u.searchParams.get("cursor"),
+  });
 
-  const order = sort === "score" ? "e.overall_score DESC NULLS LAST, s.created_at DESC"
-              : sort === "duration" ? "COALESCE(s.ended_at, strftime('%s','now')) - s.created_at DESC"
-              : "s.created_at DESC";
-
-  const rows = query<SessionRow>(
-    `SELECT s.*, e.overall_score, e.recommendation,
-      (SELECT COUNT(*) FROM message_turns m WHERE m.session_id = s.id AND m.role = 'user') AS evaluated_turns
-     FROM sessions s
-     LEFT JOIN evaluations e ON e.session_id = s.id
-     ${where}
-     ORDER BY ${order}
-     LIMIT ?`,
-    [...params, limit],
-  );
-
-  return privateJson({ sessions: rows });
+  return privateJson({ sessions, nextCursor, hasMore, limit });
 }
 
 /* POST — atomic session creation (T-03.3). */
