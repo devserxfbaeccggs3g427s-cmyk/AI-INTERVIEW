@@ -11,6 +11,7 @@ import type { PdfPreview } from "@/lib/pdf";
 import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { enterOperation } from "@/lib/maintenance";
+import { FocusSchema } from "@/lib/focus";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ const Body = modelConfigInput.extend({
   language: z.enum(["vi", "en"]),
   mode: z.enum(["strict", "coaching"]),
   plannedRounds: z.union([z.literal(5), z.literal(8), z.literal(12)]),
+  focus: FocusSchema.default([]),
   cvSource: z.enum(["none", "paste", "pdf"]),
   // Server still length-checks cvText below; +100 headroom means the in-route
   // check produces a real "exceeds the 20,000 character limit" instead of a
@@ -143,14 +145,15 @@ export async function POST(req: Request) {
       try {
         runInTransaction("IMMEDIATE", () => {
           exec(
-            `INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, base_url, temperature, max_tokens, top_p, cv_source, cv_filename)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO sessions (id, role, language, mode, planned_rounds, focus_json, provider, model, base_url, temperature, max_tokens, top_p, cv_source, cv_filename)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               body.role.trim(),
               body.language,
               body.mode,
               body.plannedRounds,
+              JSON.stringify(body.focus),
               cfg.provider,
               cfg.model,
               cfg.base_url ?? null,

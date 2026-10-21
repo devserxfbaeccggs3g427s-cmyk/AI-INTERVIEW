@@ -35,9 +35,9 @@ beforeEach(() => {
 });
 
 function seed(): void {
-  appDb.prepare(`INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, status)
-      VALUES (?, ?, 'vi', 'coaching', 2, 'custom', 'model', 'completed')`)
-    .run("sess_α", "restart-role");
+  appDb.prepare(`INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, status, focus_json)
+      VALUES (?, ?, 'vi', 'coaching', 2, 'custom', 'model', 'completed', ?)`)
+    .run("sess_α", "restart-role", '["questions"]');
   appDb.prepare(`INSERT INTO message_turns (session_id, turn_number, role, content)
       VALUES (?, 1, 'assistant', ?)`).run("sess_α", "q1; ' Ω");
   appDb.prepare(`INSERT INTO cv_extracts (session_id, source, text, char_count)
@@ -65,7 +65,7 @@ try {
   const db = new DatabaseSync(path);
   try {
     const version = db.prepare("PRAGMA user_version").get().user_version;
-    const session = db.prepare("SELECT role FROM sessions WHERE id = ?").get(sessionId);
+    const session = db.prepare("SELECT role, focus_json FROM sessions WHERE id = ?").get(sessionId);
     const maxRow = db.prepare("SELECT MAX(id) AS id FROM message_turns").get();
     const beforeMaxId = maxRow && maxRow.id !== null ? maxRow.id : 0;
     const beforeCounts = {
@@ -83,6 +83,7 @@ try {
       ok: true,
       version,
       sessionRole: session && session.role !== undefined ? session.role : null,
+      focusJson: session && session.focus_json !== undefined ? session.focus_json : null,
       sessionFound: !!session,
       beforeMaxId,
       newRowId: newRow.id,
@@ -139,7 +140,8 @@ test("restore survives a real child-process restart and AUTOINCREMENT continues 
   assert.equal(status, 0, `child must exit zero (stderr=${stderr})`);
   assert.equal(payload.ok, true, `child reported failure: ${JSON.stringify(payload)}`);
 
-  assert.equal(payload.version, 1, "PRAGMA user_version must be 1 after restore");
+  assert.equal(payload.version, 2, "PRAGMA user_version must be 2 after restore");
+  assert.equal(payload.focusJson, '["questions"]');
   assert.equal(payload.sessionFound, true, "restored session row must be visible to the child");
   assert.equal(payload.sessionRole, "restart-role", "Unicode/control-character content must round-trip through disk");
 

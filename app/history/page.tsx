@@ -31,6 +31,10 @@ interface SessionListItem {
   evaluated_turns: number;
 }
 
+function comparableRole(role: string): string {
+  return role.trim().replace(/\s+/gu, " ").toLowerCase();
+}
+
 interface DbStatus { ok: boolean; dbPath: string; counters?: RestoreCounts }
 
 const RESTORE_TABLES = ["sessions", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "model_configs"] as const;
@@ -69,6 +73,8 @@ function expiryTime(value: string | number): number {
 
 export default function HistoryPage() {
   const [items, setItems] = useState<SessionListItem[]>([]);
+  /** Keep the selected summaries across cursor pages and filters, never the full list rows. */
+  const [compareSelection, setCompareSelection] = useState<Pick<SessionListItem, "id" | "role">[]>([]);
   const [db, setDb] = useState<DbStatus | null>(null);
   const [loading, setLoading] = useState(true);
   /** A background/page load while rows are already on screen. Distinct from
@@ -265,6 +271,7 @@ export default function HistoryPage() {
       } else {
         const result = await res.json();
         if (result.ok !== true) throw new Error(result.error ?? "Thao tác thất bại.");
+        if (action === "wipe-all" || action === "wipe-sessions") setCompareSelection([]);
         setMsg(`Đã chạy ${action}.`);
         await reload();
       }
@@ -342,6 +349,7 @@ export default function HistoryPage() {
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setReplaceAcknowledged(false);
+      setCompareSelection([]);
       const reloaded = await reload();
       setMsg(reloaded
         ? "Đã phục hồi dữ liệu. Danh sách và thống kê đã được tải lại."
@@ -358,6 +366,7 @@ export default function HistoryPage() {
     try {
       const res = await fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) throw await responseError(res);
+      setCompareSelection((selected) => selected.filter((s) => s.id !== id));
       setMsg("Đã xoá phiên.");
       await reload();
     } catch (e) {
@@ -365,6 +374,15 @@ export default function HistoryPage() {
     } finally {
       endBusy();
     }
+  };
+
+  const toggleCompare = (s: SessionListItem) => {
+    setCompareSelection((selected) => {
+      if (selected.some((picked) => picked.id === s.id)) return selected.filter((picked) => picked.id !== s.id);
+      if (s.status !== "completed" || selected.length >= 2 ||
+          (selected.length === 1 && comparableRole(selected[0].role) !== comparableRole(s.role))) return selected;
+      return [...selected, { id: s.id, role: s.role }];
+    });
   };
 
   return (
@@ -431,6 +449,22 @@ export default function HistoryPage() {
         </div>
       ) : null}
 
+      <div className="card p-space-md flex flex-wrap items-center gap-space-sm" aria-label="Chọn hai phiên để so sánh">
+        <div className="flex-1 min-w-[220px]">
+          <p className="font-body-md text-body-md text-on-surface">So sánh hai báo cáo cùng vị trí</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">Chọn A rồi B trong danh sách phiên hoàn tất. Lựa chọn được giữ khi chuyển trang hoặc lọc.</p>
+          <p className="font-body-sm text-body-sm text-on-surface-variant">
+            A: {compareSelection[0]?.role ?? "Chưa chọn"} {compareSelection[0] ? `(${compareSelection[0].id})` : ""} · B: {compareSelection[1]?.role ?? "Chưa chọn"} {compareSelection[1] ? `(${compareSelection[1].id})` : ""}
+          </p>
+        </div>
+        {compareSelection.length === 2 ? (
+          <Link className="btn btn-primary" href={`/compare?a=${encodeURIComponent(compareSelection[0].id)}&b=${encodeURIComponent(compareSelection[1].id)}`}>
+            So sánh A và B
+          </Link>
+        ) : null}
+        {compareSelection.length > 0 ? <button type="button" className="btn btn-ghost" onClick={() => setCompareSelection([])}>Bỏ chọn</button> : null}
+      </div>
+
       {/* Pager. Counter shows the current page range (pageOffset + 1 – pageOffset + rows);
           with `total` reported by the server it appends the grand total. Hidden entirely on
           an empty first page so the table never shows a lonely control row. */}
@@ -467,7 +501,7 @@ export default function HistoryPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--border-hairline)" }}>
-                {["ID", "Vị trí", "Provider / Model", "Trạng thái", "Chế độ", "Câu", "Điểm", "Ngày tạo", ""].map((h) => (
+                {["So sánh", "ID", "Vị trí", "Provider / Model", "Trạng thái", "Chế độ", "Câu", "Điểm", "Ngày tạo", ""].map((h) => (
                   <th key={h} scope="col" className="px-space-md py-space-sm label-caps text-on-surface-variant uppercase">{h}</th>
                 ))}
               </tr>
@@ -475,20 +509,31 @@ export default function HistoryPage() {
             <tbody>
               {/* First load: nothing on screen yet, so the spinner replaces the body. */}
               {loading && items.length === 0 ? (
-                <tr><td colSpan={9} role="status" className="px-space-md py-space-md text-on-surface-variant">Đang tải…</td></tr>
+                <tr><td colSpan={10} role="status" className="px-space-md py-space-md text-on-surface-variant">Đang tải…</td></tr>
               ) : null}
               {/* Page/filter change: previous rows stay mounted underneath, the strip
                   above them says work is in progress instead of blanking the table. */}
               {pageLoading && items.length > 0 ? (
-                <tr><td colSpan={9} role="status" className="px-space-md py-space-sm text-on-surface-variant">
+                <tr><td colSpan={10} role="status" className="px-space-md py-space-sm text-on-surface-variant">
                   {pageOffset > 0 ? "Đang tải trang tiếp…" : "Đang tải…"}
                 </td></tr>
               ) : null}
               {!loading && !pageLoading && items.length === 0 ? (
-                <tr><td colSpan={9} className="px-space-md py-space-md text-on-surface-variant">Chưa có phiên nào.</td></tr>
+                <tr><td colSpan={10} className="px-space-md py-space-md text-on-surface-variant">Chưa có phiên nào.</td></tr>
               ) : null}
               {items.map((s) => (
                 <tr key={s.id} className="border-b hover:bg-surface-elevated transition-colors" style={{ borderColor: "var(--border-hairline)" }}>
+                  <td className="px-space-md py-space-sm">
+                    <input
+                      type="checkbox"
+                      aria-label={`Chọn phiên ${s.id} để so sánh`}
+                      checked={compareSelection.some((picked) => picked.id === s.id)}
+                      disabled={pageLoading || busy !== null || s.status !== "completed" ||
+                        (compareSelection.length >= 2 && !compareSelection.some((picked) => picked.id === s.id)) ||
+                        (compareSelection.length > 0 && !compareSelection.some((picked) => picked.id === s.id) && comparableRole(compareSelection[0].role) !== comparableRole(s.role))}
+                      onChange={() => toggleCompare(s)}
+                    />
+                  </td>
                   <td className="px-space-md py-space-sm"><span className="label-code-sm text-on-surface">{s.id}</span></td>
                   <td className="px-space-md py-space-sm"><span className="font-body-md text-body-md text-on-surface">{s.role}</span></td>
                   <td className="px-space-md py-space-sm"><span className="label-code-sm text-on-surface-variant">{s.provider} · {s.model}</span></td>

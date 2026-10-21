@@ -23,20 +23,23 @@ loader._load = function (id: string, ...args: [unknown, boolean?]) {
 
 type DbModule = typeof import("./db");
 type SessionRoute = typeof import("../app/api/sessions/route");
+type SessionDetailRoute = typeof import("../app/api/sessions/[id]/route");
 type PdfModule = typeof import("./pdf");
 type ValidateModule = typeof import("./validate");
 type MaintenanceModule = typeof import("./maintenance");
 
 let db: DbModule;
 let route: SessionRoute;
+let detail: SessionDetailRoute;
 let pdf: PdfModule;
 let validate: ValidateModule;
 let maintenance: MaintenanceModule;
 
 before(async () => {
-    [db, route, pdf, validate, maintenance] = await Promise.all([
+    [db, route, detail, pdf, validate, maintenance] = await Promise.all([
         import("./db"),
         import("../app/api/sessions/route"),
+        import("../app/api/sessions/[id]/route"),
         import("./pdf"),
         import("./validate"),
         import("./maintenance"),
@@ -87,6 +90,7 @@ function validBody(over: Partial<{
     cvFilename: string;
     cvDataUrl: string;
     previewDigest: string;
+    focus: unknown;
 }> = {}) {
     return {
         ...validConfig(),
@@ -150,6 +154,27 @@ test("happy paste: writes sessions + cv_extracts (paste) + model_configs exactly
     assert.ok(cfg);
     assert.equal(cfg.model, "test-model");
     assert.equal(cfg.temperature, 0.5);
+});
+
+test("focus is normalized and snapshotted with the new session", async () => {
+    const focus = ["  transactions  ", "Retries & idempotency"];
+    const res = await route.POST(post("sessions", validBody({focus})));
+    const json = await readJson(res);
+    assert.equal(res.status, 200, JSON.stringify(json));
+    const session = db.queryOne<{focus_json: string}>("SELECT focus_json FROM sessions WHERE id = ?", [json.sessionId]);
+    assert.deepEqual(JSON.parse(session!.focus_json), ["transactions", "Retries & idempotency"]);
+    const response = await detail.GET(new Request(`${ORIGIN}/api/sessions/${json.sessionId}`), {params: {id: json.sessionId}});
+    assert.deepEqual((await response.json()).session.focus, ["transactions", "Retries & idempotency"]);
+    assert.equal(tableCount("cv_extracts"), 1);
+});
+
+test("focus limits reject malformed or oversized input without any writes", async () => {
+    for (const focus of [["x".repeat(121)], ["one", "two", "three", "four"], ["  "], "not-array"]) {
+        const res = await route.POST(post("sessions", validBody({focus})));
+        assert.equal(res.status, 400, JSON.stringify(await readJson(res)));
+        assert.equal(tableCount("sessions"), 0);
+        assert.equal(tableCount("model_configs"), 0);
+    }
 });
 
 test("happy pdf: stubbed parser yields text; no base64 / signature leak in DB", async () => {

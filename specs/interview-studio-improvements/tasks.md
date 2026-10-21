@@ -108,13 +108,32 @@
 
 ## T-06 — Vòng luyện tập + so sánh hai báo cáo (P2) → RQ-06; D-06
 
-- [ ] **T-06.1 / migration:** mở rộng sessions với `focus_json` mặc định `[]`, migration có version/rollback, validate tối đa 3 × 120 ký tự; test mở DB v1 cũ và v2 mới, không ảnh hưởng dữ liệu/báo cáo cũ.
-- [ ] **T-06.2 / tạo phiên:** `/new` thêm focus sửa/xóa được, nhận prefill từ CTA report nhưng không CV/key; API tạo session snapshot focus, prompt dùng như *dữ liệu ưu tiên* (không tin là system instruction); test prompt, length/escaping, state phiên sau reload.
-- [ ] **T-06.3 / report CTA:** `improvements`/`next_steps` có nút “Luyện chủ đề này”, giới hạn/sanitize text AI, prefill role/language/focus, không tự POST. Test click không truyền transcript/CV/API key.
-- [ ] **T-06.4 / compare:** từ lịch sử chọn đúng 2 phiên completed cùng role; validate report server-side, UI điểm tổng + 4 trụ, delta B−A, provider/model/số câu/ngày, cảnh báo không tương đồng và trạng thái thiếu report. Không gọi model để vẽ compare; test các trường hợp 0/100, thiếu report, khác provider/rounds, role khác.
+- [x] **T-06.1 / migration:** mở rộng sessions với `focus_json` mặc định `[]`, migration có version/rollback, validate tối đa 3 × 120 ký tự; test mở DB v1 cũ và v2 mới, không ảnh hưởng dữ liệu/báo cáo cũ.
+- [x] **T-06.2 / tạo phiên:** `/new` thêm focus sửa/xóa được, nhận prefill từ CTA report nhưng không CV/key; API tạo session snapshot focus, prompt dùng như *dữ liệu ưu tiên* (không tin là system instruction); test prompt, length/escaping, state phiên sau reload.
+- [x] **T-06.3 / report CTA:** `improvements`/`next_steps` có nút “Luyện chủ đề này”, giới hạn/sanitize text AI, prefill role/language/focus, không tự POST. Test click không truyền transcript/CV/API key.
+- [x] **T-06.4 / compare:** từ lịch sử chọn đúng 2 phiên completed cùng role; validate report server-side, UI điểm tổng + 4 trụ, delta B−A, provider/model/số câu/ngày, cảnh báo không tương đồng và trạng thái thiếu report. Không gọi model để vẽ compare; test các trường hợp 0/100, thiếu report, khác provider/rounds, role khác.
 
 **Đụng tới:** `lib/db.ts`, `lib/types.ts`, `lib/prompts.ts`, `lib/zod-schemas.ts`, `app/api/sessions/route.ts`, `app/new/page.tsx`, `app/report/[id]/page.tsx`, `app/history/page.tsx`, route/page compare mới và tests.  
 **DoD:** CTA tạo được phiên do người dùng xác nhận, dữ liệu cũ vẫn đọc được, so sánh không tuyên bố nhân quả.
+
+**Bằng chứng T-06.1:** `lib/db.ts` nâng schema lên `SCHEMA_VERSION=2` với `focus_json TEXT NOT NULL DEFAULT '[]'`, `PRAGMA user_version` kiểm tra trước DDL, transaction `BEGIN IMMEDIATE` quanh upgrade, rollback khi lỗi; `lib/focus-migration.test.ts` (5 test) — fresh DB mở ở v2, v1 cũ upgrade giữ rows/reports, version tương lai từ chối trước khi ghi, migration lỗi rollback cả schema lẫn data. Validate tối đa 3 × 120 ở `lib/focus.ts` và `lib/backup.ts` parse (file `lib/backup.test.ts` "counts, unknown fields, versions, invalid UTF-8…" và `"strict v1 backup restores with empty focus"`). DB thật `data/interview_sessions.db` chưa đụng, MD5 = `90f4eba279714523f63419881517e982`. Rollback offline mô tả trong comment `lib/db.ts` (backup v1 trước upgrade khi app dừng) — không có destructive live down-migration.
+
+**Bằng chứng T-06.2:** `app/api/sessions/route.ts:51` `focus: FocusSchema.default([])` trong Body strict và INSERT snapshot `JSON.stringify(body.focus)` vào `focus_json` trong cùng transaction. `app/new/page.tsx` — focus chỉnh sửa/xóa/thêm (tối đa 3), submit chỉ chạy khi người dùng click, không auto-POST khi nhận CTA. `lib/prompts.ts:36` `FocusSchema.safeParse(ctx.focus ?? [])` rồi nhúng vào prompt như khối "Practice focus" được trích dẫn rõ ràng và được nhắc là untrusted data. `GET /api/sessions/[id]` chỉ đọc `focus_json` qua `parseStoredFocus()`; `/messages` chỉ dùng `focus` từ session row đã lưu, không dùng client mutable field. Tests: `lib/focus-prompt.test.ts` (focus hợp lệ thành quoted untrusted, invalid focus bị bỏ), `lib/sessions-create.test.ts` (focus normalize + snapshot, focus malformed/oversize từ chối không ghi DB).
+
+**Bằng chứng T-06.3:** `app/report/[id]/page.tsx` chỉ import `encodePracticePrefill` + `practiceFocusLabel` từ `lib/practice-prefill.ts`; encoder chỉ nhận `role`/`language`/`focus` (không có cách nào nhận CV/key/transcript). Label đã strip HTML/URL/control/markdown trước khi cắt 120 ký tự và qua `FocusSchema.safeParse`. URL prefill tối đa 8192 ký tự. `/new` không tự POST khi đọc prefill. Tests: `lib/practice-prefill.test.ts` (5 test) — short URI round-trip Unicode, max-length multibyte focus+role round-trip, label stripping, decoder từ chối field lạ/trùng/oversize/control, query không bao giờ mang CV/key/transcript.
+
+**Bằng chứng T-06.4:** `app/api/compare/route.ts` dùng `privateJson` + `compareSessions()`; `lib/compare.ts` chọn 2 ID well-formed khác nhau, bắt buộc `status='completed'` và `report_json` pass `safeParseStoredReport()` (404/409/422 lỗi rõ). `normalizeCompareRole` dùng `trim` + `\s+` collapse + `toLowerCase()` (locale-independent; client `app/history/page.tsx:35` dùng cùng công thức). UI ở `app/compare/page.tsx` hiển thị overall + 4 pillar với delta B−A, metadata + cảnh báo mô tả khi provider/model/planned_rounds/answered_turns lệch. Không gọi provider khi render compare — chỉ đọc SQLite + `safeParseStoredReport`. Tests: `lib/compare.test.ts` (6 test) — 0/100 deltas, no role leakage từ report vào JSON trả về, role locale độc lập, validation trước khi truy cập DB, ID absent/active/missing/invalid/different-role trả status tương ứng, planned_rounds cảnh báo dù answered_turns bằng.
+
+**Tổng verification:**
+- `npm run typecheck`: pass clean.
+- `npm test`: pass 80/80 network (`.mjs`) + 132/132 TypeScript (`.ts`).
+- `npm run build`: pass, route table có `/api/compare` và `/compare`.
+- `git diff --check`: sạch.
+- `data/interview_sessions.db`: checksum `90f4eba2…` không đổi.
+
+**Chưa kiểm chứng trong phạm vi T-06 (giữ checklist liên quan mở tới khi có bằng chứng):**
+- Chưa chạy browser E2E (repo không có jsdom/Playwright): không test thực sự bấm CTA mở `/new` với prefill đúng, điền focus sửa, đồng ý tạo phiên trên trình duyệt; chưa chọn 2 phiên ở `/history` rồi mở `/compare` thực sự render. Phần code đã được đối chiếu + typecheck + build.
+- Chưa có VPS smoke (T-07); phiên cũ không có focus vẫn hoạt động trong test, nhưng DB thật chưa chạy migration thực — migration v1→v2 chỉ verify trên DB temp `lib/focus-migration.test.ts`; khi deploy lần đầu sẽ cần thủ tục backup offline theo `lib/db.ts` comment trước khi nâng app.
 
 ## T-07 — Phát hành và vận hành VPS (P0 release gate) → mọi RQ; D-07
 

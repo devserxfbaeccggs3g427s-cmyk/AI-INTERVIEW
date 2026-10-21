@@ -14,6 +14,7 @@ import type { MessageTurnRow, SessionRow } from "@/lib/types";
 import { env } from "@/lib/env";
 import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { enterOperation } from "@/lib/maintenance";
+import { parseStoredFocus } from "@/lib/focus";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,6 +109,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     mode: session.mode,
     plannedRounds: session.planned_rounds,
     turnNumber: questionTurn,
+    focus: parseStoredFocus(session.focus_json),
     cvText: cv?.text,
   };
 

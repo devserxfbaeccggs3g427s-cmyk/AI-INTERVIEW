@@ -3,6 +3,7 @@ import type { MessageTurnRow, SessionRow } from "@/lib/types";
 import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { enterOperation } from "@/lib/maintenance";
+import { parseStoredFocus } from "@/lib/focus";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     `SELECT source, filename, text, char_count FROM cv_extracts WHERE session_id = ? ORDER BY id DESC LIMIT 1`,
     [params.id],
   );
-  return privateJson({ session, turns, cv });
+  return privateJson({ session: { ...session, focus: parseStoredFocus(session.focus_json) }, turns, cv });
 }
 
 export async function DELETE(req: Request, { params }: RouteParams) {

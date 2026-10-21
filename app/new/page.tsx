@@ -6,6 +6,8 @@ import { useByok } from "@/components/ByokConfigContext";
 import { Chip } from "@/components/Chip";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { getProviderSpec, isProviderEnabled } from "@/lib/providers/registry";
+import { FocusSchema } from "@/lib/focus";
+import { decodePracticePrefill } from "@/lib/practice-prefill";
 
 const ROLE_SUGGESTIONS = [
   "Senior Frontend (React/TS)",
@@ -65,6 +67,7 @@ export default function StartInterviewPage() {
   const [lang, setLang] = useState<Lang>("vi");
   const [mode, setMode] = useState<Mode>("coaching");
   const [rounds, setRounds] = useState<Rounds>(8);
+  const [focus, setFocus] = useState<string[]>([]);
   const [cvSource, setCvSource] = useState<CvSource>("none");
   const [cvText, setCvText] = useState("");
   const [cvFilename, setCvFilename] = useState<string | null>(null);
@@ -80,6 +83,15 @@ export default function StartInterviewPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   // Track the in-flight preview request to discard stale responses on re-pick.
   const previewSeq = useRef(0);
+
+  // Parse the navigation URL only after mount; no search-param hook or implicit POST.
+  useEffect(() => {
+    const prefill = decodePracticePrefill(window.location.search);
+    if (!prefill) return;
+    setRole(prefill.role);
+    setLang(prefill.language);
+    setFocus(prefill.focus);
+  }, []);
 
   // Block submit if no BYOK config
   useEffect(() => {
@@ -239,6 +251,8 @@ export default function StartInterviewPage() {
   const submit = async () => {
     setError(null);
     if (role.trim().length < 2) { setError("Vui lòng nhập vị trí ứng tuyển (≥ 2 ký tự)"); return; }
+    const parsedFocus = FocusSchema.safeParse(focus.map((item) => item.trim()));
+    if (!parsedFocus.success) { setError("Tối đa 3 chủ đề, mỗi chủ đề từ 1 đến 120 ký tự."); return; }
     if (cvSource === "paste") {
       if (cvText.length === 0) { setError("Vui lòng dán nội dung CV"); return; }
       if (cvText.length > MAX_CV_CHARS) { setError(`CV vượt quá ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự`); return; }
@@ -271,6 +285,7 @@ export default function StartInterviewPage() {
         topP: cfg.topP,
         role: role.trim(),
         language: lang,
+        focus: parsedFocus.data,
         mode,
         plannedRounds: rounds,
         cvSource,
@@ -304,6 +319,7 @@ export default function StartInterviewPage() {
   // Submit gating (extra — keeps the button disabled until preconditions hold).
   const submitDisabled =
     submitting
+    || !FocusSchema.safeParse(focus.map((item) => item.trim())).success
     || (cvSource === "paste" && cvText.length > MAX_CV_CHARS)
     || (cvSource === "paste" && cvText.length === 0)
     || (cvSource === "pdf" && (!pdfDataUrl || !pdfPreview || !previewDigest || pdfLoading));
@@ -352,6 +368,41 @@ export default function StartInterviewPage() {
                 ))}
               </div>
             </div>
+          </StepCard>
+
+          <StepCard step="+" label="TÙY CHỌN · LUYỆN TẬP" title="Chủ đề cần luyện (Focus)" right={
+            <span className="label-code-sm text-on-surface-variant">{focus.length} / 3 chủ đề</span>
+          }>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              Gợi ý từ báo cáo chỉ là dữ liệu tham khảo. Bạn có thể sửa, xóa hoặc thêm chủ đề trước khi chủ động bắt đầu phiên mới.
+            </p>
+            {focus.map((item, index) => (
+              <div key={index} className="flex items-center gap-space-xs">
+                <input
+                  className="input flex-1 min-w-0"
+                  aria-label={`Chủ đề luyện tập ${index + 1}`}
+                  maxLength={120}
+                  value={item}
+                  onChange={(e) => setFocus((current) => current.map((value, i) => i === index ? e.target.value : value))}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  aria-label={`Xóa chủ đề luyện tập ${index + 1}`}
+                  onClick={() => setFocus((current) => current.filter((_, i) => i !== index))}
+                >
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+                </button>
+              </div>
+            ))}
+            {focus.length < 3 ? (
+              <button type="button" className="btn btn-ghost self-start" onClick={() => setFocus((current) => [...current, ""])}>
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Thêm chủ đề
+              </button>
+            ) : null}
+            {focus.some((item) => !item.trim()) ? (
+              <p className="font-body-sm text-body-sm text-error" role="alert">Nhập chủ đề hoặc xóa dòng trống trước khi bắt đầu.</p>
+            ) : null}
           </StepCard>
 
           <StepCard step="2" label="FR-1 · LỰA CHỌN 2" title="Ngôn ngữ phỏng vấn (Language)">

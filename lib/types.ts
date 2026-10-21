@@ -35,6 +35,7 @@ export interface SessionRow extends ModelConfig {
   evaluation_started_at: number | null;
   evaluation_attempt_id: string | null;
   rubric_json: string | null;
+  focus_json: string;
   error_count: number;
   /** Joined-in evaluation summary (if any). */
   overall_score?: number | null;

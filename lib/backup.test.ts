@@ -35,9 +35,9 @@ beforeEach(() => {
 
 function seed(): void {
   db.prepare(`INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model,
-      rubric_json, evaluation_started_at, evaluation_attempt_id, status)
-      VALUES (?, ?, 'vi', 'coaching', 2, 'custom', 'model', ?, 123, 'attempt;1', 'completed')`)
-    .run("sess_α", "Role 'quoted' ;\n新", "{\"micro\":\"line\\n;\"}");
+      rubric_json, evaluation_started_at, evaluation_attempt_id, status, focus_json)
+      VALUES (?, ?, 'vi', 'coaching', 2, 'custom', 'model', ?, 123, 'attempt;1', 'completed', ?)`)
+    .run("sess_α", "Role 'quoted' ;\n新", "{\"micro\":\"line\\n;\"}", '["Practice ;\\n Unicode 新"]');
   db.prepare(`INSERT INTO message_turns (session_id, turn_number, role, content, raw_blocks_json)
       VALUES (?, 1, 'assistant', ?, ?)`).run("sess_α", "question\n; ' Ω", '{"blocks":";\\n"}');
   db.prepare(`INSERT INTO cv_extracts (session_id, source, text, char_count) VALUES (?, 'paste', ?, ?)`)
@@ -64,7 +64,8 @@ function expectRejected(data: BackupData, matcher: RegExp): void {
 
 test("empty backup has all six tables, exact counts, and supported version", () => {
   const data = snapshot();
-  assert.equal(data.schemaVersion, 1);
+  assert.equal(data.formatVersion, 1);
+  assert.equal(data.schemaVersion, 2);
   assert.deepEqual(Object.keys(data.tables), [...backup.TABLE_NAMES]);
   assert.deepEqual(data.counts, backup.getBackupCounts());
   assert.ok(Object.values(data.counts).every((n) => n === 0));
@@ -76,6 +77,7 @@ test("WAL snapshot round-trips six tables and migrated columns, including NULL a
   const original = snapshot();
   assert.deepEqual(Object.values(original.counts), [1, 1, 1, 1, 1, 1]);
   assert.equal(original.tables.sessions[0].evaluation_started_at, 123);
+  assert.equal(original.tables.sessions[0].focus_json, '["Practice ;\\n Unicode 新"]');
   assert.equal(original.tables.sessions[0].base_url, null);
   assert.match(original.tables.message_turns[0].content, /Ω/);
   assert.equal(JSON.stringify(original).includes("api_key"), false);
@@ -104,7 +106,11 @@ test("counts, unknown fields, versions, invalid UTF-8, SQL, and oversized files 
   expectRejected(modified(data, (d) => { d.counts.sessions++; }), /counts/);
   expectRejected(modified(data, (d) => { (d.tables.sessions[0] as object as Record<string, string>).api_key = "never"; }), /schema/);
   expectRejected(modified(data, (d) => { d.formatVersion = 2 as 1; }), /version/);
-  expectRejected(modified(data, (d) => { d.schemaVersion = 2 as 1; }), /version/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 3 as 2; }), /version/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 1 as 2; }), /schema/);
+  expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["", "invalid"]'; }), /schema/);
+  expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["a","b","c","d"]'; }), /schema/);
+  expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = JSON.stringify(["x".repeat(121)]); }), /schema/);
   expectRejected(modified(data, (d) => { (d.tables as object as Record<string, unknown>).unknown = []; }), /schema/);
   expectRejected(modified(data, (d) => { delete (d.tables as object as Record<string, unknown>).evaluation_attempts; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.message_turns[0].id = Number.MAX_SAFE_INTEGER + 1; }), /schema/);
@@ -113,6 +119,49 @@ test("counts, unknown fields, versions, invalid UTF-8, SQL, and oversized files 
   assert.throws(() => backup.parseBackup(Buffer.from("{\"format\": \"broken\"")), /JSON/);
   assert.throws(() => backup.parseBackup(Uint8Array.of(0xff, 0xfe)), /UTF-8/);
   assert.throws(() => backup.parseBackup(new Uint8Array(backup.BACKUP_MAX_BYTES + 1)), (e: unknown) => e instanceof backup.BackupError && e.status === 413);
+});
+
+test("strict v1 backup restores with empty focus, preserving reports and attempts", () => {
+  seed();
+  const v2 = snapshot();
+  const old = structuredClone(v2) as unknown as Record<string, unknown>;
+  old.schemaVersion = 1;
+  const tables = old.tables as { sessions: Record<string, unknown>[] };
+  for (const row of tables.sessions) delete row.focus_json;
+  const bytes = Buffer.from(JSON.stringify(old));
+  const upgraded = backup.parseBackup(bytes);
+  assert.equal(upgraded.schemaVersion, 2);
+  assert.equal(upgraded.tables.sessions[0].focus_json, "[]");
+  backup.restoreBackup(upgraded);
+  assert.equal(snapshot().tables.sessions[0].focus_json, "[]");
+  assert.deepEqual(snapshot().tables.evaluations, v2.tables.evaluations);
+  assert.deepEqual(snapshot().tables.evaluation_attempts, v2.tables.evaluation_attempts);
+  // Direct callers can also supply a parsed legacy envelope; commit revalidates.
+  backup.restoreBackup(old as unknown as BackupData);
+  assert.equal(snapshot().tables.sessions[0].focus_json, "[]");
+  tables.sessions[0].focus_json = "[]";
+  assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
+});
+
+test("a legal near-limit v1 upload remains restorable after in-memory v2 projection", () => {
+  seed();
+  const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
+  old.schemaVersion = 1;
+  const session = (old.tables as { sessions: Record<string, unknown>[] }).sessions[0];
+  delete session.focus_json;
+  const baseBytes = Buffer.byteLength(JSON.stringify(old), "utf8");
+  // The uploaded v1 file fits; the projected v2 JSON gains focus_json and exceeds the cap.
+  session.role = "x".repeat(backup.BACKUP_MAX_BYTES - baseBytes + String(session.role).length - 1);
+  // The fixture's original Unicode role occupies three more UTF-8 bytes than
+  // its JavaScript string length, so fill the remaining difference exactly.
+  session.role += "x".repeat(backup.BACKUP_MAX_BYTES - 1 - Buffer.byteLength(JSON.stringify(old), "utf8"));
+  const bytes = Buffer.from(JSON.stringify(old));
+  assert.equal(bytes.byteLength, backup.BACKUP_MAX_BYTES - 1);
+  const upgraded = backup.parseBackup(bytes);
+  assert.ok(Buffer.byteLength(JSON.stringify(upgraded), "utf8") > backup.BACKUP_MAX_BYTES);
+  backup.restoreBackup(upgraded);
+  assert.equal((db.prepare("SELECT length(role) AS n FROM sessions WHERE id='sess_α'").get() as {n: number}).n,
+    (session.role as string).length);
 });
 
 test("duplicate IDs, duplicate turns, duplicate evaluation and orphan foreign key fail without mutation", () => {

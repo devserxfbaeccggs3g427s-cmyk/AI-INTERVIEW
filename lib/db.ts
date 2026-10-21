@@ -27,22 +27,37 @@ function open(): DatabaseSync {
   db.exec("PRAGMA synchronous = NORMAL");
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
-  db.exec(SCHEMA);
-  const version = db.prepare("PRAGMA user_version").get() as { user_version: number };
-  if (version.user_version === 0) {
-    db.exec("BEGIN IMMEDIATE");
-    try {
+  const version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
+  if (version !== 0 && version !== 1 && version !== 2) {
+    db.close();
+    throw new Error(`Unsupported database version: ${version}`);
+  }
+  // Run both the base DDL and every pending upgrade in one transaction. A failed
+  // ALTER leaves user_version and all existing rows/reports unchanged. Version 0
+  // includes fresh files and the original pre-v1 schema; the base DDL is idempotent.
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.exec(SCHEMA);
+    if (version === 0) {
       db.exec("ALTER TABLE sessions ADD COLUMN evaluation_started_at INTEGER");
       db.exec("ALTER TABLE sessions ADD COLUMN evaluation_attempt_id TEXT");
       db.exec("PRAGMA user_version = 1");
-      db.exec("COMMIT");
-    } catch (error) {
-      db.exec("ROLLBACK");
-      throw error;
     }
-  } else if (version.user_version !== 1) {
-    throw new Error(`Unsupported database version: ${version.user_version}`);
+    if (version < 2) {
+      db.exec("ALTER TABLE sessions ADD COLUMN focus_json TEXT NOT NULL DEFAULT '[]'");
+      db.exec("PRAGMA user_version = 2");
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    db.close();
+    throw error;
   }
+  // Rollback strategy for operators: before deploying v2, take a consistent
+  // offline SQLite backup including WAL frames. To revert the application,
+  // stop it, restore that v1 file on a COPY of the volume, and start the old
+  // binary. Never run a destructive down-migration or overwrite a live DB:
+  // v2 focus data cannot be represented by the old app. This is not automated.
   return db;
 }
 

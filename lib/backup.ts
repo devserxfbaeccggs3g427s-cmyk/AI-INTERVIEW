@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { TextDecoder, TextEncoder } from "node:util";
 import { z } from "zod";
 import { getDb } from "./db";
+import { FocusSchema } from "./focus";
 
 /** Only the six application tables are portable; SQLite internals and secrets are not. */
 export const TABLE_NAMES = [
@@ -10,7 +11,8 @@ export const TABLE_NAMES = [
 type TableName = (typeof TABLE_NAMES)[number];
 export const BACKUP_MAX_BYTES = 50 * 1024 * 1024;
 const FORMAT = "interview-ai-backup";
-const VERSION = 1;
+const FORMAT_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export class BackupError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -25,8 +27,12 @@ const integer = z.number().int().safe();
 const nullableInteger = integer.nullable();
 const real = z.number().finite();
 const positiveId = integer.positive();
+const focusJson = text.refine((value) => {
+  try { return FocusSchema.safeParse(JSON.parse(value)).success; }
+  catch { return false; }
+}, "Invalid focus_json");
 
-// All columns are explicit, including the two sessions columns added by the v1 migration.
+// All columns are explicit, including the v1 evaluation and v2 focus columns.
 // Unknown columns (including api_key) must not be accepted or accidentally exported.
 const rowSchemas = {
   sessions: z.object({
@@ -38,7 +44,7 @@ const rowSchemas = {
     cv_source: z.enum(["none", "paste", "pdf"]).nullable(), cv_filename: nullableText,
     created_at: integer, ended_at: nullableInteger, rubric_json: nullableText,
     error_count: integer, evaluation_started_at: nullableInteger,
-    evaluation_attempt_id: nullableText,
+     evaluation_attempt_id: nullableText, focus_json: focusJson,
   }).strict(),
   message_turns: z.object({
     id: positiveId, session_id: text, turn_number: integer,
@@ -77,8 +83,8 @@ const countsSchema = z.object({
 export type BackupCounts = z.infer<typeof countsSchema>;
 
 const backupSchema = z.object({
-  format: z.literal(FORMAT), formatVersion: z.literal(VERSION),
-  schemaVersion: z.literal(VERSION), createdAt: z.string().datetime(),
+  format: z.literal(FORMAT), formatVersion: z.literal(FORMAT_VERSION),
+  schemaVersion: z.literal(SCHEMA_VERSION), createdAt: z.string().datetime(),
   tables: z.object({
     sessions: z.array(rowSchemas.sessions),
     message_turns: z.array(rowSchemas.message_turns),
@@ -89,9 +95,17 @@ const backupSchema = z.object({
   }).strict(), counts: countsSchema,
 }).strict();
 export type BackupData = z.infer<typeof backupSchema>;
+// v1 used the same envelope, but its sessions had no focus_json. Validate it
+// independently and strictly before upgrading in memory; never relax v2 rows.
+const legacyBackupSchema = backupSchema.extend({
+  schemaVersion: z.literal(1),
+  tables: backupSchema.shape.tables.extend({
+    sessions: z.array(rowSchemas.sessions.omit({ focus_json: true })),
+  }),
+});
 
 const columns: { [K in TableName]: readonly (keyof BackupData["tables"][K][number] & string)[] } = {
-  sessions: ["id", "role", "language", "mode", "planned_rounds", "status", "provider", "model", "base_url", "temperature", "max_tokens", "top_p", "cv_source", "cv_filename", "created_at", "ended_at", "rubric_json", "error_count", "evaluation_started_at", "evaluation_attempt_id"],
+  sessions: ["id", "role", "language", "mode", "planned_rounds", "status", "provider", "model", "base_url", "temperature", "max_tokens", "top_p", "cv_source", "cv_filename", "created_at", "ended_at", "rubric_json", "error_count", "evaluation_started_at", "evaluation_attempt_id", "focus_json"],
   message_turns: ["id", "session_id", "turn_number", "role", "content", "raw_blocks_json", "latency_ms", "prompt_tokens", "completion_tokens", "micro_rubric", "finish_reason", "created_at"],
   cv_extracts: ["id", "session_id", "source", "filename", "text", "char_count", "created_at"],
   evaluations: ["id", "session_id", "report_json", "overall_score", "recommendation", "schema_valid", "repair_attempts", "created_at"],
@@ -107,7 +121,7 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 
 function readVersion(): void {
   const version = (getDb().prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version !== VERSION) throw new BackupError("Unsupported database schema version", 409);
+  if (version !== SCHEMA_VERSION) throw new BackupError("Unsupported database schema version", 409);
 }
 
 function readCounts(): BackupCounts {
@@ -190,12 +204,17 @@ function validate(input: unknown): BackupData {
     throw new BackupError("Invalid backup format", 400);
   }
   const header = input as Record<string, unknown>;
-  if (header.formatVersion !== VERSION || header.schemaVersion !== VERSION) {
+  if (header.formatVersion !== FORMAT_VERSION || (header.schemaVersion !== 1 && header.schemaVersion !== SCHEMA_VERSION)) {
     throw new BackupError("Unsupported backup version", 422);
   }
-  const parsed = backupSchema.safeParse(input);
+  const parsed = (header.schemaVersion === 1 ? legacyBackupSchema : backupSchema).safeParse(input);
   if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
-  const data = parsed.data;
+  const data: BackupData = header.schemaVersion === 1
+    ? { ...parsed.data, schemaVersion: SCHEMA_VERSION, tables: {
+      ...parsed.data.tables,
+      sessions: parsed.data.tables.sessions.map((row) => ({ ...row, focus_json: "[]" })),
+    } }
+    : parsed.data as BackupData;
   for (const table of TABLE_NAMES) {
     if (data.counts[table] !== data.tables[table].length) {
       throw new BackupError("Backup row counts do not match", 422);
@@ -253,7 +272,7 @@ export function exportBackup(): Uint8Array {
       (tables[table] as unknown[]).push(row);
     });
     const data: BackupData = {
-      format: FORMAT, formatVersion: VERSION, schemaVersion: VERSION,
+      format: FORMAT, formatVersion: FORMAT_VERSION, schemaVersion: SCHEMA_VERSION,
       createdAt: new Date().toISOString(), tables,
       counts: readCounts(),
     };
@@ -303,8 +322,11 @@ export function restoreBackup(input: BackupData, expected?: BackupRevision): voi
   let data: BackupData;
   try {
     // Revalidate at commit: callers can mutate the object returned by parseBackup.
+    // Upload size is checked against the original bytes in parseBackup. A valid
+    // v1 file can grow past 50 MiB in memory when each legacy session gains its
+    // v2 focus_json default; that projection must not make commit fail after
+    // validate-restore accepted the exact same uploaded bytes.
     const json = JSON.stringify(input);
-    assertSize(Buffer.byteLength(json, "utf8"));
     data = validate(JSON.parse(json) as unknown);
   } catch (error) {
     if (error instanceof BackupError) throw error;

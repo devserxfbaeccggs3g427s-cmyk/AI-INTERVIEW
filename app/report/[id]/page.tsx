@@ -18,6 +18,7 @@ import { useByok } from "@/components/ByokConfigContext";
 import { renderMarkdown } from "@/lib/markdown";
 import { sessionKeyError } from "@/lib/session-key";
 import { EVALUATION_STALE_AFTER_MS } from "@/lib/evaluation-constants";
+import { encodePracticePrefill, practiceFocusLabel } from "@/lib/practice-prefill";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 import type { EvaluationReport, Pillar, TurnEval } from "@/lib/zod-schemas";
 
@@ -162,6 +163,10 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
   const reco = RECO_TONE[report.recommendation] ?? { label: report.recommendation, tone: "neutral" as const };
   const answered = turns.filter((t) => t.role === "user").length;
   const asked = turns.filter((t) => t.role === "assistant").length;
+  const practiceUrl = (candidate: string) => {
+    const label = practiceFocusLabel(candidate);
+    return label ? encodePracticePrefill({ role: session.role, language: session.language, focus: [label] }) : null;
+  };
 
   return (
     <div className="w-full px-gutter py-space-lg max-w-7xl mx-auto flex flex-col gap-space-lg">
@@ -216,7 +221,7 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
           </Section>
 
           <Section title="Cần cải thiện" subtitle="Lỗ hổng kiến thức / cách diễn đạt">
-            <BulletList items={report.improvements} icon="lightbulb" tone="amber" />
+            <BulletList items={report.improvements} icon="lightbulb" tone="amber" practiceUrl={practiceUrl} />
           </Section>
 
           <Section title="Phân tích theo từng câu" subtitle="Điểm 4 tiêu chí + rubric per turn">
@@ -252,10 +257,15 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
               {report.next_steps.map((s, i) => (
                 <li key={`${s.title}-${i}`} className="card p-space-md flex items-start gap-space-sm" style={{ borderColor: "var(--border-focus)" }}>
                   <span className="w-6 h-6 rounded-full bg-primary text-white label-code-sm flex items-center justify-center flex-shrink-0 font-bold">{i + 1}</span>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-1">
                     <span className="font-body-md text-body-md text-on-surface">{s.title}</span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">{s.description}</span>
                     <span className="label-code-sm text-tertiary mt-1">{s.duration}</span>
+                    {practiceUrl(s.title) ? (
+                      <a href={practiceUrl(s.title)!} className="btn btn-ghost self-start" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s.title)}`}>
+                        Luyện chủ đề này
+                      </a>
+                    ) : null}
                   </div>
                 </li>
               ))}
@@ -358,7 +368,7 @@ function PillarCard({ label, pillar }: { label: string; pillar: Pillar }) {
   );
 }
 
-function BulletList({ items, icon, tone }: { items: string[]; icon: string; tone: "emerald" | "amber" }) {
+function BulletList({ items, icon, tone, practiceUrl }: { items: string[]; icon: string; tone: "emerald" | "amber"; practiceUrl?: (item: string) => string | null }) {
   const borderColor = tone === "emerald" ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)";
   const iconColor = tone === "emerald" ? "text-tertiary" : "text-warning";
   return (
@@ -366,7 +376,14 @@ function BulletList({ items, icon, tone }: { items: string[]; icon: string; tone
       {items.map((s, i) => (
         <li key={i} className="card p-space-md flex items-start gap-space-sm" style={{ borderColor }}>
           <span className={`material-symbols-outlined ${iconColor} flex-shrink-0`}>{icon}</span>
-          <span className="font-body-md text-body-md text-on-surface">{s}</span>
+          <div className="flex flex-col gap-1">
+            <span className="font-body-md text-body-md text-on-surface">{s}</span>
+            {practiceUrl?.(s) ? (
+              <a href={practiceUrl(s)!} className="btn btn-ghost self-start" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s)}`}>
+                Luyện chủ đề này
+              </a>
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>
