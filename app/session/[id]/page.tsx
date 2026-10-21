@@ -343,10 +343,10 @@ export default function ActiveSessionPage({ params }: Props) {
           </div>
 
           {session.cv_source !== "none" ? (
-            <div className="card p-space-sm flex flex-col gap-space-xs">
+            <div className="card p-space-sm flex flex-col gap-space-xs min-w-0">
               <span className="label-caps text-on-surface-variant uppercase">CV nguồn</span>
-              <span className="label-code-sm text-on-surface">{session.cv_filename ?? "(paste)"}</span>
-              <span className="label-code-sm text-on-surface-variant">{session.cv_source}</span>
+              <span className="label-code-sm text-on-surface break-all min-w-0" title={session.cv_filename ?? "(paste)"}>{session.cv_filename ?? "(paste)"}</span>
+              <span className="label-code-sm text-on-surface-variant break-all min-w-0">{session.cv_source}</span>
             </div>
           ) : null}
 
