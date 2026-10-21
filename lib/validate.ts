@@ -31,6 +31,13 @@ export function requireApiKey(provider: ProviderId, key: string | undefined): st
 
 export const MAX_ANSWER_CHARS = 4000;
 export const MAX_CV_CHARS = 20_000;
+/** Length of the CV slice the provider prompt actually receives.
+ *  Must stay equal to the literal 6000 in lib/prompts.ts `truncate(ctx.cvText, 6000)`
+ *  so the preview shown on /new is exactly the text the model will see. prompts.ts is
+ *  left untouched, so this constant documents the value rather than feeding it. */
+export const MAX_PROMPT_CV_CHARS = 6_000;
+/** Decoded PDF byte ceiling (10 MiB). The base64 data URL is ~4/3 of this. */
+export const MAX_PDF_BYTES = 10 * 1024 * 1024;
 export const MIN_ROLE_LEN = 2;
 export const MAX_ROLE_LEN = 120;
 

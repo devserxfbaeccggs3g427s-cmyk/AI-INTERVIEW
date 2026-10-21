@@ -198,3 +198,30 @@ export function queryOne<T = Record<string, unknown>>(
   const rows = query<T>(sql, params);
   return rows[0];
 }
+
+export type TransactionMode = "DEFERRED" | "IMMEDIATE" | "EXCLUSIVE";
+
+/**
+ * Run the body in a single SQLite transaction. `mode` is one of
+ * "DEFERRED" / "IMMEDIATE" / "EXCLUSIVE". The body runs synchronously — node:sqlite
+ * is sync, but next ticks can sneak in if the body awaits. For atomic writes that
+ * don't await, "IMMEDIATE" prevents two writers interleaving. On any throw, the
+ * transaction is rolled back and the error re-raised. ROLLBACK itself may throw
+ * (e.g. if the connection is already broken); swallow that secondary error so the
+ * original cause reaches the caller.
+ */
+export function runInTransaction(mode: TransactionMode, body: () => void): void {
+  const db = getDb();
+  db.exec(`BEGIN ${mode}`);
+  try {
+    body();
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      // Swallow secondary failure; original error is what the caller handles.
+    }
+    throw err;
+  }
+  db.exec("COMMIT");
+}

@@ -19,6 +19,12 @@ docker compose -f deploy/compose.yaml up -d --build
 
 Optionally set `NEXT_PUBLIC_PROVIDER_ENABLE` before **building** to opt into a permitted provider list. This is inlined into the Next.js client bundle; modifying it requires a rebuild. Never put credentials into any `NEXT_PUBLIC_*` value. `ALLOW_PRIVATE_BASE_URL=0` is fixed in this sample. The app's `/data` named volume holds the SQLite database plus WAL/SHM sidecars; keep the volume when replacing containers. Do not copy only an open `.db` file as a backup, and do not remove volumes with `down -v` unless intentionally destroying all data.
 
+## Request sizing and CV handling
+
+Size the reverse proxy for CV uploads: a pasted CV is capped at 20,000 characters (rejected with 400 if longer — never silently truncated), and a PDF is capped at **10 MiB decoded**, which is roughly **14 MiB** of base64 JSON request body. `POST /api/sessions/preview` and `POST /api/sessions` both accept that envelope, and both answer **413** when it is exceeded — raise any proxy `client_max_body_size` above 14 MiB or valid PDFs will fail at the edge instead of in the app. The Origin guard runs before the body is read, so an unauthenticated caller is rejected without the app buffering the upload.
+
+PDF bytes are parsed server-side and discarded: they are never written to SQLite, never logged, and never included in a backup export. What does leave the app is the extracted text (≤ 20,000 characters, of which the first 6,000 reach each prompt), sent to whichever provider endpoint the operator configured. Treat request bodies and any proxy access logs accordingly.
+
 ## Check and recover
 
 Before exposure, check an anonymous request to `/`, `/_next/*` and `/api/*` returns 401, a valid credential can reach those routes and stream SSE, and an outside host cannot connect to 12213. Check TLS renewal, redirects and the exact HTTPS Origin. The Dockerfile's healthcheck probes the app **inside its container**; it is not a public unauthenticated endpoint. Caddy disables access logging, strips proxy credentials/identity claims before upstream, sets private no-store responses and flushes SSE. Avoid enabling request headers/bodies or verbose debug logs: `x-api-key`, CV and backup payloads are sensitive. App errors and diagnostics still need separate privacy review.

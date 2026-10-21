@@ -174,18 +174,34 @@ test("PDF creation keeps maintenance out across extraction failure and releases 
     Object.defineProperty(request, "json", {value: () => bodyGate.promise});
     const pending = sessions.POST(request);
     assert.equal(enterMaintenance(), null);
+    const beforeSessions = db.queryOne<{n: number}>("SELECT COUNT(*) n FROM sessions")?.n ?? 0;
+    const beforeCv = db.queryOne<{n: number}>("SELECT COUNT(*) n FROM cv_extracts")?.n ?? 0;
     try {
         bodyGate.resolve({
             ...config, role: "Backend", language: "en", mode: "strict",
             plannedRounds: 5, cvSource: "pdf", cvDataUrl: "data:application/pdf;base64,JVBERi0xLjQ=",
         });
-        // The route now awaits extraction; the parser errors on malformed PDF in
-        // this direct node:test environment, after the session row is inserted.
+        // The atomic POST refuses before BEGIN IMMEDIATE: PDF extraction happens
+        // outside the SQLite transaction, so no session / cv / model_config row
+        // is ever added when the validator or parser rejects the upload. Under
+        // tsx the pdf-parse import path throws during pdfParser.load(), which
+        // the route maps to a 500 server fault rather than a 4xx client error.
         assert.equal(enterMaintenance(), null);
         const response = await pending;
-        assert.equal(response.status, 500);
-        // Deliberately not asserting the state of the half-created session row:
-        // the lease, not that row, is what this test covers.
+        assert.ok(response.status === 500 || response.status === 400,
+            `unexpected status ${response.status}`);
+        const json = await response.clone().json();
+        assert.match(json.error, /PDF|exceeds|parsed/i);
+        assert.equal(
+            db.queryOne<{n: number}>("SELECT COUNT(*) n FROM sessions")?.n,
+            beforeSessions,
+            "no new session row may be inserted when PDF extraction rejects",
+        );
+        assert.equal(
+            db.queryOne<{n: number}>("SELECT COUNT(*) n FROM cv_extracts")?.n,
+            beforeCv,
+            "no new cv_extracts row may be inserted when PDF extraction rejects",
+        );
         const maintenance = enterMaintenance();
         assert.ok(maintenance);
         maintenance();

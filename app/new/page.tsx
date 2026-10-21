@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useByok } from "@/components/ByokConfigContext";
 import { Chip } from "@/components/Chip";
@@ -23,6 +23,39 @@ type CvSource = "none" | "paste" | "pdf";
 type Rounds = 5 | 8 | 12;
 
 const MAX_CV_CHARS = 20_000;
+const MAX_PROMPT_CV_CHARS = 6_000;
+/** Authoritative cap is 10 MiB decoded bytes; the server enforces it.
+ *  We use 14 MiB base64 length as a coarse client proxy. */
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const MAX_PDF_DATAURL_LEN = 14 * 1024 * 1024;
+
+interface PdfPreview {
+  text: string;
+  charCount: number;
+  truncated: boolean;
+  promptCharCount: number;
+  promptTruncated: boolean;
+  digest: string;
+}
+
+/** Browser-native SHA-256 hex digest (NFR-2 friendly, no third-party deps). */
+async function sha256Hex(s: string): Promise<string> {
+  const enc = new TextEncoder().encode(s);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Best-effort truncation of the prompt view (mirrors what the AI gets to see). */
+function promptSlice(source: string, max: number): { text: string; truncated: boolean } {
+  if (source.length <= max) return { text: source, truncated: false };
+  return { text: source.slice(0, max), truncated: true };
+}
+
+function isPdfDataUrl(value: unknown): value is string {
+  return typeof value === "string" && /^data:application\/pdf;base64,/i.test(value);
+}
 
 export default function StartInterviewPage() {
   const router = useRouter();
@@ -37,9 +70,16 @@ export default function StartInterviewPage() {
   const [cvFilename, setCvFilename] = useState<string | null>(null);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
   const [pdfMeta, setPdfMeta] = useState<{ size: number } | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfPreview, setPdfPreview] = useState<PdfPreview | null>(null);
+  const [editableText, setEditableText] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [previewDigest, setPreviewDigest] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Track the in-flight preview request to discard stale responses on re-pick.
+  const previewSeq = useRef(0);
 
   // Block submit if no BYOK config
   useEffect(() => {
@@ -48,28 +88,168 @@ export default function StartInterviewPage() {
     }
   }, [hydrated, cfg]);
 
+  /** Clear every piece of PDF state. Used on error, re-pick, and switch-away. */
+  const clearPdfState = useCallback(() => {
+    previewSeq.current += 1; // invalidate any in-flight preview
+    setCvFilename(null);
+    setPdfMeta(null);
+    setPdfDataUrl(null);
+    setPdfPreview(null);
+    setEditableText("");
+    setEditing(false);
+    setPreviewDigest(null);
+    setPdfLoading(false);
+  }, []);
+
+  /** Switch CV source. Make sure stale PDF state doesn't leak into other modes. */
+  const pickCvSource = useCallback((next: CvSource) => {
+    setCvSource(next);
+    setError(null);
+    // Don't clear on a same-tab re-selection but DO clear when leaving PDF.
+    if (next !== "pdf") clearPdfState();
+  }, [clearPdfState]);
+
   const onPickPdf = async (file: File) => {
+    // Always reset stale state first so a failed pick cannot POST prior data.
+    clearPdfState();
+    setError(null);
+
     if (file.type !== "application/pdf") {
       setError("Chỉ chấp nhận file PDF");
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      setError("PDF tối đa 20MB");
+    if (file.size > MAX_PDF_BYTES) {
+      setError("PDF tối đa 10 MB");
       return;
     }
-    setError(null);
+
     setCvFilename(file.name);
     setPdfMeta({ size: file.size });
+
+    const seq = previewSeq.current;
     const reader = new FileReader();
-    reader.onload = () => setPdfDataUrl(String(reader.result));
+    reader.onload = () => {
+      const value = String(reader.result);
+      if (previewSeq.current !== seq) return; // user picked something else meanwhile
+      if (value.length > MAX_PDF_DATAURL_LEN) {
+        // Coarse proxy for >10 MiB decoded; server is the authoritative gate.
+        clearPdfState();
+        setError("PDF tối đa 10 MB");
+        return;
+      }
+      setPdfDataUrl(value);
+    };
+    reader.onerror = () => {
+      if (previewSeq.current !== seq) return;
+      clearPdfState();
+      setError("Không đọc được file PDF. Vui lòng thử lại.");
+    };
     reader.readAsDataURL(file);
   };
+
+  /** Reset and re-open the file picker. */
+  const onRepickPdf = () => {
+    clearPdfState();
+    setError(null);
+    if (fileRef.current) fileRef.current.value = "";
+    fileRef.current?.click();
+  };
+
+  // Trigger preview fetch whenever the data URL changes (and only when valid).
+  useEffect(() => {
+    if (cvSource !== "pdf" || !isPdfDataUrl(pdfDataUrl)) {
+      setPdfPreview(null);
+      setEditableText("");
+      setPreviewDigest(null);
+      setPdfLoading(false);
+      return;
+    }
+    const dataUrl = pdfDataUrl;
+    const seq = ++previewSeq.current;
+    let cancelled = false;
+    setPdfLoading(true);
+    setPdfPreview(null);
+    setEditableText("");
+    setPreviewDigest(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/sessions/preview", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cvDataUrl: dataUrl }),
+        });
+        if (cancelled || previewSeq.current !== seq) return;
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json || json.ok !== true) {
+          const msg = (json && typeof json.error === "string")
+            ? json.error
+            : `Không trích xuất được PDF (HTTP ${res.status}).`;
+          clearPdfState();
+          setError(msg);
+          return;
+        }
+        const preview: PdfPreview = {
+          text: typeof json.text === "string" ? json.text : "",
+          charCount: Number(json.charCount) || 0,
+          truncated: Boolean(json.truncated),
+          promptCharCount: Number(json.promptCharCount) || 0,
+          promptTruncated: Boolean(json.promptTruncated),
+          digest: typeof json.digest === "string" ? json.digest : "",
+        };
+        if (preview.digest.length !== 64) {
+          clearPdfState();
+          setError("Phản hồi preview không hợp lệ. Vui lòng thử lại.");
+          return;
+        }
+        setPdfPreview(preview);
+        setEditableText(preview.text);
+        setPreviewDigest(preview.digest);
+        setEditing(false);
+      } catch (e) {
+        if (cancelled || previewSeq.current !== seq) return;
+        clearPdfState();
+        setError((e as Error).message || "Không trích xuất được PDF. Vui lòng thử lại.");
+      } finally {
+        if (!cancelled && previewSeq.current === seq) setPdfLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [cvSource, pdfDataUrl, clearPdfState]);
+
+  // While editing, every keystroke recomputes the local digest. The server is
+  // still the source of truth and will 409 if anything is edited (per spec).
+  useEffect(() => {
+    if (!pdfPreview) return;
+    if (!editing) {
+      setPreviewDigest(pdfPreview.digest);
+      return;
+    }
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      sha256Hex(editableText).then((d) => {
+        if (!cancelled) setPreviewDigest(d);
+      }).catch(() => { /* ignore */ });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [editing, editableText, pdfPreview]);
 
   const submit = async () => {
     setError(null);
     if (role.trim().length < 2) { setError("Vui lòng nhập vị trí ứng tuyển (≥ 2 ký tự)"); return; }
-    if (cvSource === "paste" && cvText.length > MAX_CV_CHARS) { setError(`CV vượt quá ${MAX_CV_CHARS} ký tự`); return; }
-    if (cvSource === "pdf" && !pdfDataUrl) { setError("Vui lòng chọn file PDF"); return; }
+    if (cvSource === "paste") {
+      if (cvText.length === 0) { setError("Vui lòng dán nội dung CV"); return; }
+      if (cvText.length > MAX_CV_CHARS) { setError(`CV vượt quá ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự`); return; }
+    }
+    if (cvSource === "pdf") {
+      if (!pdfDataUrl) { setError("Vui lòng chọn file PDF"); return; }
+      if (!pdfPreview || !previewDigest) {
+        setError("Đang trích xuất PDF, vui lòng đợi trong giây lát…");
+        return;
+      }
+    }
     if (!cfg.model) { setError("Bạn chưa cấu hình Model ở màn 1"); router.push("/"); return; }
     if (!isProviderEnabled(cfg.provider)) { setError(getProviderSpec(cfg.provider).disabledReason); return; }
     if (getProviderSpec(cfg.provider).requiresApiKey && !cfg.apiKey) { setError("Bạn chưa nhập API Key ở màn 1"); router.push("/"); return; }
@@ -77,6 +257,11 @@ export default function StartInterviewPage() {
 
     setSubmitting(true);
     try {
+      // Compute per-source digest on demand; spec asks for it on both paths.
+      let pasteDigestHex: string | null = null;
+      if (cvSource === "paste") {
+        pasteDigestHex = await sha256Hex(cvText);
+      }
       const body: Record<string, unknown> = {
         provider: cfg.provider,
         model: cfg.model,
@@ -90,8 +275,16 @@ export default function StartInterviewPage() {
         plannedRounds: rounds,
         cvSource,
       };
-      if (cvSource === "paste") { body.cvText = cvText; body.cvFilename = cvFilename ?? "pasted-cv.txt"; }
-      if (cvSource === "pdf") { body.cvDataUrl = pdfDataUrl; body.cvFilename = cvFilename ?? "cv.pdf"; }
+      if (cvSource === "paste") {
+        body.cvText = cvText;
+        body.cvFilename = cvFilename ?? "pasted-cv.txt";
+        body.previewDigest = pasteDigestHex;
+      }
+      if (cvSource === "pdf") {
+        body.cvDataUrl = pdfDataUrl;
+        body.cvFilename = cvFilename ?? "cv.pdf";
+        body.previewDigest = previewDigest;
+      }
 
       const res = await fetch("/api/sessions", {
         method: "POST",
@@ -107,6 +300,13 @@ export default function StartInterviewPage() {
       setSubmitting(false);
     }
   };
+
+  // Submit gating (extra — keeps the button disabled until preconditions hold).
+  const submitDisabled =
+    submitting
+    || (cvSource === "paste" && cvText.length > MAX_CV_CHARS)
+    || (cvSource === "paste" && cvText.length === 0)
+    || (cvSource === "pdf" && (!pdfDataUrl || !pdfPreview || !previewDigest || pdfLoading));
 
   return (
     <div className="w-full px-gutter py-space-lg max-w-[1520px] mx-auto flex flex-col gap-space-lg">
@@ -209,12 +409,12 @@ export default function StartInterviewPage() {
 
           <StepCard step="5" label="FR-1 · LỰA CHỌN 5" title="Nguồn CV (CV Source)">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
-              <CvSourceCard active={cvSource === "none"} onClick={() => setCvSource("none")} icon="block" title="Không có CV"
+              <CvSourceCard active={cvSource === "none"} onClick={() => pickCvSource("none")} icon="block" title="Không có CV"
                 body="Phỏng vấn dựa hoàn toàn vào vị trí ứng tuyển." />
-              <CvSourceCard active={cvSource === "paste"} onClick={() => setCvSource("paste")} icon="content_paste" title="Dán văn bản"
+              <CvSourceCard active={cvSource === "paste"} onClick={() => pickCvSource("paste")} icon="content_paste" title="Dán văn bản"
                 body={`Plain text tối đa ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự.`} />
-              <CvSourceCard active={cvSource === "pdf"} onClick={() => setCvSource("pdf")} icon="picture_as_pdf" title="Tải file PDF"
-                body="Trích xuất text phía server (pdf-parse), không upload lên cloud." />
+              <CvSourceCard active={cvSource === "pdf"} onClick={() => pickCvSource("pdf")} icon="picture_as_pdf" title="Tải file PDF"
+                body={`Trích xuất text tại server (pdf-parse). Tối đa ${(MAX_PDF_BYTES / 1024 / 1024).toFixed(0)} MB.`} />
             </div>
 
             {cvSource === "paste" ? (
@@ -223,46 +423,191 @@ export default function StartInterviewPage() {
                   className="input min-h-[200px] resize-y"
                   placeholder="Dán nội dung CV vào đây…"
                   value={cvText}
-                  onChange={(e) => setCvText(e.target.value.slice(0, MAX_CV_CHARS))}
-                  maxLength={MAX_CV_CHARS}
+                  onChange={(e) => setCvText(e.target.value)}
                 />
                 <div className="flex justify-between text-on-surface-variant label-code-sm">
-                  <span>{cvText.length.toLocaleString("vi-VN")} / {MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự</span>
-                  <span>{Math.round((cvText.length / MAX_CV_CHARS) * 100)}%</span>
+                  <span>
+                    {cvText.length.toLocaleString("vi-VN")} / {MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự
+                  </span>
+                  <span>{Math.min(100, Math.round((cvText.length / MAX_CV_CHARS) * 100))}%</span>
                 </div>
+                {cvText.length > MAX_CV_CHARS ? (
+                  <p className="font-body-sm text-body-sm text-error flex items-center gap-1.5" role="alert">
+                    <span className="material-symbols-outlined text-[16px]">error</span>
+                    Đã vượt quá giới hạn {MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự — vui lòng rút gọn CV trước khi tiếp tục.
+                  </p>
+                ) : null}
+                <Callout
+                  tone="info"
+                  title="Văn bản bạn dán vào"
+                  body={`Văn bản dán vào sẽ được gửi tới AI provider dưới dạng một phần prompt kèm mỗi phiên (tối đa ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự; prompt chỉ thấy ${MAX_PROMPT_CV_CHARS.toLocaleString("vi-VN")} ký tự đầu). Không upload file nào cả; chỉ plain text đi trong request body.`}
+                  icon="content_paste"
+                />
               </div>
             ) : null}
 
             {cvSource === "pdf" ? (
-              <div
-                className="card-elevated p-space-md flex flex-col gap-space-sm cursor-pointer"
-                onClick={() => fileRef.current?.click()}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileRef.current?.click()}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-space-sm">
-                    <div className="w-10 h-10 rounded-lg bg-surface-overlay flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined text-[22px]">picture_as_pdf</span>
+              <div className="flex flex-col gap-space-sm">
+                <div
+                  className="card-elevated p-space-md flex flex-col gap-space-sm cursor-pointer"
+                  onClick={() => fileRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileRef.current?.click()}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-space-sm">
+                      <div className="w-10 h-10 rounded-lg bg-surface-overlay flex items-center justify-center text-primary">
+                        <span className="material-symbols-outlined text-[22px]">picture_as_pdf</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-headline-sm text-headline-sm text-on-surface">
+                          {cvFilename ?? "Chọn file PDF…"}
+                        </span>
+                        <span className="label-code-sm text-on-surface-variant">
+                          {pdfMeta
+                            ? `${(pdfMeta.size / 1024).toFixed(1)} KB · tối đa ${(MAX_PDF_BYTES / 1024 / 1024).toFixed(0)} MB`
+                            : `Tối đa ${(MAX_PDF_BYTES / 1024 / 1024).toFixed(0)} MB · xử lý tại server`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-headline-sm text-headline-sm text-on-surface">
-                        {cvFilename ?? "Chọn file PDF…"}
-                      </span>
-                      <span className="label-code-sm text-on-surface-variant">
-                        {pdfMeta ? `${(pdfMeta.size / 1024).toFixed(1)} KB` : "Tối đa 20MB · xử lý local"}
-                      </span>
+                    <div className="flex items-center gap-space-xs">
+                      {cvFilename ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onRepickPdf(); }}
+                          className="px-2 py-1 rounded bg-surface-overlay hover:bg-surface-elevated text-on-surface-variant label-code-sm flex items-center gap-1"
+                          aria-label="Chọn lại file PDF"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">refresh</span> Chọn lại
+                        </button>
+                      ) : null}
+                      <span className="material-symbols-outlined text-on-surface-variant">upload_file</span>
                     </div>
                   </div>
-                  <span className="material-symbols-outlined text-on-surface-variant">upload_file</span>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void onPickPdf(file);
+                      // Reset so selecting the same file twice still triggers onChange.
+                      e.target.value = "";
+                    }}
+                  />
                 </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && onPickPdf(e.target.files[0])}
+
+                {/* Inline preview status */}
+                {pdfLoading ? (
+                  <div
+                    className="card p-space-md flex items-center gap-space-sm"
+                    aria-live="polite"
+                  >
+                    <span className="material-symbols-outlined text-[20px] text-primary animate-spin">progress_activity</span>
+                    <span className="font-body-md text-body-md text-on-surface">
+                      Đang trích xuất PDF…
+                    </span>
+                  </div>
+                ) : null}
+
+                {pdfPreview ? (
+                  <div className="card p-space-md flex flex-col gap-space-sm" aria-live="polite">
+                    <div className="flex items-center justify-between gap-space-sm flex-wrap">
+                      <div className="flex items-center gap-space-sm">
+                        <span className="material-symbols-outlined text-[20px] text-tertiary">preview</span>
+                        <span className="font-headline-sm text-headline-sm text-on-surface">Preview trích xuất</span>
+                        {pdfPreview.truncated ? (
+                          <Chip tone="amber" dot={false}>bị cắt tại {MAX_CV_CHARS.toLocaleString("vi-VN")}</Chip>
+                        ) : null}
+                        {pdfPreview.promptTruncated ? (
+                          <Chip tone="amber" dot={false}>prompt chỉ thấy {MAX_PROMPT_CV_CHARS.toLocaleString("vi-VN")} ký tự đầu</Chip>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editing) {
+                            // Reverting exits edit mode and restores server-supplied text/digest.
+                            setEditableText(pdfPreview.text);
+                            setEditing(false);
+                          } else {
+                            setEditing(true);
+                          }
+                        }}
+                        className="px-2 py-1 rounded bg-surface-overlay hover:bg-surface-elevated text-on-surface-variant label-code-sm flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">
+                          {editing ? "close" : "edit"}
+                        </span>
+                        {editing ? "Huỷ sửa" : "Chỉnh sửa"}
+                      </button>
+                    </div>
+
+                    {editing ? (
+                      <div className="flex flex-col gap-space-xs">
+                        <textarea
+                          className="input min-h-[180px] resize-y"
+                          value={editableText}
+                          onChange={(e) => setEditableText(e.target.value)}
+                          aria-label="Chỉnh sửa text PDF đã trích xuất"
+                        />
+                        <div className="flex justify-between text-on-surface-variant label-code-sm">
+                          <span>
+                            {editableText.length.toLocaleString("vi-VN")} / {MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự
+                          </span>
+                          <span>{Math.min(100, Math.round((editableText.length / MAX_CV_CHARS) * 100))}%</span>
+                        </div>
+                        {editableText.length > MAX_CV_CHARS ? (
+                          <p className="font-body-sm text-body-sm text-error flex items-center gap-1.5" role="alert">
+                            <span className="material-symbols-outlined text-[16px]">error</span>
+                            Đã vượt quá giới hạn {MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự — vui lòng rút gọn CV trước khi tiếp tục.
+                          </p>
+                        ) : (
+                          <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[16px] text-warning">warning</span>
+                            Máy chủ là nguồn sự thật: bất kỳ chỉnh sửa nào cũng có thể khiến digest lệch và server sẽ từ chối (HTTP 409).
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <pre
+                        className="whitespace-pre-wrap break-words font-body-sm text-body-sm text-on-surface bg-surface-container-lowest p-space-sm rounded border max-h-[260px] overflow-y-auto"
+                        aria-label="Text PDF đã trích xuất"
+                      >
+                        {pdfPreview.text || <span className="text-on-surface-variant">(trống)</span>}
+                      </pre>
+                    )}
+
+                    {/* Footer status row: digest + character counts */}
+                    <div className="flex flex-wrap items-center justify-between gap-space-sm pt-1">
+                      <div className="flex flex-wrap items-center gap-space-sm">
+                        <span className="label-caps uppercase text-on-surface-variant">Đếm ký tự</span>
+                        <span className="label-code-sm text-on-surface">
+                          {pdfPreview.charCount.toLocaleString("vi-VN")} / {MAX_CV_CHARS.toLocaleString("vi-VN")}
+                        </span>
+                        <span className="text-on-surface-variant">·</span>
+                        <span className="label-code-sm text-on-surface">
+                          {pdfPreview.promptCharCount.toLocaleString("vi-VN")} / {MAX_PROMPT_CV_CHARS.toLocaleString("vi-VN")} trong prompt
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5" title={previewDigest ?? ""}>
+                        <span className="material-symbols-outlined text-[16px] text-on-surface-variant">tag</span>
+                        <span className="label-code-sm text-on-surface-variant">digest</span>
+                        <span className="label-code-sm text-on-surface">
+                          {previewDigest ? `${previewDigest.slice(0, 12)}…` : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <Callout
+                  tone="info"
+                  title="PDF xử lý tại server"
+                  body={`PDF xử lý tại server, chỉ text kết quả (≤ ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự, prompt chỉ thấy ${MAX_PROMPT_CV_CHARS.toLocaleString("vi-VN")} ký tự đầu) mới được gửi tới AI provider kèm mỗi phiên. File PDF gốc không được lưu trong SQLite hay backup.`}
+                  icon="picture_as_pdf"
                 />
               </div>
             ) : null}
@@ -281,7 +626,7 @@ export default function StartInterviewPage() {
             </a>
             <button
               onClick={submit}
-              disabled={submitting}
+              disabled={submitDisabled}
               className="btn btn-primary w-full sm:w-auto"
             >
               {submitting ? (
@@ -300,7 +645,17 @@ export default function StartInterviewPage() {
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-space-md">
-          <RightSummary role={role} lang={lang} mode={mode} rounds={rounds} cvSource={cvSource} cvChars={cvText.length} pdfMeta={pdfMeta} />
+          <RightSummary
+            role={role}
+            lang={lang}
+            mode={mode}
+            rounds={rounds}
+            cvSource={cvSource}
+            cvChars={cvText.length}
+            pdfMeta={pdfMeta}
+            pdfPreviewChars={pdfPreview ? pdfPreview.charCount : null}
+            pdfPromptChars={pdfPreview ? pdfPreview.promptCharCount : null}
+          />
           <Callout
             tone="warning"
             title="Khuyến cáo NFR-2 & NFR-10"
@@ -457,8 +812,12 @@ function CvSourceCard({ active, onClick, icon, title, body }: { active: boolean;
   );
 }
 
-function RightSummary({ role, lang, mode, rounds, cvSource, cvChars, pdfMeta }: {
-  role: string; lang: string; mode: string; rounds: number; cvSource: string; cvChars: number; pdfMeta: { size: number } | null;
+function RightSummary({
+  role, lang, mode, rounds, cvSource, cvChars, pdfMeta, pdfPreviewChars, pdfPromptChars,
+}: {
+  role: string; lang: string; mode: string; rounds: number; cvSource: string;
+  cvChars: number; pdfMeta: { size: number } | null;
+  pdfPreviewChars: number | null; pdfPromptChars: number | null;
 }) {
   return (
     <div className="card p-space-md flex flex-col gap-space-md">
@@ -475,7 +834,15 @@ function RightSummary({ role, lang, mode, rounds, cvSource, cvChars, pdfMeta }: 
         v={
           cvSource === "none" ? "Không có" :
           cvSource === "paste" ? `Dán văn bản · ${cvChars.toLocaleString("vi-VN")} ký tự` :
-          `PDF · ${pdfMeta ? (pdfMeta.size / 1024).toFixed(1) + " KB" : "chưa chọn"}`
+          (
+            pdfMeta
+              ? (
+                  pdfPreviewChars != null
+                    ? `PDF · ${(pdfMeta.size / 1024).toFixed(1)} KB · ${pdfPreviewChars.toLocaleString("vi-VN")} ký tự (prompt ${pdfPromptChars?.toLocaleString("vi-VN") ?? 0})`
+                    : `PDF · ${(pdfMeta.size / 1024).toFixed(1)} KB · đang trích xuất…`
+                )
+              : "PDF · chưa chọn"
+          )
         }
       />
     </div>

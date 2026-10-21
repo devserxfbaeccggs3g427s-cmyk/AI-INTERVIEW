@@ -1,13 +1,13 @@
 # Backlog triển khai — InterviewAI Studio trên VPS
 
-> Phiên bản: 1.0 · 2026-10-21 · **T-01 (một phần) và T-02 đã triển khai ở mức code + test; checkbox phản ánh phần đã kiểm chứng, không xác nhận VPS đã được phát hành.**  
+> Phiên bản: 1.1 · 2026-10-21 · **T-01 (một phần), T-02 và T-03 đã triển khai ở mức code + test; checkbox phản ánh phần đã kiểm chứng, không xác nhận VPS đã được phát hành.**  
 > [Yêu cầu](requirements.md) · [Thiết kế](design.md) · [FR/NFR gốc](../../stitch-screens/screens/00-requirements.md) · [Stitch UI](../../stitch-screens/01-design-system.md)
 
 ## Nguyên tắc thực hiện
 
 - Mỗi PR nêu rõ RQ và phần thiết kế tương ứng, migration/rollback, test và bằng chứng nghiệm thu. Không deploy VPS public ở trạng thái code hiện tại: API DB/CV vẫn thiếu auth ở tầng ứng dụng và ingress của T-01 chưa smoke-test trên staging. Import SQL thực thi đã bị gỡ ở T-02, nhưng điều đó không thay thế được auth.
 - Đối với mọi test DB, dùng file tạm riêng và gán `INTERVIEW_DB_PATH` **trước** khi import `lib/db.ts`; không xóa DB đang có. Không cho nhiều replica app cùng dùng một volume SQLite nếu chưa thiết kế coordination. Giữ key provider ở browser/per-request, không log/header-forward vào analytics.
-- Thứ tự cổng: **T-01 (biên VPS)** trước khi public; **T-02 (backup/restore)** và **T-03 (PDF)** trước khi xử lý dữ liệu thực; T-04/T-05 có thể phát triển sau đó; T-06 phụ thuộc T-05; T-07 là kiểm thử phát hành tổng.
+- Thứ tự cổng: **T-01 (biên VPS)** trước khi public; **T-02 (backup/restore)** và **T-03 (PDF)** trước khi xử lý dữ liệu thực — cả hai đã xong ở mức code + test; T-04/T-05 có thể phát triển sau đó; T-06 phụ thuộc T-05; T-07 là kiểm thử phát hành tổng và vẫn mở.
 
 ## T-01 — VPS ingress và chính sách Origin (P0) → RQ-01; D-01
 
@@ -41,13 +41,22 @@
 
 ## T-03 — PDF, preview và tạo phiên transaction (P1) → RQ-03; D-03
 
-- [ ] **T-03.1 / validation:** đồng bộ giới hạn PDF 10 MiB, Paste 20.000 ký tự; server kiểm MIME/data URL/base64 chặt, byte length/signature/PDF parse và text sau trim, giới hạn parser. Zod request ràng buộc đúng `cvSource` (none/paste/pdf), không chấp nhận dữ liệu thừa hay CV thiếu, không cắt paste thầm lặng. Loại bỏ state PDF cũ khi chọn file lỗi.
-- [ ] **T-03.2 / preview + thông điệp:** endpoint preview auth/Origin, không lưu PDF/DB; trả text hiệu lực, trạng thái truncate 20k/6k, digest để đối chiếu *nhất quán UX*; `/new` hiển thị text sẽ vào prompt, cho sửa/chọn lại, xác nhận văn bản sẽ tới AI provider; không ghi “không upload lên cloud” mà không phân biệt file và text.
-- [ ] **T-03.3 / atomic create:** trích xuất lại PDF **trước** SQLite transaction, so digest preview và nội dung mới; insert session + CV extract + model config trong transaction ngắn, rollback mọi lỗi. Không giữ lock khi await parser. Xác định đường xử lý thay đổi file/preview stale (409 cần preview lại).
-- [ ] **T-03.4 / test:** boundary 10 MiB và kích thước data URL thực, file MIME/signature/base64 sai, PDF rỗng/ảnh/khóa/parser lỗi, paste rỗng/quá dài; lỗi insert CV/upsert model config không tạo session hoặc làm đổi prefs; preview khác text lưu thì không tạo; bytes PDF không có trong DB/backup. Thử prompt nhận đúng phần text đã hiển thị.
+- [x] **T-03.1 / validation:** đồng bộ giới hạn PDF 10 MiB, Paste 20.000 ký tự; server kiểm MIME/data URL/base64 chặt, byte length/signature/PDF parse và text sau trim, giới hạn parser. Zod request ràng buộc đúng `cvSource` (none/paste/pdf), không chấp nhận dữ liệu thừa hay CV thiếu, không cắt paste thầm lặng. Loại bỏ state PDF cũ khi chọn file lỗi.
+- [x] **T-03.2 / preview + thông điệp:** endpoint preview auth/Origin, không lưu PDF/DB; trả text hiệu lực, trạng thái truncate 20k/6k, digest để đối chiếu *nhất quán UX*; `/new` hiển thị text sẽ vào prompt, cho sửa/chọn lại, xác nhận văn bản sẽ tới AI provider; không ghi “không upload lên cloud” mà không phân biệt file và text.
+- [x] **T-03.3 / atomic create:** trích xuất lại PDF **trước** SQLite transaction, so digest preview và nội dung mới; insert session + CV extract + model config trong transaction ngắn, rollback mọi lỗi. Không giữ lock khi await parser. Xác định đường xử lý thay đổi file/preview stale (409 cần preview lại).
+- [x] **T-03.4 / test:** boundary 10 MiB và kích thước data URL thực, file MIME/signature/base64 sai, PDF rỗng/ảnh/khóa/parser lỗi, paste rỗng/quá dài; lỗi insert CV/upsert model config không tạo session hoặc làm đổi prefs; preview khác text lưu thì không tạo; bytes PDF không có trong DB/backup. Thử prompt nhận đúng phần text đã hiển thị.
 
-**Đụng tới:** `app/new/page.tsx`, `app/api/sessions/route.ts`, preview route mới, `lib/pdf.ts`, `lib/validate.ts`, `lib/prompts.ts`, test DB/API.  
+**Đụng tới:** `app/new/page.tsx`, `app/api/sessions/route.ts`, `app/api/sessions/preview/route.ts`, `lib/pdf.ts`, `lib/db.ts`, `lib/validate.ts`, test DB/API.  
 **DoD:** failure không để lại phiên mồ côi; thông báo quyền riêng tư và giới hạn thống nhất ở UI/API/prompt.
+
+**Trạng thái T-03 (2026-10-21):** đã kiểm chứng bằng `npm run typecheck`, `npm test` (80/80 network + 67/67 TypeScript) và `npm run build`; **không VPS/DB thật nào bị tác động** (`data/interview_sessions.db` và WAL giữ nguyên mtime 20/10, đã kiểm md5/mtime trước và sau; `data/` vẫn git-ignored).
+
+- **T-03.1:** `MAX_PDF_BYTES = 10 MiB` (giảm từ 20) và `MAX_PROMPT_CV_CHARS = 6000` dùng chung client/server; server kiểm theo thứ tự prefix `data:application/pdf;base64,` → alphabet base64 → trần byte đã giải mã (413) → chữ ký `%PDF-` tại offset 0 (400, BOM/khoảng trắng dẫn đầu không hợp lệ) → `pdf-parse` → text sau trim. Mọi lỗi là `PdfError` mang HTTP status, không chứa byte payload. `cvText` dài hơn 20.000 bị từ chối 400 thay vì `.slice()` thầm lặng; `app/new/page.tsx` bỏ `maxLength`, hiện bộ đếm + cảnh báo + khoá nút submit. `clearPdfState()` là điểm reset duy nhất cho mọi nhánh lỗi file, và `previewSeq` chặn response preview đến muộn.
+- **T-03.2:** `POST /api/sessions/preview` chạy Origin guard **trước** khi đọc body, yêu cầu `application/json`, kiểm `Content-Length`, giữ operation lease, và **không ghi gì**. Trả `{ text, charCount, truncated, promptCharCount, promptTruncated, digest }` với `digest = sha256(text)`. `/new` hiển thị đúng text đó (mặc định `<pre>` chỉ đọc, có nút sửa/huỷ để chỉnh rồi digest được tính lại), cho chọn lại file, và hiện digest rút gọn. Copy quyền riêng tư đã tách theo chế độ: paste = text đi tới provider; PDF = server chỉ trích text, file gốc không lưu.
+- **T-03.3:** `runInTransaction("IMMEDIATE", …)` mới trong `lib/db.ts` bọc đúng ba ghi (sessions + cv_extracts + model_configs upsert). `validatePdfDataUrl` + `extractPdfPreview` chạy **trước** transaction nên parser async không bao giờ giữ write lock. Preview lệch digest → 409 với thông điệp yêu cầu xem lại, không tạo phiên.
+- **T-03.4:** thêm `lib/pdf-preview.test.ts` (16 test) và `lib/sessions-create.test.ts` (11 test), cập nhật `lib/maintenance.test.ts`. Phủ: boundary đúng 10 MiB và +1 byte → 413; MIME/base64/signature sai → 400; parser lỗi → 400, parser không load được → 500 (không đổ lỗi server thành lỗi client); pdf-parse thật với fixture `01-valid.pdf` đi kèm chính gói `pdf-parse` (test tự skip nếu dependency không có file đó, nên không thêm PDF nhị phân vào repo); 403 trước khi đọc body; 415; 409 khi maintenance; paste rỗng/quá dài; digest lệch cả paste lẫn PDF; Zod strict; lỗi insert/upsert không đụng sentinel `model_configs`; `runInTransaction` rollback khi throw; và assert không byte PDF nào trong DB.
+
+**Chưa kiểm chứng (giữ ngoài phạm vi, không tick):** chưa có browser E2E cho `/new` (luồng chọn file → preview → sửa → tạo phiên chỉ mới kiểm bằng typecheck/build, chưa chạy tay trên trình duyệt); chưa có smoke ingress thật nên mức 413 của proxy vẫn chưa đối chiếu với Caddy; chưa chạy drill restore trên volume thật; `npm run lint` vẫn hỏi cấu hình vì repo chưa có ESLint config. Hai điểm này nằm ở T-07.
 
 ## T-04 — Phỏng vấn, telemetry, mobile/a11y (P1) → RQ-04; D-04
 
