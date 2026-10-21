@@ -30,7 +30,7 @@ export function buildSystemPrompt(ctx: InterviewContext): string {
   const tone =
     ctx.mode === "strict"
       ? "You are in strict-mock mode: ask one focused question per turn, never give hints or coach between turns, and never reveal the rubric. End your turn exactly after the question — no preamble."
-      : "You are in coaching mode: after the candidate answers (handled client-side), you will give a 2-bullet micro-rubric of (✓ Điểm tốt, ! Gợi ý cải thiện) and a /10 score, then ask the next question. Keep the rubric terse.";
+      : "You are in coaching mode: after the candidate answers (handled client-side), you will give a 2-bullet micro-rubric of (✓ Điểm tốt, ! Gợi ý cải thiện) and a /100 score, then ask the next question. Keep the rubric terse.";
 
   return `# Identity
 You are a senior staff/principal engineering interviewer. You conduct a real production-grade ${ctx.role} interview. You speak ${lang}. Technical jargon stays in English (kafka, redis, BGP, idempotency, …) even when the language is Vietnamese.

@@ -9,6 +9,7 @@ import { useStreamingChat } from "@/lib/useStreamingChat";
 import { sessionKeyError } from "@/lib/session-key";
 import { EVALUATION_STALE_AFTER_MS } from "@/lib/evaluation-constants";
 import { renderMarkdown } from "@/lib/markdown";
+import { earlyStopOptions, rubricPercent } from "@/lib/scoring";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 
 interface Props { params: { id: string } }
@@ -134,14 +135,14 @@ export default function ActiveSessionPage({ params }: Props) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const sendMessage = async (opening: boolean, earlyStop = false) => {
+  const sendMessage = async (opening: boolean, earlyStop = false, overrideAnswer?: string) => {
     if (inFlightRef.current || !session || stage !== "ready" || finalizing) return;
     const keyError = sessionKeyError(cfg, session);
     if (keyError) { setBootErr(keyError); return; }
     setBootErr(null);
     if (opening ? messages.some((m) => m.role === "interviewer") :
         !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)) return;
-    const submittedAnswer = opening ? "" : answer.trim();
+    const submittedAnswer = opening ? "" : (overrideAnswer ?? answer).trim();
     if (!opening && !submittedAnswer && !earlyStop) return;
     inFlightRef.current = true;
 
@@ -236,6 +237,13 @@ export default function ActiveSessionPage({ params }: Props) {
     }
   };
 
+  const cancelAndExit = () => {
+    if (!session) return;
+    if (confirm("Hủy phiên sẽ xóa phiên mà không tạo báo cáo. Bạn có chắc?")) {
+      fetch(`/api/sessions/${session.id}`, { method: "DELETE" }).then(() => router.push("/history"));
+    }
+  };
+
   if (stage === "loading") {
     return <div className="w-full px-gutter py-space-xl text-center text-on-surface-variant">Đang tải phiên…</div>;
   }
@@ -254,11 +262,50 @@ export default function ActiveSessionPage({ params }: Props) {
   const evaluatingStale = stage === "evaluating" &&
     (session.evaluation_started_at == null || Date.now() - session.evaluation_started_at * 1000 > EVALUATION_STALE_AFTER_MS);
   const pct = plan ? Math.round((plan.completed / plan.planned) * 100) : 0;
+  const earlyStopMode = earlyStopOptions({
+    answeredTurns: plan?.completed ?? 0,
+    plannedRounds: plan?.planned ?? 0,
+    hasDraftAnswer: answer.trim().length > 0,
+    sessionStatus: session.status,
+  });
 
   return (
-    <div className="w-full h-[calc(100vh-4rem)] flex">
-      {/* Sidebar (left) — 280px */}
-      <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 border-r" style={{ borderColor: "var(--border-hairline)" }}>
+    <div className="w-full h-[calc(100svh-4rem)] flex flex-col">
+      {/* Mobile toolbar (visible only on small screens; mirrors the desktop sidebar header + cancel). */}
+      <div
+        className="lg:hidden border-b"
+        style={{ borderColor: "var(--border-hairline)" }}
+      >
+        <div className="flex items-center gap-space-sm px-gutter py-space-sm">
+          <a
+            href="/history"
+            aria-label="Về lịch sử"
+            className="btn btn-ghost"
+          >
+            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          </a>
+          <div className="flex items-center gap-space-xs min-w-0 flex-1">
+            <Chip tone="indigo">{session.id}</Chip>
+            <span className="font-body-sm text-body-sm text-on-surface truncate">
+              {session.role}
+            </span>
+          </div>
+          <button
+            onClick={cancelAndExit}
+            aria-label="Hủy phiên"
+            className="btn btn-ghost text-error"
+            style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="font-headline-sm text-headline-sm">Hủy phiên</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Body row (desktop: sidebar | section | coaching; mobile: section only). */}
+      <div className="flex-1 flex min-h-0">
+        {/* Sidebar (left) — 280px */}
+        <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 border-r" style={{ borderColor: "var(--border-hairline)" }}>
         <div className="p-space-md flex flex-col gap-space-md">
           <div>
             <div className="flex items-center gap-space-xs">
@@ -304,11 +351,7 @@ export default function ActiveSessionPage({ params }: Props) {
           ) : null}
 
           <button
-            onClick={() => {
-              if (confirm("Dừng phiên này? Transcript hiện tại sẽ được giữ nguyên trong SQLite.")) {
-                fetch(`/api/sessions/${session.id}`, { method: "DELETE" }).then(() => router.push("/history"));
-              }
-            }}
+            onClick={cancelAndExit}
             className="btn btn-destructive w-full mt-auto"
           >
             <span className="material-symbols-outlined text-[18px]">close</span> Hủy phiên
@@ -338,7 +381,7 @@ export default function ActiveSessionPage({ params }: Props) {
             {evaluationPending ? <EvaluatingBanner pending /> : null}
             {stage === "evaluating" && !evaluatingStale && !evaluationPending ? <EvaluatingBanner /> : null}
             {(stage === "evaluating" && evaluatingStale || stage === "failed") && !evaluationPending ? (
-              <div className="card p-space-md flex flex-col gap-space-sm" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
+              <div className="card p-space-md flex flex-col gap-space-sm" role="status" aria-live="polite" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
                 <span className="font-headline-sm text-headline-sm text-error">Chấm điểm chưa hoàn tất</span>
                 <span className="font-body-sm text-body-sm text-on-surface">Câu trả lời đã lưu. Bạn có thể thử chấm điểm lại mà không cần gửi lại câu trả lời.</span>
                 <div className="flex gap-space-sm">
@@ -359,7 +402,7 @@ export default function ActiveSessionPage({ params }: Props) {
                 <span className="label-caps text-on-surface-variant uppercase">Câu trả lời của bạn</span>
                 <span className="label-code-sm text-on-surface-variant">{answer.length} / {MAX_ANSWER}</span>
               </div>
-              {plan && plan.completed > 0 && plan.completed < plan.planned && stage === "ready" && !finalizing ? (
+              {plan && stage === "ready" && !finalizing && earlyStopMode !== "disabled" ? (
                 <button onClick={() => setShowEarlyStopConfirm((v) => !v)} disabled={streaming} className="btn btn-ghost text-error" style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}>
                   <span className="material-symbols-outlined text-[18px]">stop_circle</span> Dừng sớm & chấm điểm
                 </button>
@@ -368,6 +411,7 @@ export default function ActiveSessionPage({ params }: Props) {
             <textarea
               className="input min-h-[120px] resize-y"
               placeholder="Trả lời câu hỏi phỏng vấn… (tối đa 4.000 ký tự)"
+              aria-label="Câu trả lời phỏng vấn"
               value={answer}
               onChange={(e) => setAnswer(e.target.value.slice(0, MAX_ANSWER))}
               disabled={streaming || finalizing || stage !== "ready" ||
@@ -375,15 +419,38 @@ export default function ActiveSessionPage({ params }: Props) {
               maxLength={MAX_ANSWER}
             />
             {showEarlyStopConfirm && stage === "ready" && !streaming && !finalizing ? (
-              <div className="card p-space-sm flex items-center justify-between" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
-                <span className="font-body-sm text-body-sm text-error">
-                  Dừng sớm sẽ tạo báo cáo ngay với số câu đã trả lời. Bạn có chắc?
-                </span>
-                <div className="flex gap-space-sm">
-                  <button onClick={() => setShowEarlyStopConfirm(false)} className="btn btn-ghost">Hủy</button>
-                  <button onClick={() => sendMessage(false, true)} disabled={streaming} className="btn btn-destructive">Dừng & chấm điểm</button>
+              earlyStopMode === "cancel-only" ? (
+                <div className="card p-space-sm flex flex-col gap-space-sm" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
+                  <span className="font-body-sm text-body-sm text-error">
+                    Bạn chưa có câu trả lời nào — hủy phiên sẽ xóa phiên mà không tạo báo cáo.
+                  </span>
+                  <div className="flex justify-end gap-space-sm">
+                    <button onClick={() => setShowEarlyStopConfirm(false)} className="btn btn-ghost">Hủy bỏ</button>
+                    <button onClick={cancelAndExit} disabled={streaming} className="btn btn-destructive">Hủy phiên</button>
+                  </div>
                 </div>
-              </div>
+              ) : earlyStopMode === "evaluate-empty" ? (
+                <div className="card p-space-sm flex items-center justify-between" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
+                  <span className="font-body-sm text-body-sm text-error">
+                    Dừng sớm sẽ tạo báo cáo ngay với số câu đã trả lời. Bạn có chắc?
+                  </span>
+                  <div className="flex gap-space-sm">
+                    <button onClick={() => setShowEarlyStopConfirm(false)} className="btn btn-ghost">Hủy</button>
+                    <button onClick={() => sendMessage(false, true)} disabled={streaming} className="btn btn-destructive">Dừng & chấm điểm</button>
+                  </div>
+                </div>
+              ) : earlyStopMode === "evaluate-or-finalize-draft" ? (
+                <div className="card p-space-sm flex flex-col gap-space-sm" style={{ borderColor: "rgba(244,63,94,0.4)" }}>
+                  <span className="font-body-sm text-body-sm text-error">
+                    Bạn đang soạn câu trả lời: muốn chấm với các câu đã lưu (bỏ qua bản nháp), hay gửi bản nháp làm câu cuối?
+                  </span>
+                  <div className="flex flex-wrap justify-end gap-space-sm">
+                    <button onClick={() => setShowEarlyStopConfirm(false)} className="btn btn-ghost">Hủy bỏ</button>
+                    <button onClick={() => sendMessage(false, true, "")} disabled={streaming} className="btn btn-destructive">Dừng & chấm các câu đã trả lời</button>
+                    <button onClick={() => sendMessage(false, true)} disabled={streaming} className="btn btn-primary">Gửi bản nháp rồi chấm</button>
+                  </div>
+                </div>
+              ) : null
             ) : null}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm label-code-sm text-on-surface-variant">
@@ -392,7 +459,7 @@ export default function ActiveSessionPage({ params }: Props) {
               </div>
               <div className="flex gap-space-sm">
                 {streaming && !finalizing ? (
-                  <button onClick={stop} className="btn btn-ghost">
+                  <button onClick={stop} className="btn btn-ghost" aria-label="Dừng stream từ AI">
                     <span className="material-symbols-outlined text-[18px]">stop</span> Dừng stream
                   </button>
                 ) : null}
@@ -401,6 +468,7 @@ export default function ActiveSessionPage({ params }: Props) {
                   disabled={streaming || finalizing || !answer.trim() || stage !== "ready" ||
                     !messages.some((m) => m.role === "interviewer" && m.turnNumber === (plan?.completed ?? 0) + 1 && !m.streaming)}
                   className="btn btn-primary"
+                  aria-label="Gửi câu trả lời"
                 >
                   <span className="material-symbols-outlined text-[18px]">send</span> Gửi
                 </button>
@@ -419,14 +487,14 @@ export default function ActiveSessionPage({ params }: Props) {
               <Chip tone="emerald">Per-turn rubric</Chip>
             </div>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Sau mỗi câu trả lời, AI sẽ chấm 1-10, highlight điểm mạnh và lỗ hổng ngay tại đây.
+              Mỗi câu trả lời (trừ câu cuối) hiện chấm 0-100 ở đây; câu cuối được chấm trong báo cáo tổng kết.
             </p>
             <div className="flex flex-col gap-space-sm">
               {messages.filter((m) => m.role === "interviewer" && m.coaching).slice().reverse().map((m) => (
                 <div key={m.id} className="card p-space-md flex flex-col gap-space-sm">
                   <div className="flex items-center justify-between">
                     <span className="label-caps text-on-surface uppercase">Câu {m.turnNumber}</span>
-                    <span className="label-code-sm text-tertiary">{m.coaching!.score}/10</span>
+                    <span className="label-code-sm text-tertiary">{m.coaching!.score}/100</span>
                   </div>
                   <RubricBar score={m.coaching!.score} />
                   <div className="flex flex-col gap-space-xs">
@@ -451,6 +519,7 @@ export default function ActiveSessionPage({ params }: Props) {
           </div>
         </aside>
       ) : null}
+      </div>
     </div>
   );
 }
@@ -474,7 +543,7 @@ function Bubble({ msg }: { msg: UiMessage }) {
           <div className="card p-space-md flex flex-col gap-space-sm" style={{ borderColor: "var(--tertiary)" }}>
             <div className="flex items-center justify-between">
               <span className="label-caps text-tertiary uppercase">Coaching rubric</span>
-              <span className="label-code-sm text-tertiary">{msg.coaching.score}/10</span>
+              <span className="label-code-sm text-tertiary">{msg.coaching.score}/100</span>
             </div>
             <RubricBar score={msg.coaching.score} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
@@ -515,7 +584,7 @@ function Bubble({ msg }: { msg: UiMessage }) {
 }
 
 function RubricBar({ score }: { score: number }) {
-  const pct = Math.max(0, Math.min(10, score)) * 10;
+  const pct = rubricPercent(score);
   return (
     <div className="h-1.5 rounded-full bg-surface-container-lowest overflow-hidden">
       <div className={`h-full ${pct >= 70 ? "bg-tertiary" : pct >= 40 ? "bg-warning" : "bg-destructive"}`} style={{ width: `${pct}%` }} />
@@ -525,7 +594,7 @@ function RubricBar({ score }: { score: number }) {
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="card p-space-md flex items-start gap-space-sm" style={{ borderColor: "rgba(244,63,94,0.5)" }}>
+    <div className="card p-space-md flex items-start gap-space-sm" role="alert" style={{ borderColor: "rgba(244,63,94,0.5)" }}>
       <span className="material-symbols-outlined text-error">error</span>
       <div className="flex flex-col">
         <span className="font-headline-sm text-headline-sm text-error">Đã xảy ra lỗi</span>
@@ -537,7 +606,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 function EvaluatingBanner({ pending = false }: { pending?: boolean }) {
   return (
-    <div className="card p-space-md flex items-center gap-space-sm glow-active" role="status">
+    <div className="card p-space-md flex items-center gap-space-sm glow-active" role="status" aria-live="polite">
       <span className="material-symbols-outlined text-primary animate-spin">progress_activity</span>
       <div className="flex flex-col">
         <span className="font-headline-sm text-headline-sm text-on-surface">{pending ? "Đang lưu câu trả lời để chấm điểm…" : "AI đang chấm điểm tổng kết…"}</span>
