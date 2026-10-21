@@ -5,6 +5,7 @@ import { claimEvaluation, evaluationIsStale, runEvaluation } from "@/lib/evaluat
 import type { SessionRow } from "@/lib/types";
 import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
+import { enterOperation } from "@/lib/maintenance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,9 @@ interface RouteParams { params: { id: string } }
 export async function POST(req: Request, { params }: RouteParams) {
   const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
   if (denied) return denied;
+  const release = enterOperation();
+  if (!release) return privateJson({ ok: false, error: "Database maintenance in progress" }, { status: 409 });
+  try {
   const session = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [params.id]);
   if (!session) return privateJson({ ok: false, error: "Session not found" }, { status: 404 });
 
@@ -42,5 +46,8 @@ export async function POST(req: Request, { params }: RouteParams) {
     return privateJson({ ok: true });
   } catch {
     return privateJson({ ok: false, error: "Không thể chấm điểm. Vui lòng thử lại." }, { status: 500 });
+  }
+  } finally {
+    release();
   }
 }

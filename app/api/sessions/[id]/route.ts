@@ -2,6 +2,7 @@ import { query, queryOne, exec } from "@/lib/db";
 import type { MessageTurnRow, SessionRow } from "@/lib/types";
 import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
+import { enterOperation } from "@/lib/maintenance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,12 @@ export async function GET(_req: Request, { params }: RouteParams) {
 export async function DELETE(req: Request, { params }: RouteParams) {
   const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
   if (denied) return denied;
-  exec(`DELETE FROM sessions WHERE id = ?`, [params.id]);
-  return privateJson({ ok: true });
+  const release = enterOperation();
+  if (!release) return privateJson({ ok: false, error: "Database maintenance in progress" }, { status: 409 });
+  try {
+    exec(`DELETE FROM sessions WHERE id = ?`, [params.id]);
+    return privateJson({ ok: true });
+  } finally {
+    release();
+  }
 }

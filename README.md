@@ -105,7 +105,9 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 | GET    | `/api/sessions/[id]/report`         | Parsed evaluation report |
 | GET    | `/api/sessions/[id]/attempts`       | Scoring audit trail (`?raw=1` includes the model's body) |
 | GET    | `/api/admin/db`                     | Path + counters |
-| POST   | `/api/admin/db`                     | `wipe-sessions` / `wipe-all` / `vacuum` / `backup` / `import` |
+| POST   | `/api/admin/db`                     | `wipe-sessions` / `wipe-all` / `vacuum` / JSON `backup` |
+| POST   | `/api/admin/db/validate-restore`    | Validate JSON backup and preview replacement counts |
+| POST   | `/api/admin/db/commit-restore`      | Confirm exact validated JSON bytes with short-lived token |
 | GET    | `/api/admin/schema`                 | Table list + DDL |
 
 ## Security & operations
@@ -113,9 +115,9 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 - The app is **single-tenant and has no application login**. For a VPS, configure `PUBLIC_ORIGIN` and place **every** page, asset and API route behind HTTPS + owner authentication at the reverse proxy; never expose app port 12213. Origin checks on mutations mitigate CSRF but are not authentication. See [the VPS sample](deploy/README.md). Keep the instance private until the [T-07 release gate](specs/interview-studio-improvements/tasks.md) (especially T-02 backup/restore and T-07) is complete.
 - `ALLOW_PRIVATE_BASE_URL=1` permits custom endpoints on local/private networks (e.g. Ollama at `http://localhost:11434`) and can expose internal services to anyone able to call this unauthenticated app. Leave it unset in public deployments. Link-local and metadata addresses remain blocked even with opt-in.
 - A custom API key is sent directly to the user-selected endpoint; only enter endpoints you trust. The key is not persisted in SQLite, and custom requests never fall back to OpenAI.
-- `VACUUM` periodically if you do a lot of wipes. `backup` exports a portable SQL script.
-- `import` re-executes the SQL. It does **not** validate the schema — only feed it files you created via `backup`.
-- WAL files (`*.db-wal`, `*.db-shm`) live next to the DB; ship all three for crash-safety.
+- `VACUUM` periodically if you do a lot of wipes. The browser backup exports a versioned JSON snapshot of all six application tables, including evaluation attempts. The file contains sensitive CV text, transcripts, raw model responses and custom endpoint URLs: store it encrypted with restricted permissions, never in the repository or a public download folder. It does not contain provider keys or PDF bytes.
+- Restore **replaces all application data** in a single transaction. The history page validates the selected JSON file, shows counts for the current and incoming data, and requires a separate confirmation. The server binds a short-lived token to the exact file bytes and to a content fingerprint of the database as reviewed. If anything changed in between — including an edit that leaves the row counts identical — the commit re-checks that fingerprint inside the restore transaction and aborts with 409 rather than overwriting newer data. A changed file, unsupported schema or legacy `.sql` upload is also rejected. A validated file is not a substitute for ingress authentication. Keep a copy of the current data before replacing it.
+- Browser backup and restore are limited to 50 MiB of UTF-8 JSON. An oversized export fails instead of downloading a partial file. For larger databases, use an offline SQLite-aware backup (SQLite backup API or `VACUUM INTO`) against a stopped/quiescent app, and restore into a **separate** volume for verification before swapping. Do not copy only the open `.db` file: WAL files (`*.db-wal`, `*.db-shm`) live beside it. See [the VPS runbook](deploy/README.md) for retention and recovery. Legacy SQL files must be converted offline on an isolated copy; the API never executes uploaded SQL.
 
 ## Deploy
 
@@ -124,7 +126,7 @@ The app does **not** work on Vercel / Netlify / Cloudflare Pages because of the 
 
 The checked-in [Dockerfile](Dockerfile) builds a Node 22 **standalone** Next.js image. Its non-root runner executes `node server.js` on internal port **12213**, with SQLite at `/data/interview_sessions.db` on a persistent volume (including WAL/SHM sidecars). The [Compose/Caddy sample and operator runbook](deploy/README.md) put the app on an isolated Docker network with no published app port; only Caddy serves HTTPS with owner authentication. Do not use `docker run -p 12213:12213` on a public VPS. With a host-installed proxy instead, publish only `127.0.0.1:12213:12213` and restrict access with a firewall.
 
-Set `PUBLIC_ORIGIN` to the exact external HTTPS origin at **runtime**. `NEXT_PUBLIC_PROVIDER_ENABLE` and other `NEXT_PUBLIC_*` settings are embedded at **build time**; rebuild to change them. Keep `ALLOW_PRIVATE_BASE_URL=0` on a VPS. The Caddy password hash and any other operator secrets must not be committed, baked into the image, or put in `NEXT_PUBLIC_*`. Docker's internal healthcheck talks directly to the container loopback, not through the authenticated public proxy. See the runbook for TLS setup, firewall checks, secret rotation/recovery, and SQLite-safe backups; **do not publish a real-data VPS yet** while the T-02/T-07 release gates remain open.
+Set `PUBLIC_ORIGIN` to the exact external HTTPS origin at **runtime**. `NEXT_PUBLIC_PROVIDER_ENABLE` and other `NEXT_PUBLIC_*` settings are embedded at **build time**; rebuild to change them. Keep `ALLOW_PRIVATE_BASE_URL=0` on a VPS. The Caddy password hash and any other operator secrets must not be committed, baked into the image, or put in `NEXT_PUBLIC_*`. Docker's internal healthcheck talks directly to the container loopback, not through the authenticated public proxy. See the runbook for TLS setup, firewall checks, secret rotation/recovery, and SQLite-safe backups; **do not publish a real-data VPS yet** until the T-01 proxy smoke checks, T-02 restore drill, T-03 and T-07 release gates are complete.
 
 ## Requirements coverage
 

@@ -1,112 +1,91 @@
 import { z } from "zod";
-import { exec, query, queryOne } from "@/lib/db";
+import { exportBackup, getBackupCounts, wipeBackupData, BackupError } from "@/lib/backup";
+import { getDb } from "@/lib/db";
 import { env } from "@/lib/env";
+import { enterMaintenance, enterOperation } from "@/lib/maintenance";
 import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-interface Counters {
-  sessions: number;
-  turns: number;
-  cv: number;
-  evaluations: number;
-  modelConfigs: number;
-}
+const Body = z.object({ action: z.enum(["wipe-sessions", "wipe-all", "vacuum", "backup"]) }).strict();
+const MAX_ACTION_BYTES = 1024;
 
-function counters(): Counters {
-  const c = (sql: string) => queryOne<{ n: number }>(`SELECT COUNT(*) AS n FROM ${sql}`)?.n ?? 0;
-  return {
-    sessions: c("sessions"),
-    turns: c("message_turns"),
-    cv: c("cv_extracts"),
-    evaluations: c("evaluations"),
-    modelConfigs: c("model_configs"),
-  };
+function errorResponse(error: unknown): Response {
+  if (error instanceof BackupError) return privateJson({ ok: false, error: error.message }, { status: error.status });
+  return privateJson({ ok: false, error: "Database operation failed" }, { status: 500 });
 }
 
 export async function GET() {
-  return privateJson({ ok: true, dbPath: env.INTERVIEW_DB_PATH, counters: counters() });
+  try {
+    return privateJson({ ok: true, dbPath: env.INTERVIEW_DB_PATH, counters: getBackupCounts() });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }
 
-/* POST — admin actions: wipe, vacuum, backup, import */
-const Body = z.object({
-  action: z.enum(["wipe-sessions", "wipe-all", "vacuum", "backup", "import"]),
-  payload: z.string().optional(),
-});
-
+/** Only action JSON belongs here. Uploaded backup bytes use the two restore routes. */
 export async function POST(req: Request) {
   const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
   if (denied) return denied;
-  let body: z.infer<typeof Body>;
-  try { body = Body.parse(await req.json()); }
-  catch (e) { return privateJson({ ok: false, error: (e as Error).message }, { status: 400 }); }
 
-  if (body.action === "wipe-sessions") {
-    exec(`DELETE FROM sessions`); // cascades
-    return privateJson({ ok: true, action: body.action, counters: counters() });
+  const length = req.headers.get("content-length");
+  if (length !== null && /^\d+$/.test(length) && Number(length) > MAX_ACTION_BYTES) {
+    return privateJson({ ok: false, error: "Action request too large" }, { status: 413 });
   }
-  if (body.action === "wipe-all") {
-    exec(`DELETE FROM sessions`);
-    exec(`DELETE FROM evaluations`);
-    exec(`DELETE FROM cv_extracts`);
-    exec(`DELETE FROM message_turns`);
-    exec(`DELETE FROM model_configs`);
-    return privateJson({ ok: true, action: body.action, counters: counters() });
+  if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(req.headers.get("content-type") ?? "")) {
+    return privateJson({ ok: false, error: "Expected application/json" }, { status: 415 });
   }
-  if (body.action === "vacuum") {
-    exec(`VACUUM`);
-    return privateJson({ ok: true, action: body.action });
-  }
-  if (body.action === "backup") {
-    const sql = await exportToSql();
-    return new Response(sql, {
-      status: 200,
-      headers: {
-        ...PRIVATE_HEADERS,
-        "content-type": "application/sql",
-        "content-disposition": `attachment; filename="interview-sessions-${Date.now()}.sql"`,
-      },
-    });
-  }
-  if (body.action === "import") {
-    if (!body.payload) return privateJson({ ok: false, error: "payload required" }, { status: 400 });
-    importFromSql(body.payload);
-    return privateJson({ ok: true, action: body.action, counters: counters() });
-  }
-  return privateJson({ ok: false, error: "unknown action" }, { status: 400 });
-}
 
-async function exportToSql(): Promise<string> {
-  const tables = ["sessions", "message_turns", "cv_extracts", "evaluations", "model_configs"];
-  const out: string[] = [];
-  out.push(`-- AI Mock Interview Studio backup`);
-  out.push(`-- generated ${new Date().toISOString()}`);
-  for (const t of tables) {
-    const rows = query<Record<string, unknown>>(`SELECT * FROM ${t}`);
-    if (!rows.length) continue;
-    const cols = Object.keys(rows[0]);
-    out.push(`-- ${t} (${rows.length} rows)`);
-    for (const r of rows) {
-      const vals = cols.map((c) => sqlValue(r[c])).join(", ");
-      out.push(`INSERT INTO ${t} (${cols.join(", ")}) VALUES (${vals});`);
+  let action: z.infer<typeof Body>["action"];
+  try {
+    if (!req.body) throw new Error("Missing action");
+    const reader = req.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_ACTION_BYTES) {
+          await reader.cancel();
+          return privateJson({ ok: false, error: "Action request too large" }, { status: 413 });
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
     }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    action = Body.parse(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))).action;
+  } catch {
+    return privateJson({ ok: false, error: "Invalid action request" }, { status: 400 });
   }
-  return out.join("\n") + "\n";
-}
 
-function sqlValue(v: unknown): string {
-  if (v === null || v === undefined) return "NULL";
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "1" : "0";
-  return `'${String(v).replace(/'/g, "''")}'`;
-}
-
-function importFromSql(sql: string) {
-  const cleaned = sql
-    .split("\n")
-    .filter((l) => !l.trim().startsWith("--"))
-    .join("\n");
-  const statements = cleaned.split(/;\s*\n/).map((s) => s.trim()).filter(Boolean);
-  for (const stmt of statements) exec(stmt);
+  const release = action === "backup" ? enterOperation() : enterMaintenance();
+  if (!release) return privateJson({ ok: false, error: "Database is busy" }, { status: 409 });
+  try {
+    if (action === "backup") {
+      return new Response(exportBackup(), {
+        headers: {
+          ...PRIVATE_HEADERS,
+          "content-type": "application/json; charset=utf-8",
+          "content-disposition": `attachment; filename="interview-sessions-${Date.now()}.json"`,
+        },
+      });
+    }
+    if (action === "vacuum") {
+      getDb().exec("VACUUM");
+      return privateJson({ ok: true, action });
+    }
+    wipeBackupData(action);
+    return privateJson({ ok: true, action, counters: getBackupCounts() });
+  } catch (error) {
+    return errorResponse(error);
+  } finally {
+    release();
+  }
 }

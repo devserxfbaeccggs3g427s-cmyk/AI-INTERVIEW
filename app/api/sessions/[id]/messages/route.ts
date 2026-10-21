@@ -13,6 +13,7 @@ import { MAX_ANSWER_CHARS } from "@/lib/validate";
 import type { MessageTurnRow, SessionRow } from "@/lib/types";
 import { env } from "@/lib/env";
 import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
+import { enterOperation } from "@/lib/maintenance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,10 @@ function sse(obj: unknown): string {
 export async function POST(req: Request, { params }: RouteParams) {
   const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
   if (denied) return denied;
+  const release = enterOperation();
+  if (!release) return privateJson({ ok: false, error: "Database maintenance in progress" }, { status: 409 });
+  let streamStarted = false;
+  try {
   const apiKey = req.headers.get("x-api-key") ?? undefined;
   const parsed = parseModelConfig(await req.json().catch(() => null), apiKey, Body);
   if (!parsed.ok) return privateJson({ ok: false, error: parsed.error }, { status: 400 });
@@ -115,6 +120,7 @@ export async function POST(req: Request, { params }: RouteParams) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      streamStarted = true;
       const enc = new TextEncoder();
       const write = (e: unknown) => {
         try { controller.enqueue(enc.encode(sse(e))); } catch { /* Client disconnected; finish persisted work. */ }
@@ -258,6 +264,7 @@ ${body.answer}
         write({ type: "error", message: (e as Error).message });
       } finally {
         try { controller.close(); } catch { /* already closed */ }
+        release();
       }
     },
   });
@@ -271,6 +278,11 @@ ${body.answer}
       "connection": "keep-alive",
     },
   });
+  } finally {
+    // Once start() runs, it owns the lease through provider streaming, DB
+    // persistence, and final evaluation (even if the client disconnects).
+    if (!streamStarted) release();
+  }
 }
 
 async function collectText(it: AsyncIterable<string>): Promise<string> {

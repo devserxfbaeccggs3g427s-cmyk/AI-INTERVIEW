@@ -7,6 +7,7 @@ import { MAX_CV_CHARS, validateStartSessionInput } from "@/lib/validate";
 import { extractPdfFromDataUrl } from "@/lib/pdf";
 import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
+import { enterOperation } from "@/lib/maintenance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +63,9 @@ const Body = modelConfigInput.extend({
 export async function POST(req: Request) {
   const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
   if (denied) return denied;
+  const release = enterOperation();
+  if (!release) return privateJson({ ok: false, error: "Database maintenance in progress" }, { status: 409 });
+  try {
   const parsed = parseModelConfig(await req.json().catch(() => null), undefined, Body, { allowMissingKey: true });
   if (!parsed.ok) return privateJson({ ok: false, error: parsed.error }, { status: 400 });
   const { body, cfg } = parsed;
@@ -131,4 +135,7 @@ export async function POST(req: Request) {
   }
 
   return privateJson({ ok: true, sessionId: id });
+  } finally {
+    release();
+  }
 }

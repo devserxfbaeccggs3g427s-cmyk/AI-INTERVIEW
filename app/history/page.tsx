@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Chip } from "@/components/Chip";
 import { PROVIDER_IDS, PROVIDER_REGISTRY } from "@/lib/providers/registry";
@@ -23,7 +23,41 @@ interface SessionListItem {
   evaluated_turns: number;
 }
 
-interface DbStatus { ok: boolean; dbPath: string; counters?: { sessions: number; turns: number; cv: number; evaluations: number; modelConfigs: number } }
+interface DbStatus { ok: boolean; dbPath: string; counters?: RestoreCounts }
+
+const RESTORE_TABLES = ["sessions", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "model_configs"] as const;
+type RestoreCounts = Record<(typeof RESTORE_TABLES)[number], number>;
+interface RestorePreview {
+  file: File;
+  token: string;
+  expiresAt: string | number;
+  incomingCounts: RestoreCounts;
+  currentCounts: RestoreCounts;
+  /** Short content fingerprint of the database state this preview was taken against. */
+  revision?: string;
+}
+
+function isRestoreCounts(value: unknown): value is RestoreCounts {
+  return typeof value === "object" && value !== null && RESTORE_TABLES.every((table) => {
+    const count = (value as Record<string, unknown>)[table];
+    return typeof count === "number" && Number.isSafeInteger(count) && count >= 0;
+  });
+}
+
+async function responseError(res: Response): Promise<Error> {
+  if (res.status === 413) return new Error("File quá lớn để phục hồi qua trình duyệt. Hãy sao lưu và phục hồi ngoại tuyến trên máy chủ bằng công cụ SQLite an toàn, không gửi file lớn qua giao diện này.");
+  const data = await res.json().catch(() => null);
+  return new Error(typeof data?.error === "string" ? data.error : `Yêu cầu thất bại (HTTP ${res.status}).`);
+}
+
+function totalCounts(counts: RestoreCounts): number {
+  return RESTORE_TABLES.reduce((sum, table) => sum + counts[table], 0);
+}
+
+function expiryTime(value: string | number): number {
+  if (typeof value === "number") return value < 1e12 ? value * 1000 : value;
+  return Date.parse(value);
+}
 
 export default function HistoryPage() {
   const [items, setItems] = useState<SessionListItem[]>([]);
@@ -35,9 +69,24 @@ export default function HistoryPage() {
   const [sort, setSort] = useState<string>("newest");
   const [q, setQ] = useState<string>("");
   const [busy, setBusy] = useState<string | null>(null);
+  const busyRef = useRef(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
+  const [replaceAcknowledged, setReplaceAcknowledged] = useState(false);
+  const selectedFileRef = useRef<File | null>(null);
+  const selectionVersion = useRef(0);
+  const [now, setNow] = useState(() => Date.now());
 
-  const reload = useCallback(async () => {
+  useEffect(() => {
+    if (!restorePreview) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [restorePreview]);
+
+  const reload = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     try {
       const u = new URL("/api/sessions", window.location.origin);
@@ -50,15 +99,27 @@ export default function HistoryPage() {
       // Each fetch is wrapped so a transient failure on one route
       // (server restart, dev hot-reload, etc.) does not abort the other
       // and does not throw an unhandled rejection into React.
-      const safeFetch = (url: string) =>
-        fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const safeFetch = async <T,>(url: string): Promise<{ ok: true; data: T } | { ok: false }> => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return { ok: false };
+          return { ok: true, data: (await res.json()) as T };
+        } catch {
+          return { ok: false };
+        }
+      };
 
       const [r, d] = await Promise.all([
-        safeFetch(u.toString()),
-        safeFetch("/api/admin/db"),
+        safeFetch<{ sessions?: SessionListItem[] }>(u.toString()),
+        safeFetch<DbStatus>("/api/admin/db"),
       ]);
-      setItems(r?.sessions ?? []);
-      setDb(d ?? { ok: false, dbPath: "—" });
+      // A failed fetch must never be rendered as "zero rows": after a restore
+      // that would read as if the operator had just wiped their data.
+      if (r.ok) setItems(r.data?.sessions ?? []);
+      if (d.ok) setDb(d.data);
+      const ok = r.ok && d.ok;
+      setLoadFailed(!ok);
+      return ok;
     } finally {
       setLoading(false);
     }
@@ -66,40 +127,136 @@ export default function HistoryPage() {
 
   useEffect(() => { void reload(); }, [reload]);
 
-  const admin = async (action: "wipe-sessions" | "wipe-all" | "vacuum" | "backup" | "import", payload?: string) => {
+  const beginBusy = (action: string) => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
     setBusy(action);
     setMsg(null);
+    return true;
+  };
+  const endBusy = () => {
+    busyRef.current = false;
+    setBusy(null);
+  };
+
+  const admin = async (action: "wipe-sessions" | "wipe-all" | "vacuum" | "backup") => {
+    if (!beginBusy(action)) return;
     try {
+      const res = await fetch("/api/admin/db", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw await responseError(res);
       if (action === "backup") {
-        const res = await fetch("/api/admin/db", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action }),
-        });
-        const blob = await res.blob();
-        download(blob, `interview-backup-${Date.now()}.sql`);
-        setMsg("Đã tải file backup SQL.");
+        if (!/^application\/json(?:\s*;|\s*$)/i.test(res.headers.get("content-type") ?? "")) {
+          throw new Error("Backup không phải JSON; không tải file để tránh lưu nội dung không hợp lệ.");
+        }
+        download(await res.blob(), `interview-backup-${Date.now()}.json`);
+        setMsg("Đã tải file backup JSON.");
       } else {
-        const res = await fetch("/api/admin/db", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action, payload }),
-        });
-        const j = await res.json();
-        if (!j.ok) throw new Error(j.error);
+        const result = await res.json();
+        if (result.ok !== true) throw new Error(result.error ?? "Thao tác thất bại.");
         setMsg(`Đã chạy ${action}.`);
         await reload();
       }
     } catch (e) {
       setMsg(`Lỗi: ${(e as Error).message}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
-  const onImport = async (file: File) => {
-    const text = await file.text();
-    await admin("import", text);
+  const validateRestore = async () => {
+    if (!selectedFile || !beginBusy("validate-restore")) return;
+    const file = selectedFile;
+    const version = selectionVersion.current;
+    setRestorePreview(null);
+    setReplaceAcknowledged(false);
+    try {
+      const res = await fetch("/api/admin/db/validate-restore", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: file,
+      });
+      if (!res.ok) throw await responseError(res);
+      const data = await res.json();
+      if (data.ok !== true || typeof data.token !== "string" || !isRestoreCounts(data.incomingCounts) || !isRestoreCounts(data.currentCounts)) {
+        throw new Error(data.error ?? "Phản hồi kiểm tra backup không hợp lệ.");
+      }
+      if ((typeof data.expiresAt !== "number" && typeof data.expiresAt !== "string") || !Number.isFinite(expiryTime(data.expiresAt)) || expiryTime(data.expiresAt) <= Date.now()) {
+        throw new Error("Token kiểm tra đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra lại.");
+      }
+      if (selectedFileRef.current !== file || selectionVersion.current !== version) return;
+      setNow(Date.now());
+      setRestorePreview({
+        file, token: data.token, expiresAt: data.expiresAt,
+        incomingCounts: data.incomingCounts, currentCounts: data.currentCounts,
+        revision: typeof data.revision === "string" ? data.revision : undefined,
+      });
+      setMsg("Đã kiểm tra file. Đối chiếu số lượng trước khi xác nhận phục hồi.");
+    } catch (e) {
+      if (selectedFileRef.current === file && selectionVersion.current === version) setMsg(`Lỗi: ${(e as Error).message}`);
+    } finally {
+      endBusy();
+    }
+  };
+
+  const commitRestore = async () => {
+    if (!restorePreview || !replaceAcknowledged || selectedFileRef.current !== restorePreview.file || busyRef.current) return;
+    if (expiryTime(restorePreview.expiresAt) <= Date.now()) {
+      setRestorePreview(null);
+      setReplaceAcknowledged(false);
+      setMsg("Token đã hết hạn. Vui lòng kiểm tra lại file trước khi phục hồi.");
+      return;
+    }
+    if (!confirm("Xác nhận lần cuối: THAY THẾ TOÀN BỘ dữ liệu SQLite hiện tại bằng file đã kiểm tra? Hành động này không thể hoàn tác. Bạn đã sao lưu dữ liệu hiện tại chưa?")) return;
+    if (selectedFileRef.current !== restorePreview.file || expiryTime(restorePreview.expiresAt) <= Date.now()) {
+      setRestorePreview(null);
+      setReplaceAcknowledged(false);
+      setMsg("File đã thay đổi hoặc token hết hạn. Vui lòng kiểm tra lại.");
+      return;
+    }
+    if (!beginBusy("commit-restore")) return;
+    const preview = restorePreview;
+    setRestorePreview(null); // Token chỉ dùng cho đúng một lần thử; lỗi cần kiểm tra lại.
+    try {
+      const res = await fetch("/api/admin/db/commit-restore", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-restore-token": preview.token },
+        body: preview.file,
+      });
+      if (!res.ok) throw await responseError(res);
+      const data = await res.json();
+      if (data.ok !== true) throw new Error(data.error ?? "Phục hồi thất bại.");
+      selectedFileRef.current = null;
+      selectionVersion.current += 1;
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setReplaceAcknowledged(false);
+      const reloaded = await reload();
+      setMsg(reloaded
+        ? "Đã phục hồi dữ liệu. Danh sách và thống kê đã được tải lại."
+        : "Đã phục hồi dữ liệu, nhưng danh sách chưa tải lại được. Vui lòng tải lại trang để xác nhận.");
+    } catch (e) {
+      setMsg(`Lỗi: ${(e as Error).message} Vui lòng kiểm tra lại file trước khi thử lại.`);
+    } finally {
+      endBusy();
+    }
+  };
+
+  const deleteSession = async (id: string) => {
+    if (busyRef.current || !confirm(`Xoá phiên ${id}?`) || !beginBusy("delete")) return;
+    try {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) throw await responseError(res);
+      setMsg("Đã xoá phiên.");
+      await reload();
+    } catch (e) {
+      setMsg(`Lỗi: ${(e as Error).message}`);
+    } finally {
+      endBusy();
+    }
   };
 
   return (
@@ -127,10 +284,19 @@ export default function HistoryPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-space-md">
         <Stat label="Sessions" value={db?.counters?.sessions ?? 0} icon="work" tone="indigo" />
-        <Stat label="Message Turns" value={db?.counters?.turns ?? 0} icon="forum" tone="emerald" />
-        <Stat label="CV Extracts" value={db?.counters?.cv ?? 0} icon="description" tone="amber" />
+        <Stat label="Message Turns" value={db?.counters?.message_turns ?? 0} icon="forum" tone="emerald" />
+        <Stat label="CV Extracts" value={db?.counters?.cv_extracts ?? 0} icon="description" tone="amber" />
         <Stat label="Evaluations" value={db?.counters?.evaluations ?? 0} icon="verified" tone="rose" />
       </div>
+
+      {loadFailed ? (
+        <div role="alert" className="flex items-start gap-space-sm rounded-xl border border-amber-500/40 bg-amber-500/10 p-space-md">
+          <span className="material-symbols-outlined text-[20px] text-amber-600">warning</span>
+          <span className="font-body-md text-body-md text-on-surface">
+            Không tải được danh sách hoặc thống kê từ máy chủ. Số liệu bên trên có thể đã cũ — không phải dữ liệu đã bị xoá. Vui lòng tải lại trang.
+          </span>
+        </div>
+      ) : null}
 
       <div className="card p-space-md flex flex-col gap-space-md">
         <div className="flex flex-wrap items-end gap-space-sm">
@@ -197,12 +363,10 @@ export default function HistoryPage() {
                         </Link>
                       )}
                       <button
-                        onClick={async () => {
-                          if (!confirm(`Xoá phiên ${s.id}?`)) return;
-                          await fetch(`/api/sessions/${s.id}`, { method: "DELETE" });
-                          await reload();
-                        }}
+                        onClick={() => void deleteSession(s.id)}
                         className="btn btn-destructive text-label-code-sm py-1 px-2"
+                        disabled={busy !== null}
+                        aria-label={`Xoá phiên ${s.id}`}
                       >
                         <span className="material-symbols-outlined text-[14px]">delete</span>
                       </button>
@@ -250,25 +414,76 @@ export default function HistoryPage() {
         <div className="card p-space-md flex flex-col gap-space-sm">
           <span className="label-caps text-on-surface uppercase">Sao lưu / Phục hồi</span>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Backup xuất ra file SQL chứa toàn bộ INSERT statements. Import cần file SQL cùng schema.
+            Sao lưu dưới dạng JSON. Nên tải bản sao lưu dữ liệu hiện tại trước khi phục hồi.
+            Phục hồi sẽ <strong className="text-error">thay thế toàn bộ dữ liệu hiện tại, không thể hoàn tác</strong>.
           </p>
           <div className="flex flex-wrap gap-space-sm">
-            <button onClick={() => admin("backup")} className="btn btn-ghost" disabled={busy !== null}>
-              <span className="material-symbols-outlined text-[18px]">download</span> Backup SQL
+            <button onClick={() => void admin("backup")} className="btn btn-ghost" disabled={busy !== null}>
+              <span className="material-symbols-outlined text-[18px]">download</span> Tải backup JSON
             </button>
-            <label className="btn btn-ghost cursor-pointer">
-              <span className="material-symbols-outlined text-[18px]">upload</span> Import SQL
-              <input
-                type="file"
-                accept=".sql,text/plain"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])}
-              />
-            </label>
-            <a href="/api/admin/schema" target="_blank" className="btn btn-ghost">
+            <a href="/api/admin/schema" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               <span className="material-symbols-outlined text-[18px]">code</span> Xem schema
             </a>
           </div>
+          <label className="font-body-sm text-body-sm text-on-surface" htmlFor="restore-file">Chọn file backup JSON để kiểm tra</label>
+          <input
+            id="restore-file"
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="input"
+            disabled={busy !== null}
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              selectedFileRef.current = file;
+              selectionVersion.current += 1;
+              setSelectedFile(file);
+              setRestorePreview(null);
+              setReplaceAcknowledged(false);
+              setMsg(null);
+            }}
+          />
+          <button onClick={() => void validateRestore()} className="btn btn-ghost self-start" disabled={busy !== null || !selectedFile}>
+            <span className="material-symbols-outlined text-[18px]">fact_check</span> Kiểm tra file
+          </button>
+          {restorePreview && expiryTime(restorePreview.expiresAt) > now ? (
+            <div className="flex flex-col gap-space-sm" aria-live="polite">
+              <p className="font-body-sm text-body-sm text-on-surface-variant">
+                File đã kiểm tra: <strong className="text-on-surface">{restorePreview.file.name}</strong>. Token hết hạn: {new Date(expiryTime(restorePreview.expiresAt)).toLocaleString("vi-VN")}.
+                {restorePreview.revision ? <> Mã trạng thái DB: <span className="label-code-sm">{restorePreview.revision}</span>.</> : null}
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-body-sm text-body-sm">
+                  <thead><tr className="border-b" style={{ borderColor: "var(--border-hairline)" }}>
+                    <th className="py-space-xs">Bảng</th><th className="py-space-xs">Hiện tại</th><th className="py-space-xs">File phục hồi</th>
+                  </tr></thead>
+                  <tbody>
+                    {RESTORE_TABLES.map((table) => (
+                      <tr key={table} className="border-b" style={{ borderColor: "var(--border-hairline)" }}>
+                        <td className="py-space-xs label-code-sm">{table}</td>
+                        <td className="py-space-xs">{restorePreview.currentCounts[table].toLocaleString("vi-VN")}</td>
+                        <td className="py-space-xs">{restorePreview.incomingCounts[table].toLocaleString("vi-VN")}</td>
+                      </tr>
+                    ))}
+                    <tr className="font-semibold text-on-surface">
+                      <td className="py-space-xs">Tổng</td>
+                      <td className="py-space-xs">{totalCounts(restorePreview.currentCounts).toLocaleString("vi-VN")}</td>
+                      <td className="py-space-xs">{totalCounts(restorePreview.incomingCounts).toLocaleString("vi-VN")}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <label className="flex items-start gap-space-xs font-body-sm text-body-sm text-error">
+                <input type="checkbox" checked={replaceAcknowledged} disabled={busy !== null} onChange={(e) => setReplaceAcknowledged(e.target.checked)} />
+                Tôi đã xem số lượng, hiểu dữ liệu hiện tại sẽ bị thay thế vĩnh viễn và đã cân nhắc sao lưu trước.
+              </label>
+              <button onClick={() => void commitRestore()} className="btn btn-destructive self-start" disabled={busy !== null || !replaceAcknowledged || selectedFile !== restorePreview.file}>
+                <span className="material-symbols-outlined text-[18px]">restore</span> Xác nhận phục hồi
+              </button>
+            </div>
+          ) : restorePreview ? (
+            <p className="font-body-sm text-body-sm text-error" role="status">Token đã hết hạn. Kiểm tra lại file trước khi phục hồi.</p>
+          ) : null}
         </div>
       </div>
 
