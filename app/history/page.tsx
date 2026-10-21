@@ -317,7 +317,7 @@ export default function HistoryPage() {
       </div>
 
       {msg ? (
-        <div className="card p-space-md flex items-center gap-space-sm">
+        <div role="status" className="card p-space-md flex items-center gap-space-sm">
           <span className="material-symbols-outlined text-primary">info</span>
           <span className="font-body-md text-body-md text-on-surface">{msg}</span>
         </div>
@@ -330,7 +330,7 @@ export default function HistoryPage() {
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--border-hairline)" }}>
                 {["ID", "Vị trí", "Provider / Model", "Trạng thái", "Chế độ", "Câu", "Điểm", "Ngày tạo", ""].map((h) => (
-                  <th key={h} className="px-space-md py-space-sm label-caps text-on-surface-variant uppercase">{h}</th>
+                  <th key={h} scope="col" className="px-space-md py-space-sm label-caps text-on-surface-variant uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -455,7 +455,7 @@ export default function HistoryPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left font-body-sm text-body-sm">
                   <thead><tr className="border-b" style={{ borderColor: "var(--border-hairline)" }}>
-                    <th className="py-space-xs">Bảng</th><th className="py-space-xs">Hiện tại</th><th className="py-space-xs">File phục hồi</th>
+                    <th scope="col" className="py-space-xs">Bảng</th><th scope="col" className="py-space-xs">Hiện tại</th><th scope="col" className="py-space-xs">File phục hồi</th>
                   </tr></thead>
                   <tbody>
                     {RESTORE_TABLES.map((table) => (
@@ -517,7 +517,7 @@ function Filter({ label, value, onChange, options }: { label: string; value: str
   return (
     <div className="flex flex-col gap-1 min-w-[120px]">
       <label className="label-caps text-on-surface uppercase">{label}</label>
-      <select className="input cursor-pointer" value={value} onChange={(e) => onChange(e.target.value)}>
+      <select className="input cursor-pointer" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </div>

@@ -202,7 +202,7 @@ export default function ByokConfigPage() {
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-space-md">
-          <TelemetryCard />
+          <OperationalStatus sessionOnly={cfg.sessionOnly} hydrated={hydrated} />
           <CapabilityCard />
           <SecurityNote disabledReason={providerEnabled ? undefined : providerSpec.disabledReason} />
         </div>
@@ -229,12 +229,13 @@ function PageHeader() {
       </div>
       <div className="flex items-center gap-space-sm bg-surface-subtle p-space-sm rounded-xl">
         <div className="w-8 h-8 rounded-lg bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
-          <span className="material-symbols-outlined text-[18px]">lock</span>
+          <span className="material-symbols-outlined text-[18px]">tune</span>
         </div>
         <div className="flex flex-col">
-          <span className="label-caps text-on-surface uppercase">Trạng thái bảo mật</span>
-          <span className="label-code-sm text-tertiary">Bộ nhớ RAM / Session Active</span>
+          <span className="label-caps text-on-surface uppercase">Cấu hình cục bộ</span>
+          <span className="label-code-sm text-tertiary">Chỉ lưu trong trình duyệt này</span>
         </div>
+        <span className="w-2 h-2 rounded-full bg-tertiary" />
       </div>
     </div>
   );
@@ -346,7 +347,7 @@ function ApiKeyCard({
           <label className="font-headline-sm text-headline-sm text-on-surface" htmlFor="apiKeyField">API Key của Provider</label>
         </div>
         <div className="flex items-center gap-space-xs label-code-sm text-on-surface-variant">
-          <span className="w-2 h-2 rounded-full bg-tertiary pulse-dot" />
+          <span className="w-2 h-2 rounded-full bg-tertiary" />
           <span>{detectedLabel}</span>
         </div>
       </div>
@@ -503,39 +504,82 @@ function Slider({ label, min, max, step, value, onChange, hint }: {
   );
 }
 
-function TelemetryCard() {
-  const points = "0,48 24,42 48,46 72,32 96,38 120,24 144,30 168,18 192,26 216,14 240,20";
+/**
+ * Shape of the optional `localStorage["byok.last-test"]` record.
+ *
+ * Nothing writes this key today — the test-key handler deliberately stays out of
+ * this page's write path — so in practice this panel renders the "chưa có dữ liệu"
+ * branch. The reader is written defensively anyway so the panel stays honest (and
+ * useful) the moment a writer exists, instead of being deleted and re-added.
+ */
+interface LastTestRecord { ok?: boolean; detail?: string; at?: number | string }
+
+function readLastTest(): LastTestRecord | null {
+  try {
+    const raw = window.localStorage.getItem("byok.last-test");
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null;
+    return parsed as LastTestRecord;
+  } catch {
+    return null;
+  }
+}
+
+function formatTestTime(value: number | string): string | null {
+  const ms = typeof value === "number"
+    ? (value < 1e12 ? value * 1000 : value)
+    : Date.parse(value);
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms).toLocaleString("vi-VN");
+}
+
+function OperationalStatus({ sessionOnly, hydrated }: { sessionOnly: boolean; hydrated: boolean }) {
+  const [lastTest, setLastTest] = useState<LastTestRecord | null>(null);
+
+  // Read only after the BYOK context has hydrated from storage, so the panel
+  // never reports a state the rest of the page has not read yet.
+  useEffect(() => {
+    if (!hydrated) return;
+    setLastTest(readLastTest());
+  }, [hydrated]);
+
+  const keyState = !hydrated
+    ? "…"
+    : sessionOnly
+      ? "Session-only (chỉ sessionStorage, mất khi đóng tab)"
+      : "Đã bật localStorage (cảnh báo NFR-2 — bất kỳ extension nào cũng đọc được)";
+
+  let connection = "Chưa chạy test kết nối";
+  if (lastTest) {
+    const outcome = lastTest.ok === true ? "Thành công" : lastTest.ok === false ? "Thất bại" : "Đã ghi nhận";
+    const when = lastTest.at != null ? formatTestTime(lastTest.at) : null;
+    connection = [outcome, lastTest.detail, when].filter(Boolean).join(" · ");
+  }
+
+  const rows: [string, string][] = [
+    ["BYOK key", keyState],
+    ["Kết nối gần nhất", connection],
+  ];
+
   return (
     <div className="card p-space-md flex flex-col gap-space-md">
       <div className="flex items-center justify-between">
-        <span className="label-caps text-tertiary uppercase">Session Telemetry</span>
-        <span className="px-space-xs py-0.5 rounded bg-surface-elevated label-code-sm text-on-surface-variant">Local Only</span>
+        <span className="label-caps text-tertiary uppercase">Trạng thái thực tế</span>
+        <span className="px-space-xs py-0.5 rounded bg-surface-elevated label-code-sm text-on-surface-variant">Chỉ tín hiệu thật</span>
       </div>
       <div className="flex flex-col gap-space-sm">
-        {[
-          ["Active Architecture", "Client-to-LLM Mesh"],
-          ["SQLite Server Sync", "Zero-Key Retention (WAL)"],
-          ["Client Sandbox", "Strict CSP Enabled"],
-          ["Estimated Token Fee", "0.00$ (Direct BYOK)"],
-        ].map(([k, v]) => (
-          <div key={k} className="flex justify-between items-center py-1">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex flex-col gap-1 py-1">
             <span className="font-body-sm text-body-sm text-on-surface-variant">{k}</span>
-            <span className={`label-code-sm ${v === "0.00$ (Direct BYOK)" ? "text-primary" : "text-on-surface"}`}>{v}</span>
+            <span className="label-code-sm text-on-surface break-words">{v}</span>
           </div>
         ))}
       </div>
-      <div className="flex flex-col gap-space-xs pt-space-xs">
-        <div className="flex justify-between items-center">
-          <span className="label-caps text-on-surface-variant uppercase">Độ trễ phản hồi (ms)</span>
-          <span className="label-code-sm text-tertiary">Min 38 · Avg 46</span>
-        </div>
-        <div className="w-full h-16 bg-surface-container-lowest rounded-lg p-space-xs flex items-end">
-          <svg className="w-full h-full text-tertiary overflow-visible" preserveAspectRatio="none" viewBox="0 0 240 60">
-            <polyline fill="none" points={points} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-            <circle cx="216" cy="14" r="3" className="fill-current text-tertiary" />
-          </svg>
-        </div>
-      </div>
+      <p className="font-body-sm text-body-sm text-on-surface-variant flex items-start gap-space-xs">
+        <span className="material-symbols-outlined text-[16px] text-tertiary flex-shrink-0 mt-0.5">block</span>
+        <span>Không đo độ trễ hoặc phí token. Ô này chỉ hiển thị trạng thái ứng dụng tự kiểm chứng được.</span>
+      </p>
     </div>
   );
 }
