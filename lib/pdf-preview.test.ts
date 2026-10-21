@@ -293,6 +293,7 @@ test("the preview route answers 200 with the PdfPreview body and never persists"
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   assert.equal(response.headers.get("referrer-policy"), "no-referrer");
   assert.deepEqual(await response.json(), {
+    ok: true,
     text,
     charCount: text.length,
     truncated: false,
@@ -314,4 +315,25 @@ test("the preview route answers 409 while maintenance holds the database", async
     release();
   }
   assert.equal((await withStubText("after maintenance", () => route.POST(post({ cvDataUrl: url(bytes()) })))).status, 200);
+});
+/**
+ * Cross-boundary guard: app/new/page.tsx accepts a preview only when `json.ok === true`
+ * and the digest is 64 hex characters. A shape change on this route is invisible to the
+ * other tests here but breaks the UI with "Không trích xuất được PDF (HTTP 200)" —
+ * so pin the exact client acceptance rule.
+ */
+test("a 200 preview satisfies the /new client's acceptance check", async () => {
+  const text = "Nguyễn Quang Ngọc\nSENIOR BACKEND ENGINEER\nBANK";
+  const response = await withStubText(text, () => route.POST(post({ cvDataUrl: url(bytes()) })));
+  const json = await response.json();
+  assert.equal(response.ok, true);
+  assert.equal(json.ok, true, "client gates on json.ok === true; a 200 without it renders as an error");
+  assert.equal(typeof json.text, "string");
+  assert.equal(typeof json.digest, "string");
+  assert.match(json.digest, /^[a-f0-9]{64}$/, "client rejects a digest that is not 64 hex chars");
+  // The client also feeds these straight into the /new counters.
+  assert.equal(typeof json.charCount, "number");
+  assert.equal(typeof json.promptCharCount, "number");
+  assert.equal(typeof json.truncated, "boolean");
+  assert.equal(typeof json.promptTruncated, "boolean");
 });

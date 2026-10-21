@@ -36,7 +36,10 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return privateJson({ ok: false, error: "Expected { cvDataUrl } with a PDF data URL" }, { status: 400 });
     }
-    return privateJson(await extractPdfPreview(parsed.data.cvDataUrl));
+    // `ok: true` is the house envelope every other mutation answers with, and the
+    // /new client accepts a preview only when `json.ok === true`. Omitting it makes a
+    // perfectly good 200 render as "Không trích xuất được PDF (HTTP 200)".
+    return privateJson({ ok: true, ...(await extractPdfPreview(parsed.data.cvDataUrl)) });
   } catch (error) {
     if (error instanceof PdfError) {
       return privateJson({ ok: false, error: error.message }, { status: error.status });
