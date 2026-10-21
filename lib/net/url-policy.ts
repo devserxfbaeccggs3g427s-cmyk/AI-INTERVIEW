@@ -287,9 +287,10 @@ export function classifyAddress(address: string): AddressTier {
  * The connect-time gate. Call this for the literal host and for EVERY address
  * DNS returns, immediately before a socket is opened.
  *
- * Throws `UrlPolicyError` on any rejection. `protocol` matters: plain `http:` is
- * only ever allowed for a local target reached under the explicit opt-in, so the
- * opt-in can never be used to downgrade a public provider to cleartext.
+ * Throws `UrlPolicyError` on any rejection. `protocol` matters: plain `http:`
+ * is only ever allowed under the explicit opt-in. The opt-in covers loopback,
+ * RFC1918, ULA, AND any public IP the operator has explicitly chosen to reach
+ * over cleartext (for example a legacy VPS without TLS termination).
  */
 export function assertAddressAllowed(
   address: string,
@@ -316,12 +317,6 @@ export function assertAddressAllowed(
     );
   }
   if (tier === "public") {
-    if (protocol === "http:") {
-      throw new UrlPolicyError(
-        "unsupported_protocol",
-        "Plain http:// is only allowed for a local target.",
-      );
-    }
     return;
   }
   // tier === "private"

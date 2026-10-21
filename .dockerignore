@@ -1,0 +1,38 @@
+# Keep the build context small and deterministic — nothing here should
+# ever influence the image that `npm ci` + `next build` produce.
+
+# Host installs / stale build output (rebuilt inside the image)
+node_modules/
+.next/
+out/
+dist/
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# SQLite: data must come from a volume, never baked into a layer
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets — .env.example is kept as documentation, real .env files are not
+.env
+.env.local
+.env.*.local
+
+# VCS / tooling / editor
+.git/
+.gitignore
+.idea/
+.vscode/
+.claude/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker's own files (avoid invalidating the build cache)
+Dockerfile
+.dockerignore
+docker-compose.yml

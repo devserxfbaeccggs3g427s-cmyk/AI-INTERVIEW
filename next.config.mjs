@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Emit a self-contained server bundle in .next/standalone (only the modules
+  // actually loaded at runtime). Used by the Docker image in Dockerfile.
+  // Additive: `next dev` and `next start` keep working unchanged.
+  output: "standalone",
   // NFR-5: Persistent disk required for node:sqlite. Force Node.js runtime everywhere.
   // Per FR-12 and NFR-12, no edge runtime is allowed.
   experimental: {
