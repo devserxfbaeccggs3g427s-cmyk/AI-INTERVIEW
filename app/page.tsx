@@ -9,7 +9,7 @@ import { ENABLED_PROVIDER_IDS, getProviderSpec, isProviderEnabled, PROVIDER_IDS,
 interface ModelRow { id: string; label?: string }
 
 export default function ByokConfigPage() {
-  const { cfg, setCfg, reset, hydrated } = useByok();
+  const { cfg, setCfg, reset, hydrated, selectProvider, applyFetchedModels } = useByok();
 
   const [showKey, setShowKey] = useState(false);
   const [testState, setTestState] = useState<"idle" | "testing" | "ok" | "fail">("idle");
@@ -35,7 +35,10 @@ export default function ByokConfigPage() {
       if (Array.isArray(json.models) && json.models.length) {
         setModels(json.models);
         if (!json.warning && !json.models.find((m: ModelRow) => m.id === cfg.model)) {
-          setCfg({ model: json.models[0].id });
+          // Route through applyFetchedModels, never setCfg({ model }): this value
+          // did not come from a keystroke, so it must not overwrite a model the
+          // user is currently typing. The guard lives in the context (T-05.3).
+          applyFetchedModels(json.models.map((m: ModelRow) => m.id));
         }
         if (json.warning) setModelNote(json.warning);
       } else {
@@ -47,7 +50,7 @@ export default function ByokConfigPage() {
     } finally {
       setFetchingModels(false);
     }
-  }, [cfg.provider, cfg.model, cfg.baseUrl, cfg.apiKey, setCfg]);
+  }, [cfg.provider, cfg.model, cfg.baseUrl, cfg.apiKey, applyFetchedModels]);
 
   useEffect(() => {
     if (!providerEnabled) {
@@ -112,7 +115,7 @@ export default function ByokConfigPage() {
             return (
               <button
                 key={id}
-                onClick={() => setCfg({ provider: id, model: p.models[0].id, apiKey: id === cfg.provider ? cfg.apiKey : "" })}
+                onClick={() => selectProvider(id)}
                 disabled={!enabled}
                 title={enabled ? undefined : p.disabledReason}
                 className={`text-left p-space-md rounded-xl transition-all flex flex-col justify-between gap-space-md ${
