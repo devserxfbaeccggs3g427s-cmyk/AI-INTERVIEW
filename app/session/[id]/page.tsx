@@ -305,8 +305,8 @@ export default function ActiveSessionPage({ params }: Props) {
       {/* Body row (desktop: sidebar | section | coaching; mobile: section only). */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar (left) — 280px */}
-        <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 border-r" style={{ borderColor: "var(--border-hairline)" }}>
-        <div className="p-space-md flex flex-col gap-space-md">
+        <aside className="hidden lg:flex flex-col w-[280px] flex-shrink-0 min-h-0 overflow-y-auto scrollbar-thin border-r" style={{ borderColor: "var(--border-hairline)" }}>
+        <div className="p-space-md flex flex-col gap-space-md min-w-0">
           <div>
             <div className="flex items-center gap-space-xs">
               <span className="label-caps text-tertiary uppercase">Session</span>
@@ -480,8 +480,8 @@ export default function ActiveSessionPage({ params }: Props) {
 
       {/* Right drawer: live coaching rubric */}
       {session.mode === "coaching" ? (
-        <aside className="hidden xl:flex flex-col w-[340px] flex-shrink-0 border-l" style={{ borderColor: "var(--border-hairline)" }}>
-          <div className="p-space-md flex flex-col gap-space-md">
+        <aside className="hidden xl:flex flex-col w-[340px] flex-shrink-0 min-h-0 overflow-y-auto scrollbar-thin border-l" style={{ borderColor: "var(--border-hairline)" }}>
+          <div className="p-space-md flex flex-col gap-space-md min-w-0">
             <div className="flex items-center justify-between">
               <span className="label-caps text-tertiary uppercase">Live Coaching</span>
               <Chip tone="emerald">Per-turn rubric</Chip>
