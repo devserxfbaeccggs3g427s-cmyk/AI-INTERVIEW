@@ -90,8 +90,8 @@ export function TopBar() {
         <nav
           id="primary-mobile-menu"
           aria-label="Điều hướng chính"
-          className="lg:hidden absolute top-full left-0 right-0 z-50 bg-surface-overlay rounded-xl p-space-md flex flex-col gap-space-xs"
-          style={{ border: "1px solid var(--border-hairline)" }}
+          className="lg:hidden absolute top-full left-3 right-3 mt-2 z-50 shadow-2xl bg-[var(--bg-surface-overlay)] backdrop-blur-md rounded-xl p-space-md flex flex-col gap-space-xs"
+          style={{ border: "1px solid var(--border-strong)" }}
         >
           {NAV.map((item) => {
             const active = path === item.href || (item.href !== "/" && path.startsWith(item.href));

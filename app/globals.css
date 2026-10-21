@@ -89,6 +89,11 @@ body {
     background: rgba(15, 23, 42, 0.78);
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--border-hairline);
+    /* `position: fixed` already establishes a containing block for the absolute
+       mobile menu, but pinning `relative` makes the contract obvious and protects
+       the dropdown if the rule is ever demoted to `static`. */
+    position: fixed;
+    isolation: isolate;
   }
   .nav-link {
     @apply px-space-sm py-space-xs rounded-lg font-body-sm text-body-sm text-on-surface-variant transition-colors whitespace-nowrap;
