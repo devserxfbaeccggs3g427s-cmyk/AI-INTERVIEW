@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exec, getDb, query, queryOne } from "@/lib/db";
 import { getProvider } from "@/lib/providers";
@@ -12,6 +11,8 @@ import {
 import { claimEvaluation, runEvaluation } from "@/lib/evaluation";
 import { MAX_ANSWER_CHARS } from "@/lib/validate";
 import type { MessageTurnRow, SessionRow } from "@/lib/types";
+import { env } from "@/lib/env";
+import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,21 +38,23 @@ function sse(obj: unknown): string {
 }
 
 export async function POST(req: Request, { params }: RouteParams) {
+  const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
+  if (denied) return denied;
   const apiKey = req.headers.get("x-api-key") ?? undefined;
   const parsed = parseModelConfig(await req.json().catch(() => null), apiKey, Body);
-  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  if (!parsed.ok) return privateJson({ ok: false, error: parsed.error }, { status: 400 });
   const { body, cfg } = parsed;
 
   const session = queryOne<SessionRow>(`SELECT * FROM sessions WHERE id = ?`, [params.id]);
-  if (!session) return NextResponse.json({ ok: false, error: "Session not found" }, { status: 404 });
+  if (!session) return privateJson({ ok: false, error: "Session not found" }, { status: 404 });
   if (session.status !== "active")
-    return NextResponse.json({ ok: false, error: "Session is not active" }, { status: 409 });
+    return privateJson({ ok: false, error: "Session is not active" }, { status: 409 });
   const sessionConfig = resolveSessionConfig(session, cfg);
-  if (!sessionConfig.ok) return NextResponse.json({ ok: false, error: sessionConfig.error }, { status: 409 });
+  if (!sessionConfig.ok) return privateJson({ ok: false, error: sessionConfig.error }, { status: 409 });
   const creds = sessionConfig.cfg;
 
   if (body.answer.length > MAX_ANSWER_CHARS) {
-    return NextResponse.json(
+    return privateJson(
       { ok: false, error: `Answer exceeds ${MAX_ANSWER_CHARS} characters (FR-10)` },
       { status: 400 },
     );
@@ -66,17 +69,17 @@ export async function POST(req: Request, { params }: RouteParams) {
   const isOpener = questions.length === 0 && completedUserTurns === 0 && !body.answer.trim();
   const stopWithoutAnswer = !!body.earlyStop && !body.answer.trim() && completedUserTurns > 0;
   if (questions.length === completedUserTurns && completedUserTurns > 0) {
-    return NextResponse.json({ ok: false, error: "Wait for the next question before submitting an answer" }, { status: 409 });
+    return privateJson({ ok: false, error: "Wait for the next question before submitting an answer" }, { status: 409 });
   }
   if (isOpener && (body.earlyStop || body.finalize)) {
-    return NextResponse.json({ ok: false, error: "Start the interview before evaluating" }, { status: 400 });
+    return privateJson({ ok: false, error: "Start the interview before evaluating" }, { status: 400 });
   }
   if (!isOpener && !stopWithoutAnswer &&
       (questions.length !== completedUserTurns + 1 || !body.answer.trim())) {
-    return NextResponse.json({ ok: false, error: "Wait for a question before submitting an answer" }, { status: 409 });
+    return privateJson({ ok: false, error: "Wait for a question before submitting an answer" }, { status: 409 });
   }
   if (stopWithoutAnswer && questions.length !== completedUserTurns + 1) {
-    return NextResponse.json({ ok: false, error: "Interview has no unanswered question" }, { status: 409 });
+    return privateJson({ ok: false, error: "Interview has no unanswered question" }, { status: 409 });
   }
 
   const answeredTurn = isOpener || stopWithoutAnswer ? completedUserTurns : completedUserTurns + 1;
@@ -262,7 +265,8 @@ ${body.answer}
   return new Response(stream, {
     headers: {
       "content-type": "text/event-stream; charset=utf-8",
-      "cache-control": "no-cache, no-transform",
+      "cache-control": "private, no-store, no-transform",
+      "referrer-policy": PRIVATE_HEADERS["referrer-policy"],
       "x-accel-buffering": "no",
       "connection": "keep-alive",
     },

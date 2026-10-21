@@ -1,0 +1,26 @@
+# VPS ingress sample (T-01.1 only)
+
+This sample is **not a production release gate**. Verify server-side Origin/CSRF enforcement (T-01.2) independently, along with backup/restore and full ingress smoke tests. Do not expose a real-data instance until those gates are complete. Run one app replica per SQLite volume; no public app port is mapped. The app listens on port 12213 inside Docker; Caddy alone publishes TCP 80/443 and UDP 443 for HTTPS. Docker's `EXPOSE` is metadata, not a published port. Set the VPS firewall to permit only controlled SSH and 80/443; verify externally that 12213 is unreachable.
+
+## Prepare domain and auth secret
+
+Point a DNS name at the VPS, open 80/443 for automatic certificate issuance, and set `SITE_DOMAIN` to **only** its bare DNS name (e.g. `interview.example.com`; no scheme, slash, port, or wildcard). Compose supplies `PUBLIC_ORIGIN=https://${SITE_DOMAIN}` to the app at **runtime**; `lib/origin-guard.ts` requires this to match the browser's serialized HTTPS Origin exactly, and rejects every POST/DELETE when it does not. Do not use a CDN or extra TLS-terminating proxy without revisiting the forwarded-header trust model. Caddy certificate state persists in `caddy_data`.
+
+Generate a bcrypt hash interactively with a trusted Caddy CLI (`caddy hash-password` or `docker run --rm -it caddy:2 caddy hash-password`; the latter requires a running Docker daemon). Never type the plaintext password into shell arguments, history, a committed file, or a URL. Put a **single line** of the form `owner <bcrypt-hash>` in a root-controlled file outside the repository and Docker build context, e.g. `/etc/interview-studio/basic-auth.users`. It is imported inside the Caddy `basic_auth` block, so do not put a directive or braces in it. No actual credentials belong in this sample. Use a restrictive parent directory and file permissions (e.g. `install -d -m 0700 /etc/interview-studio`, then `chmod 0400` on the file; Docker's secret mount is readable inside Caddy's container). Ensure the file ends in a newline, is not empty, and is kept out of backup exports and version control. Set `AUTH_SNIPPET_PATH` to its **absolute** path. Compose refuses an unset path; the entrypoint refuses an absent, empty or malformed credential line before Caddy starts. Verify the hash using a non-production password before opening public access. The Compose definition itself never contains a hash or password.
+
+Start from the repository checkout (not from a copied Compose file):
+
+```sh
+export SITE_DOMAIN=interview.example.com
+export AUTH_SNIPPET_PATH=/etc/interview-studio/basic-auth.users
+docker compose -f deploy/compose.yaml config --quiet
+docker compose -f deploy/compose.yaml up -d --build
+```
+
+Optionally set `NEXT_PUBLIC_PROVIDER_ENABLE` before **building** to opt into a permitted provider list. This is inlined into the Next.js client bundle; modifying it requires a rebuild. Never put credentials into any `NEXT_PUBLIC_*` value. `ALLOW_PRIVATE_BASE_URL=0` is fixed in this sample. The app's `/data` named volume holds the SQLite database plus WAL/SHM sidecars; keep the volume when replacing containers. Do not copy only an open `.db` file as a backup, and do not remove volumes with `down -v` unless intentionally destroying all data.
+
+## Check and recover
+
+Before exposure, check an anonymous request to `/`, `/_next/*` and `/api/*` returns 401, a valid credential can reach those routes and stream SSE, and an outside host cannot connect to 12213. Check TLS renewal, redirects and the exact HTTPS Origin. The Dockerfile's healthcheck probes the app **inside its container**; it is not a public unauthenticated endpoint. Caddy disables access logging, strips proxy credentials/identity claims before upstream, sets private no-store responses and flushes SSE. Avoid enabling request headers/bodies or verbose debug logs: `x-api-key`, CV and backup payloads are sensitive. App errors and diagnostics still need separate privacy review.
+
+Rotate access by preparing a new bcrypt line in a temporary file with the same restrictive permissions, atomically replacing the file at `AUTH_SNIPPET_PATH`, then restarting Caddy (`docker compose -f deploy/compose.yaml restart caddy`). Confirm the old password fails and the new one works; Caddy must not be bypassed during replacement. Keep a secure recovery channel (SSH + offline copy of deployment settings); if Caddy/auth/TLS breaks, close ingress at the firewall rather than publishing 12213. Recover certificate state from the Caddy volume or reissue after DNS and ports are repaired. Schedule SQLite-aware backups and test restoration on a separate volume under the later backup task.

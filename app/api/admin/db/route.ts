@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { exec, query, queryOne } from "@/lib/db";
 import { env } from "@/lib/env";
+import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ function counters(): Counters {
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, dbPath: env.INTERVIEW_DB_PATH, counters: counters() });
+  return privateJson({ ok: true, dbPath: env.INTERVIEW_DB_PATH, counters: counters() });
 }
 
 /* POST — admin actions: wipe, vacuum, backup, import */
@@ -36,13 +36,15 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
+  const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
+  if (denied) return denied;
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
-  catch (e) { return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 400 }); }
+  catch (e) { return privateJson({ ok: false, error: (e as Error).message }, { status: 400 }); }
 
   if (body.action === "wipe-sessions") {
     exec(`DELETE FROM sessions`); // cascades
-    return NextResponse.json({ ok: true, action: body.action, counters: counters() });
+    return privateJson({ ok: true, action: body.action, counters: counters() });
   }
   if (body.action === "wipe-all") {
     exec(`DELETE FROM sessions`);
@@ -50,28 +52,29 @@ export async function POST(req: Request) {
     exec(`DELETE FROM cv_extracts`);
     exec(`DELETE FROM message_turns`);
     exec(`DELETE FROM model_configs`);
-    return NextResponse.json({ ok: true, action: body.action, counters: counters() });
+    return privateJson({ ok: true, action: body.action, counters: counters() });
   }
   if (body.action === "vacuum") {
     exec(`VACUUM`);
-    return NextResponse.json({ ok: true, action: body.action });
+    return privateJson({ ok: true, action: body.action });
   }
   if (body.action === "backup") {
     const sql = await exportToSql();
     return new Response(sql, {
       status: 200,
       headers: {
+        ...PRIVATE_HEADERS,
         "content-type": "application/sql",
         "content-disposition": `attachment; filename="interview-sessions-${Date.now()}.sql"`,
       },
     });
   }
   if (body.action === "import") {
-    if (!body.payload) return NextResponse.json({ ok: false, error: "payload required" }, { status: 400 });
+    if (!body.payload) return privateJson({ ok: false, error: "payload required" }, { status: 400 });
     importFromSql(body.payload);
-    return NextResponse.json({ ok: true, action: body.action, counters: counters() });
+    return privateJson({ ok: true, action: body.action, counters: counters() });
   }
-  return NextResponse.json({ ok: false, error: "unknown action" }, { status: 400 });
+  return privateJson({ ok: false, error: "unknown action" }, { status: 400 });
 }
 
 async function exportToSql(): Promise<string> {

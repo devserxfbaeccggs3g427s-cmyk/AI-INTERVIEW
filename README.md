@@ -65,12 +65,12 @@ node -v
 # 2. Install
 npm install
 
-# 3. Dev
-npm run dev
+# 3. Dev (set the exact origin used by your browser)
+PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 # → http://localhost:3000
 ```
 
-`.env.example` covers all env vars; copy it to `.env.local` if you want to override. To enable Custom, set `NEXT_PUBLIC_PROVIDER_ENABLE=anthropic,openai,gemini,custom` and restart `next dev` (rebuild for production: `NEXT_PUBLIC_*` is baked into the client bundle). Custom accepts `https://api.groq.com/openai/v1` or `http://localhost:11434` (adds `/v1` automatically); for local/private hosts set `ALLOW_PRIVATE_BASE_URL=1` on the server. Public endpoints must use HTTPS; HTTP is only for local/private hosts when explicitly opted in.
+`.env.example` covers all env vars; copy it to `.env.local` if you want to override. Set `PUBLIC_ORIGIN` to the exact origin in the address bar (for example `http://localhost:3000` during local development); missing or mismatched Origin rejects POST/DELETE, even locally. To enable Custom, set `NEXT_PUBLIC_PROVIDER_ENABLE=anthropic,openai,gemini,custom` and restart `next dev` (rebuild for production: `NEXT_PUBLIC_*` is baked into the client bundle). Custom accepts `https://api.groq.com/openai/v1` or `http://localhost:11434` (adds `/v1` automatically); for local/private hosts set `ALLOW_PRIVATE_BASE_URL=1` on the server. Public endpoints must use HTTPS; HTTP is only for local/private hosts when explicitly opted in.
 
 ## BYOK security model (NFR-2 / NFR-10 / NFR-11)
 
@@ -110,7 +110,7 @@ npm run dev
 
 ## Security & operations
 
-- The instance is **single-tenant / no auth**. Do not expose port 3000 to the public internet without a reverse proxy + firewall.
+- The app is **single-tenant and has no application login**. For a VPS, configure `PUBLIC_ORIGIN` and place **every** page, asset and API route behind HTTPS + owner authentication at the reverse proxy; never expose app port 12213. Origin checks on mutations mitigate CSRF but are not authentication. See [the VPS sample](deploy/README.md). Keep the instance private until the [T-07 release gate](specs/interview-studio-improvements/tasks.md) (especially T-02 backup/restore and T-07) is complete.
 - `ALLOW_PRIVATE_BASE_URL=1` permits custom endpoints on local/private networks (e.g. Ollama at `http://localhost:11434`) and can expose internal services to anyone able to call this unauthenticated app. Leave it unset in public deployments. Link-local and metadata addresses remain blocked even with opt-in.
 - A custom API key is sent directly to the user-selected endpoint; only enter endpoints you trust. The key is not persisted in SQLite, and custom requests never fall back to OpenAI.
 - `VACUUM` periodically if you do a lot of wipes. `backup` exports a portable SQL script.
@@ -122,19 +122,9 @@ npm run dev
 Anywhere Node 22+ runs with persistent disk: Docker volume, Railway / Fly volume, VPS.
 The app does **not** work on Vercel / Netlify / Cloudflare Pages because of the `node:sqlite` requirement (NFR-5).
 
-```dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-ENV NODE_ENV=production
-ENV INTERVIEW_DB_PATH=/data/interview_sessions.db
-VOLUME /data
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+The checked-in [Dockerfile](Dockerfile) builds a Node 22 **standalone** Next.js image. Its non-root runner executes `node server.js` on internal port **12213**, with SQLite at `/data/interview_sessions.db` on a persistent volume (including WAL/SHM sidecars). The [Compose/Caddy sample and operator runbook](deploy/README.md) put the app on an isolated Docker network with no published app port; only Caddy serves HTTPS with owner authentication. Do not use `docker run -p 12213:12213` on a public VPS. With a host-installed proxy instead, publish only `127.0.0.1:12213:12213` and restrict access with a firewall.
+
+Set `PUBLIC_ORIGIN` to the exact external HTTPS origin at **runtime**. `NEXT_PUBLIC_PROVIDER_ENABLE` and other `NEXT_PUBLIC_*` settings are embedded at **build time**; rebuild to change them. Keep `ALLOW_PRIVATE_BASE_URL=0` on a VPS. The Caddy password hash and any other operator secrets must not be committed, baked into the image, or put in `NEXT_PUBLIC_*`. Docker's internal healthcheck talks directly to the container loopback, not through the authenticated public proxy. See the runbook for TLS setup, firewall checks, secret rotation/recovery, and SQLite-safe backups; **do not publish a real-data VPS yet** while the T-02/T-07 release gates remain open.
 
 ## Requirements coverage
 

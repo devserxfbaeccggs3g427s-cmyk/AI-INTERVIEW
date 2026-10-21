@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { exec, query } from "@/lib/db";
@@ -6,6 +5,8 @@ import { modelConfigInput, parseModelConfig } from "@/lib/providers/parse";
 import type { SessionRow } from "@/lib/types";
 import { MAX_CV_CHARS, validateStartSessionInput } from "@/lib/validate";
 import { extractPdfFromDataUrl } from "@/lib/pdf";
+import { env } from "@/lib/env";
+import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ export async function GET(req: Request) {
     [...params, limit],
   );
 
-  return NextResponse.json({ sessions: rows });
+  return privateJson({ sessions: rows });
 }
 
 /* POST — create a new session (FR-1, FR-2, FR-3, FR-4). */
@@ -59,8 +60,10 @@ const Body = modelConfigInput.extend({
 });
 
 export async function POST(req: Request) {
+  const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
+  if (denied) return denied;
   const parsed = parseModelConfig(await req.json().catch(() => null), undefined, Body, { allowMissingKey: true });
-  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+  if (!parsed.ok) return privateJson({ ok: false, error: parsed.error }, { status: 400 });
   const { body, cfg } = parsed;
 
   // Field-level validation that needs aggregated context (e.g. role length after trim).
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
     planned_rounds: body.plannedRounds,
     cv_source: body.cvSource,
   });
-  if (validationErr) return NextResponse.json({ ok: false, error: validationErr }, { status: 400 });
+  if (validationErr) return privateJson({ ok: false, error: validationErr }, { status: 400 });
 
   const id = `sess_${randomUUID().replace(/-/g, "").slice(0, 14)}`;
 
@@ -124,8 +127,8 @@ export async function POST(req: Request) {
       [cfg.provider, cfg.model, cfg.base_url ?? null, cfg.temperature, cfg.max_tokens, cfg.top_p],
     );
   } catch (e) {
-    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
+    return privateJson({ ok: false, error: (e as Error).message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, sessionId: id });
+  return privateJson({ ok: true, sessionId: id });
 }

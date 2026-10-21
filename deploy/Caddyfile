@@ -1,0 +1,55 @@
+# SITE_DOMAIN is supplied at Caddy runtime by Compose. It must be a bare DNS
+# name (no scheme, port, slash or wildcard); Caddy obtains/renews TLS itself.
+{$SITE_DOMAIN} {
+    # No access log: requests may carry provider x-api-key/Authorization and PII.
+    # The single credential line is supplied outside the repository/image.
+    # The entrypoint rejects missing or malformed input before starting Caddy.
+    route {
+        basic_auth {
+            import /run/secrets/basic_auth_snippet
+        }
+
+        header {
+            # no-transform avoids altering a streamed SSE response.
+            >Cache-Control "private, no-store, no-transform"
+            >Referrer-Policy "no-referrer"
+            >X-Content-Type-Options "nosniff"
+        }
+
+        reverse_proxy app:12213 {
+            # Do not pass proxy credentials or client-supplied identity claims.
+            header_up -Authorization
+            header_up -Proxy-Authorization
+            header_up -Cookie
+            header_up -Forwarded
+            header_up -X-Forwarded-For
+            header_up -X-Forwarded-Host
+            header_up -X-Forwarded-Proto
+            header_up -X-Forwarded-Port
+            header_up -X-Real-IP
+            header_up -X-Remote-User
+            header_up -Remote-User
+            header_up -X-User
+            header_up -X-Forwarded-User
+            header_up -X-Forwarded-Email
+            header_up -X-Auth-Request-User
+            header_up -X-Authenticated-User
+            header_up -X-Forwarded-Client-Cert
+            header_up -X-Client-Cert
+            header_up -X-SSL-Client-Cert
+            header_up -X-Original-Host
+            header_up -X-Original-URI
+            header_up -X-Original-URL
+
+            # Replace the routing claims with proxy-owned values after removal.
+            header_up Host {host}
+            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-For {remote_host}
+
+            # SSE events must not wait for proxy buffering; leave long-running
+            # model requests open (no response-header timeout is configured).
+            flush_interval -1
+        }
+    }
+}

@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
 import { query, queryOne, exec } from "@/lib/db";
 import type { MessageTurnRow, SessionRow } from "@/lib/types";
+import { env } from "@/lib/env";
+import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
      FROM sessions s LEFT JOIN evaluations e ON e.session_id = s.id
      WHERE s.id = ?`, [params.id],
   );
-  if (!session) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!session) return privateJson({ error: "Not found" }, { status: 404 });
 
   const turns = query<MessageTurnRow>(
     `SELECT * FROM message_turns WHERE session_id = ? ORDER BY turn_number, role, id`,
@@ -25,10 +26,12 @@ export async function GET(_req: Request, { params }: RouteParams) {
     `SELECT source, filename, text, char_count FROM cv_extracts WHERE session_id = ? ORDER BY id DESC LIMIT 1`,
     [params.id],
   );
-  return NextResponse.json({ session, turns, cv });
+  return privateJson({ session, turns, cv });
 }
 
-export async function DELETE(_req: Request, { params }: RouteParams) {
+export async function DELETE(req: Request, { params }: RouteParams) {
+  const denied = rejectCrossOrigin(req, env.PUBLIC_ORIGIN);
+  if (denied) return denied;
   exec(`DELETE FROM sessions WHERE id = ?`, [params.id]);
-  return NextResponse.json({ ok: true });
+  return privateJson({ ok: true });
 }

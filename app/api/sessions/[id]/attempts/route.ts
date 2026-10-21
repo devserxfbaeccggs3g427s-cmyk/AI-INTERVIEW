@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
 import type { SessionRow } from "@/lib/types";
+import { privateJson } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +30,7 @@ interface AttemptRow {
  */
 export async function GET(req: Request, { params }: RouteParams) {
   const session = queryOne<SessionRow>(`SELECT id FROM sessions WHERE id = ?`, [params.id]);
-  if (!session) return NextResponse.json({ ok: false, error: "Session not found" }, { status: 404 });
+  if (!session) return privateJson({ ok: false, error: "Session not found" }, { status: 404 });
 
   const includeRaw = new URL(req.url).searchParams.get("raw") === "1";
   const rows = query<AttemptRow>(
@@ -38,7 +38,7 @@ export async function GET(req: Request, { params }: RouteParams) {
     [params.id],
   );
 
-  return NextResponse.json({
+  return privateJson({
     ok: true,
     attempts: rows.map((r) => ({
       id: r.id,

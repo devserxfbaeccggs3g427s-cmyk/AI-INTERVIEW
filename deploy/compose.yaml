@@ -1,0 +1,57 @@
+# Single-owner sample. Set SITE_DOMAIN and AUTH_SNIPPET_PATH in the operator's
+# shell or an env file outside this repository; see README.md.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        # Optional build-time choice; changing it requires a rebuild.
+        NEXT_PUBLIC_PROVIDER_ENABLE: ${NEXT_PUBLIC_PROVIDER_ENABLE:-}
+    environment:
+      PUBLIC_ORIGIN: https://${SITE_DOMAIN:?Set SITE_DOMAIN to the public DNS name}
+      ALLOW_PRIVATE_BASE_URL: "0"
+    volumes:
+      - app_data:/data
+    networks:
+      - backend
+    # No ports: 12213 is reachable only by Caddy on the backend network.
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    # Validate the operator-managed credential before opening a public socket.
+    entrypoint: ["/bin/sh", "/etc/caddy/caddy-entrypoint.sh"]
+    depends_on:
+      - app
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN to the public DNS name}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy-entrypoint.sh:/etc/caddy/caddy-entrypoint.sh:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    secrets:
+      - basic_auth_snippet
+    networks:
+      - edge
+      - backend
+    restart: unless-stopped
+
+secrets:
+  basic_auth_snippet:
+    file: ${AUTH_SNIPPET_PATH:?Set AUTH_SNIPPET_PATH to an absolute path outside the repository}
+
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+  backend:
+    # App must still reach hosted AI providers; isolation comes from no ports.

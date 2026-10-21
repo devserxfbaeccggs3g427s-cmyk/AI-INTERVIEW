@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { env } from "@/lib/env";
+import { privateJson } from "@/lib/origin-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET() {
 
   const ddl = query<Row>(`SELECT sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY type, name`);
 
-  return NextResponse.json({
+  return privateJson({
     ok: true,
     dbPath: env.INTERVIEW_DB_PATH,
     tables,
