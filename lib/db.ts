@@ -28,7 +28,7 @@ function open(): DatabaseSync {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
   const version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version !== 0 && version !== 1 && version !== 2) {
+  if (version !== 0 && version !== 1 && version !== 2 && version !== 3) {
     db.close();
     throw new Error(`Unsupported database version: ${version}`);
   }
@@ -47,17 +47,17 @@ function open(): DatabaseSync {
       db.exec("ALTER TABLE sessions ADD COLUMN focus_json TEXT NOT NULL DEFAULT '[]'");
       db.exec("PRAGMA user_version = 2");
     }
+    db.exec(LEARNING_SCHEMA);
+    if (version < 3) db.exec("PRAGMA user_version = 3");
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
     db.close();
     throw error;
   }
-  // Rollback strategy for operators: before deploying v2, take a consistent
-  // offline SQLite backup including WAL frames. To revert the application,
-  // stop it, restore that v1 file on a COPY of the volume, and start the old
-  // binary. Never run a destructive down-migration or overwrite a live DB:
-  // v2 focus data cannot be represented by the old app. This is not automated.
+  // Before deploying v3, stop the app and take an offline SQLite-aware backup
+  // including WAL frames. Roll back the app only by restoring the pre-upgrade
+  // database on a COPY of the volume, never by down-migrating a live database.
   return db;
 }
 
@@ -191,6 +191,48 @@ CREATE TABLE IF NOT EXISTS model_configs (
   top_p REAL NOT NULL,
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
+`;
+
+/** v3 DDL is run after legacy v0/v1/v2 ALTERs within the same transaction. */
+const LEARNING_SCHEMA = `
+CREATE TABLE IF NOT EXISTS learning_lessons (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  report_revision TEXT NOT NULL CHECK (length(report_revision) = 64 AND report_revision NOT GLOB '*[^0-9a-f]*'),
+  source_kind TEXT NOT NULL CHECK (source_kind IN ('improvement','next_step')),
+  source_index INTEGER NOT NULL CHECK (source_index >= 0),
+  mode TEXT NOT NULL CHECK (mode IN ('fundamentals','answering')),
+  source_label TEXT NOT NULL CHECK (length(source_label) BETWEEN 1 AND 120),
+  source_context TEXT CHECK (source_context IS NULL OR length(source_context) <= 500),
+  status TEXT NOT NULL CHECK (status IN ('generating','ready','failed')),
+  claim_id TEXT,
+  claimed_at INTEGER,
+  lesson_json TEXT,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  base_url TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(session_id, report_revision, source_kind, source_index, mode),
+  CHECK (
+    (status = 'generating' AND claim_id IS NOT NULL AND claimed_at IS NOT NULL AND lesson_json IS NULL) OR
+    (status = 'ready' AND claim_id IS NULL AND claimed_at IS NULL AND lesson_json IS NOT NULL) OR
+    (status = 'failed' AND claim_id IS NULL AND claimed_at IS NULL AND lesson_json IS NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_learning_lessons_session ON learning_lessons(session_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS learning_check_attempts (
+  id TEXT PRIMARY KEY,
+  lesson_id TEXT NOT NULL REFERENCES learning_lessons(id) ON DELETE CASCADE,
+  client_attempt_id TEXT NOT NULL,
+  answers_json TEXT NOT NULL,
+  score INTEGER NOT NULL CHECK (score >= 0),
+  total INTEGER NOT NULL CHECK (total BETWEEN 2 AND 3 AND score <= total),
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  UNIQUE(lesson_id, client_attempt_id)
+);
+CREATE INDEX IF NOT EXISTS idx_learning_checks_lesson ON learning_check_attempts(lesson_id, created_at);
 `;
 
 /** Convenience helper: every write goes through here so we can centralise error UX. */

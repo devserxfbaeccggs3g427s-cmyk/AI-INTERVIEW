@@ -16,7 +16,7 @@ internet ── 443/80 ──► caddy (image custom)
                           │ nội bộ Docker network (KHÔNG public)
                           ▼
                    app (image: interview-ai-studio)
-                   port nội bộ 12213, /data → named volume app_data
+                   port nội bộ 12213, /data → named volume interview-data
                                               │
                                               ▼
                               data/interview_sessions.db (+ WAL · SHM)
@@ -191,12 +191,11 @@ services:
       PUBLIC_ORIGIN: https://${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
       ALLOW_PRIVATE_BASE_URL: ${ALLOW_PRIVATE_BASE_URL:-0}
       INTERVIEW_DB_PATH: /data/interview_sessions.db
-    ports:
-      - "12213:12213"
     volumes:
       - interview-data:/data
     networks: [backend]
     restart: unless-stopped
+    # Không publish port 12213: chỉ Caddy trên backend network truy cập app.
 
   caddy:
     image: ngocnqph12806/interview-ai-studio-caddy:1.0.0
@@ -312,6 +311,8 @@ nc -zv <VPS-IP> 12213    # expect connection refused
 
 ## Cập nhật phiên bản
 
+Trước lần nâng cấp có migration SQLite v3 (bảng `learning_lessons` và `learning_check_attempts`), **dừng app**, sao lưu SQLite nhất quán trên volume đang dùng (bao gồm các WAL frame) rồi kiểm tra bản backup bằng `PRAGMA integrity_check` trên **bản sao**, trước khi khởi chạy image mới. Giữ bản DB v2 nguyên vẹn ngoài volume production. Không dùng JSON backup v3 để rollback image v2: image cũ không đọc DB v3 và JSON import cũ không biết hai bảng học. Nếu cần rollback, dừng app và phục hồi bản DB v2 trước upgrade vào **bản sao volume**, kiểm chứng rồi mới chuyển volume; không chạy down-migration/xóa bảng trên DB đang hoạt động. Dữ liệu học phát sinh sau upgrade không thể biểu diễn trong DB v2 và sẽ mất khi rollback.
+
 ```bash
 # local
 docker login -u ngocnqph12806
@@ -348,29 +349,39 @@ docker image prune   # dọn manifest cũ
 
 ## Sao lưu SQLite (an toàn khi WAL đang bật)
 
-App dùng `node:sqlite` ở chế độ WAL → **không copy trực tiếp `.db`** lúc container đang chạy. Dùng `.backup` API:
+App dùng `node:sqlite` ở chế độ WAL → **không copy trực tiếp `.db`** lúc container đang chạy. Ví dụ trước migration v3, dừng app (không dùng `down -v`), dùng SQLite `.backup` trên volume, kiểm tra file nhận rồi mới chạy image mới:
 
 ```bash
 mkdir -p /opt/backups
+cd /opt/interview-ai-studio
+docker compose stop app
+# Volume name mặc định theo project compose; kiểm tra bằng `docker volume ls` nếu đổi project name.
 docker run --rm \
-  -v interview-ai-studio_app_data:/data:ro \
+  -v interview-ai-studio_interview-data:/data:ro \
   -v /opt/backups:/backup \
   alpine sh -c "apk add sqlite && \
     sqlite3 /data/interview_sessions.db \
     \".backup /backup/interview_\$(date +%F).db\""
+docker run --rm -v /opt/backups:/backup:ro alpine sh -c \
+  'apk add sqlite && sqlite3 /backup/interview_$(date +%F).db "PRAGMA integrity_check; PRAGMA user_version;"'
+# Output integrity_check phải là ok; user_version phải là phiên bản trước nâng cấp.
+# Giữ file .db này ngoài volume ứng dụng trước `docker compose up -d`.
 ```
 
-Hoặc bấm **Backup** trong trang `/history` (export JSON versioned 6 tables; bao gồm CV text, transcripts, raw model output, endpoint URLs). File chứa dữ liệu nhạy cảm — encrypt + chmod + đặt ngoài webroot.
+Hoặc bấm **Backup** trong trang `/history` (JSON `schemaVersion=3`, 8 bảng; bao gồm CV text, transcripts, raw model output, endpoint URLs, bài học AI, đáp án quiz và lịch sử tự kiểm tra). File chứa dữ liệu nhạy cảm — encrypt + chmod + đặt ngoài webroot. Import v1/v2 chỉ khôi phục sáu bảng cũ, hai bảng học trống; restore thay thế toàn bộ dữ liệu, không gộp.
 
 Để kiểm thử restore vào volume khác:
 
 ```bash
+docker volume create interview-restore-drill
 docker run --rm \
   -v /opt/backups:/backup:ro \
-  -v interview-ai-studio_app_data:/target \
+  -v interview-restore-drill:/target \
   alpine sh -c "apk add sqlite && \
     sqlite3 /target/restore.db \".restore /backup/interview_2026-10-21.db\" && \
     chmod 0644 /target/restore.db"
+docker run --rm -v interview-restore-drill:/target:ro alpine sh -c \
+  'apk add sqlite && sqlite3 /target/restore.db "PRAGMA integrity_check; PRAGMA user_version;"'
 ```
 
 > Backup/restore qua web API **từ chối** nếu `.sql` legacy hoặc DB đã đổi sau khi operator review → mã 409. Re-run preview, không retry nguyên file cũ.
@@ -379,7 +390,7 @@ docker run --rm \
 ## Reset / rotate
 
 ```bash
-# Dừng, xoá containers + network (GIỮ volume app_data)
+# Dừng, xoá containers + network (GIỮ volume interview-data)
 cd /opt/interview-ai-studio
 docker compose down
 
@@ -399,4 +410,4 @@ docker compose restart caddy
 - Bật giám sát disk `/data` (volume + WAL sidecars đầy → healthcheck fail).
 - Bật alert khi `docker compose ps` thấy `caddy` hoặc `app` restart nhiều lần — cert không xoay được hoặc DB corrupted.
 - Định kỳ `docker compose logs caddy 2>&1 | grep -i error` để bắt certificate renewal fail.
-- `INTERVIEW_DB_PATH` mặc định `/data/interview_sessions.db` đã mount qua `app_data` named volume — không đổi sang đường dẫn khác khi chưa migrate.
+- `INTERVIEW_DB_PATH` mặc định `/data/interview_sessions.db` đã mount qua `interview-data` named volume — không đổi sang đường dẫn khác khi chưa migrate.

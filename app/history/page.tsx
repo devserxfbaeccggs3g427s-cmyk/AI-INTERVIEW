@@ -37,7 +37,7 @@ function comparableRole(role: string): string {
 
 interface DbStatus { ok: boolean; dbPath: string; counters?: RestoreCounts }
 
-const RESTORE_TABLES = ["sessions", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "model_configs"] as const;
+const RESTORE_TABLES = ["sessions", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "model_configs", "learning_lessons", "learning_check_attempts"] as const;
 type RestoreCounts = Record<(typeof RESTORE_TABLES)[number], number>;
 interface RestorePreview {
   file: File;
@@ -395,7 +395,7 @@ export default function HistoryPage() {
           </div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">Lịch sử & Dữ liệu SQLite</h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Toàn bộ phiên phỏng vấn, transcript kèm raw blocks, CV extract và báo cáo đánh giá được lưu trong một file SQLite duy nhất trên máy chủ.
+             Toàn bộ phiên phỏng vấn, transcript kèm raw blocks, CV extract, báo cáo đánh giá, bài học AI và bài tự kiểm tra được lưu trong một file SQLite duy nhất trên máy chủ.
             Không lưu API key.
           </p>
         </div>
@@ -581,7 +581,7 @@ export default function HistoryPage() {
           </p>
           <div className="flex flex-wrap gap-space-sm">
             <button
-              onClick={() => { if (confirm("Xoá tất cả sessions? Cascade sẽ xóa cả turns + CV + evaluations.")) admin("wipe-sessions"); }}
+               onClick={() => { if (confirm("Xoá tất cả sessions? Cascade sẽ xóa cả turns, CV, evaluations, bài học và các lần tự kiểm tra.")) admin("wipe-sessions"); }}
               className="btn btn-destructive"
               disabled={busy !== null}
             >
@@ -607,8 +607,8 @@ export default function HistoryPage() {
         <div className="card p-space-md flex flex-col gap-space-sm">
           <span className="label-caps text-on-surface uppercase">Sao lưu / Phục hồi</span>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Sao lưu dưới dạng JSON. Nên tải bản sao lưu dữ liệu hiện tại trước khi phục hồi.
-            Phục hồi sẽ <strong className="text-error">thay thế toàn bộ dữ liệu hiện tại, không thể hoàn tác</strong>.
+             Sao lưu JSON v3 gồm 8 bảng: CV, transcript, raw model output, báo cáo, bài học AI, đáp án quiz, các lần tự kiểm tra và URL endpoint (không chứa API key hoặc PDF gốc). File chứa dữ liệu riêng tư: lưu mã hóa ngoài webroot, giới hạn quyền truy cập. Nên tải bản sao lưu dữ liệu hiện tại trước khi phục hồi.
+             Phục hồi sẽ <strong className="text-error">thay thế toàn bộ dữ liệu hiện tại, không thể hoàn tác</strong>.
           </p>
           <div className="flex flex-wrap gap-space-sm">
             <button onClick={() => void admin("backup")} className="btn btn-ghost" disabled={busy !== null}>

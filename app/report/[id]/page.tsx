@@ -19,6 +19,7 @@ import { renderMarkdown } from "@/lib/markdown";
 import { sessionKeyError } from "@/lib/session-key";
 import { EVALUATION_STALE_AFTER_MS } from "@/lib/evaluation-constants";
 import { encodePracticePrefill, practiceFocusLabel } from "@/lib/practice-prefill";
+import { visibleReport } from "@/lib/report-visibility";
 import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 import type { EvaluationReport, Pillar, TurnEval } from "@/lib/zod-schemas";
 
@@ -40,7 +41,7 @@ const RECO_TONE: Record<string, { label: string; tone: "emerald" | "indigo" | "a
 export default function EvaluationPage({ params }: { params: { id: string } }) {
   const [session, setSession] = useState<SessionRow | null>(null);
   const [turns, setTurns] = useState<MessageTurnRow[]>([]);
-  const [report, setReport] = useState<EvaluationReport | null>(null);
+  const [loadedReport, setReport] = useState<EvaluationReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
@@ -65,13 +66,19 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
           if (alive && result.ok && reportData.ok && reportData.report) {
             setReport(reportData.report);
             setError(null);
-          } else if (alive) setError("Không tải được báo cáo đã hoàn tất. Vui lòng tải lại.");
+          } else if (alive) {
+            setReport(null);
+            setError("Không tải được báo cáo đã hoàn tất. Vui lòng tải lại.");
+          }
         } else {
           setReport(null);
           if (data.session.status !== "failed") setError(null);
         }
       } catch (e) {
-        if (alive) setError((e as Error).message);
+        if (alive) {
+          setReport(null);
+          setError((e as Error).message);
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -113,6 +120,7 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
       setCheckedAt(Date.now());
       setError(null);
     } catch (e) {
+      setReport(null);
       setError((e as Error).message);
       try {
         const latest = await fetch(`/api/sessions/${params.id}`, { cache: "no-store" });
@@ -134,7 +142,8 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
   if (!session) {
     return <div className="w-full px-gutter py-space-xl text-center text-error">{error ?? "Không tải được phiên."}</div>;
   }
-  if (!report) {
+  const currentReport = visibleReport(session.status, loadedReport, error);
+  if (!currentReport) {
     const stale = session.status === "evaluating" &&
       (session.evaluation_started_at == null || checkedAt - session.evaluation_started_at * 1000 > EVALUATION_STALE_AFTER_MS);
     const canRetry = (session.status === "failed" || stale) && !retrying;
@@ -160,6 +169,8 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
     );
   }
 
+  // Below this point only a freshly confirmed completed report can create learning links.
+  const report = currentReport;
   const reco = RECO_TONE[report.recommendation] ?? { label: report.recommendation, tone: "neutral" as const };
   const answered = turns.filter((t) => t.role === "user").length;
   const asked = turns.filter((t) => t.role === "assistant").length;
@@ -221,7 +232,7 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
           </Section>
 
           <Section title="Cần cải thiện" subtitle="Lỗ hổng kiến thức / cách diễn đạt">
-            <BulletList items={report.improvements} icon="lightbulb" tone="amber" practiceUrl={practiceUrl} />
+            <BulletList items={report.improvements} icon="lightbulb" tone="amber" practiceUrl={practiceUrl} learningUrl={(index) => `/learn/${encodeURIComponent(session.id)}?kind=improvement&index=${index}`} />
           </Section>
 
           <Section title="Phân tích theo từng câu" subtitle="Điểm 4 tiêu chí + rubric per turn">
@@ -261,11 +272,16 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
                     <span className="font-body-md text-body-md text-on-surface">{s.title}</span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">{s.description}</span>
                     <span className="label-code-sm text-tertiary mt-1">{s.duration}</span>
-                    {practiceUrl(s.title) ? (
-                      <a href={practiceUrl(s.title)!} className="btn btn-ghost self-start" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s.title)}`}>
-                        Luyện chủ đề này
+                    <div className="flex flex-wrap gap-space-xs mt-space-xs">
+                      <a href={`/learn/${encodeURIComponent(session.id)}?kind=next_step&index=${i}`} className="btn btn-primary" aria-label={`Học chủ đề này: bước ${i + 1}`}>
+                        Học chủ đề này
                       </a>
-                    ) : null}
+                      {practiceUrl(s.title) ? (
+                        <a href={practiceUrl(s.title)!} className="btn btn-ghost" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s.title)}`}>
+                          Luyện chủ đề này
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
                 </li>
               ))}
@@ -368,7 +384,7 @@ function PillarCard({ label, pillar }: { label: string; pillar: Pillar }) {
   );
 }
 
-function BulletList({ items, icon, tone, practiceUrl }: { items: string[]; icon: string; tone: "emerald" | "amber"; practiceUrl?: (item: string) => string | null }) {
+function BulletList({ items, icon, tone, practiceUrl, learningUrl }: { items: string[]; icon: string; tone: "emerald" | "amber"; practiceUrl?: (item: string) => string | null; learningUrl?: (index: number) => string }) {
   const borderColor = tone === "emerald" ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)";
   const iconColor = tone === "emerald" ? "text-tertiary" : "text-warning";
   return (
@@ -378,10 +394,19 @@ function BulletList({ items, icon, tone, practiceUrl }: { items: string[]; icon:
           <span className={`material-symbols-outlined ${iconColor} flex-shrink-0`}>{icon}</span>
           <div className="flex flex-col gap-1">
             <span className="font-body-md text-body-md text-on-surface">{s}</span>
-            {practiceUrl?.(s) ? (
-              <a href={practiceUrl(s)!} className="btn btn-ghost self-start" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s)}`}>
-                Luyện chủ đề này
-              </a>
+            {learningUrl || practiceUrl?.(s) ? (
+              <div className="flex flex-wrap gap-space-xs mt-space-xs">
+                {learningUrl ? (
+                  <a href={learningUrl(i)} className="btn btn-primary" aria-label={`Học chủ đề này: điểm cần cải thiện ${i + 1}`}>
+                    Học chủ đề này
+                  </a>
+                ) : null}
+                {practiceUrl?.(s) ? (
+                  <a href={practiceUrl(s)!} className="btn btn-ghost" aria-label={`Luyện chủ đề này: ${practiceFocusLabel(s)}`}>
+                    Luyện chủ đề này
+                  </a>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </li>

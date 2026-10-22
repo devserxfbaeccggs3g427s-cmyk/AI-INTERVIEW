@@ -70,7 +70,7 @@ test("admin backup and two-phase restore use bounded, private, single-use JSON, 
     const bytes = new Uint8Array(await exportResponse.arrayBuffer());
     assert.equal(backup.parseBackup(bytes).counts.sessions, 1);
 
-    db.getDb().exec("PRAGMA user_version = 3");
+    db.getDb().exec("PRAGMA user_version = 4");
     try {
       const failedExport = await admin.POST(post("/api/admin/db", '{"action":"backup"}'));
       assert.equal(failedExport.status, 409);
@@ -78,7 +78,7 @@ test("admin backup and two-phase restore use bounded, private, single-use JSON, 
       assert.match(failedExport.headers.get("content-type")!, /application\/json/);
       assert.equal(failedExport.headers.get("content-disposition"), null);
       assert.equal((await failedExport.text()).includes(PII), false);
-    } finally { db.getDb().exec("PRAGMA user_version = 2"); }
+    } finally { db.getDb().exec("PRAGMA user_version = 3"); }
 
     const tooLarge = post("/api/admin/db/validate-restore", bytes, { "content-length": String(backup.BACKUP_MAX_BYTES + 1) });
     const rejected = await validate.POST(tooLarge);

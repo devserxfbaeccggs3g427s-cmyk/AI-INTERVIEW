@@ -2,7 +2,7 @@
 
 A self-hosted web app for software engineers to practice technical interviews with AI.
 Bring your own API key (Anthropic, OpenAI, Google Gemini, or any OpenAI-compatible endpoint).
-Everything — sessions, transcripts, raw provider blocks, CV extracts, evaluation reports — is persisted in
+Everything — sessions, transcripts, raw provider blocks, CV extracts, evaluation reports, learning lessons and self-check attempts — is persisted in
 a single server-side SQLite file via the built-in `node:sqlite` driver (Node 22+).
 
 > **Design reference:** see `stitch-screens/` for the design tokens and screen captures.
@@ -78,7 +78,7 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 | ------------------------ | ----------------------------------------------------------- |
 | API key (in memory)      | React state + per-request fetch body only. **Never persisted.**|
 | `localStorage` / session | Client only. UI toggle (default: sessionStorage).            |
-| SQLite (`data/...db`)    | Sessions, turns, CV, evaluations, model configs. **No key.** |
+| SQLite (`data/...db`)    | Sessions, turns, CV, evaluations, learning lessons/quiz answers/checks, model configs. **No key.** |
 | Server logs              | `safeRawBlocks()` regex-redacts `sk-…`, `sk-ant-…`, `AIza…` before write. |
 | Custom endpoint URL      | Persisted with the session; outbound requests check the URL and actual DNS/socket address, disallow redirects and metadata/link-local hosts. |
 
@@ -125,9 +125,10 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 - `ALLOW_PRIVATE_BASE_URL=1` permits custom endpoints on local/private networks (e.g. Ollama at `http://localhost:11434`) and can expose internal services to anyone able to call this unauthenticated app. Leave it unset in public deployments. Link-local and metadata addresses remain blocked even with opt-in.
 - A custom API key is sent directly to the user-selected endpoint; only enter endpoints you trust. The key is not persisted in SQLite, and custom requests never fall back to OpenAI.
 - Whatever the CV source — pasted text or a server-extracted PDF — **the CV text is sent to the AI provider as part of each prompt**, and the operator's chosen endpoint sees it. A PDF is parsed server-side; only the extracted text leaves the app, never the file. `/new` states this per mode rather than claiming nothing is uploaded. The raw PDF bytes are never persisted, logged, or included in a backup.
-- `VACUUM` periodically if you do a lot of wipes. The browser backup exports a versioned JSON snapshot of all six application tables, including evaluation attempts. The file contains sensitive CV text, transcripts, raw model responses and custom endpoint URLs: store it encrypted with restricted permissions, never in the repository or a public download folder. It does not contain provider keys or PDF bytes.
+- `VACUUM` periodically if you do a lot of wipes. The browser backup exports a versioned JSON snapshot (`schemaVersion=3`) of all eight application tables, including evaluation attempts, learning lessons and self-check attempts. The file contains sensitive CV text, transcripts, raw model responses, custom endpoint URLs, lesson content and quiz answers: store it encrypted with restricted permissions, never in the repository or a public download folder. It does not contain provider keys or PDF bytes. Strict v1/v2 JSON imports restore their six historical tables and initialize learning tables empty; restore replaces, never merges.
 - Restore **replaces all application data** in a single transaction. The history page validates the selected JSON file, shows counts for the current and incoming data, and requires a separate confirmation. The server binds a short-lived token to the exact file bytes and to a content fingerprint of the database as reviewed. If anything changed in between — including an edit that leaves the row counts identical — the commit re-checks that fingerprint inside the restore transaction and aborts with 409 rather than overwriting newer data. A changed file, unsupported schema or legacy `.sql` upload is also rejected. A validated file is not a substitute for ingress authentication. Keep a copy of the current data before replacing it.
 - Browser backup and restore are limited to 50 MiB of UTF-8 JSON. An oversized export fails instead of downloading a partial file. For larger databases, use an offline SQLite-aware backup (SQLite backup API or `VACUUM INTO`) against a stopped/quiescent app, and restore into a **separate** volume for verification before swapping. Do not copy only the open `.db` file: WAL files (`*.db-wal`, `*.db-shm`) live beside it. See [the VPS runbook](deploy/README.md) for retention and recovery. Legacy SQL files must be converted offline on an isolated copy; the API never executes uploaded SQL.
+- Before deploying schema v3, stop the app and take an offline SQLite-aware backup with its WAL data, verify a copy, and retain the pre-upgrade v2 file. To roll back the app, stop it and restore that old DB on a **copy of the volume** before switching volumes; do not down-migrate a live DB. Learning data written after migration cannot be read by the v2 app and will not survive a v2 rollback.
 
 ## Deploy
 

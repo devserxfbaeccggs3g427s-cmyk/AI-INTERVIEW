@@ -3,16 +3,18 @@ import { TextDecoder, TextEncoder } from "node:util";
 import { z } from "zod";
 import { getDb } from "./db";
 import { FocusSchema } from "./focus";
+import { parseLesson } from "./learning-schema";
 
-/** Only the six application tables are portable; SQLite internals and secrets are not. */
+/** Only the eight application tables are portable; SQLite internals and secrets are not. */
 export const TABLE_NAMES = [
   "sessions", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "model_configs",
+  "learning_lessons", "learning_check_attempts",
 ] as const;
 type TableName = (typeof TABLE_NAMES)[number];
 export const BACKUP_MAX_BYTES = 50 * 1024 * 1024;
 const FORMAT = "interview-ai-backup";
 const FORMAT_VERSION = 1;
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 export class BackupError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -31,6 +33,19 @@ const focusJson = text.refine((value) => {
   try { return FocusSchema.safeParse(JSON.parse(value)).success; }
   catch { return false; }
 }, "Invalid focus_json");
+const reportRevision = text.regex(/^[a-f0-9]{64}$/);
+const storedLesson = text.refine((value) => {
+  if (Buffer.byteLength(value, "utf8") > 16 * 1024) return false;
+  try { return parseLesson(JSON.parse(value)) !== null; }
+  catch { return false; }
+}, "Invalid lesson_json");
+const answersJson = text.refine((value) => {
+  try {
+    const values: unknown = JSON.parse(value);
+    return Array.isArray(values) && values.length >= 2 && values.length <= 3 &&
+      values.every((answer) => answer === "A" || answer === "B" || answer === "C");
+  } catch { return false; }
+}, "Invalid answers_json");
 
 // All columns are explicit, including the v1 evaluation and v2 focus columns.
 // Unknown columns (including api_key) must not be accepted or accidentally exported.
@@ -73,13 +88,34 @@ const rowSchemas = {
     provider: text, model: text, base_url: nullableText, temperature: real,
     max_tokens: integer, top_p: real, updated_at: integer,
   }).strict(),
+  learning_lessons: z.object({
+    id: text.min(1), session_id: text, report_revision: reportRevision,
+    source_kind: z.enum(["improvement", "next_step"]), source_index: integer.nonnegative(),
+    mode: z.enum(["fundamentals", "answering"]), source_label: text.min(1).max(120),
+    source_context: text.max(500).nullable(), status: z.enum(["generating", "ready", "failed"]),
+    claim_id: nullableText, claimed_at: nullableInteger, lesson_json: storedLesson.nullable(),
+    provider: text, model: text, base_url: nullableText, created_at: integer, updated_at: integer,
+  }).strict().superRefine((row, ctx) => {
+    if (row.status === "generating" ? !row.claim_id || row.claimed_at === null || row.lesson_json !== null
+      : row.status === "ready" ? row.claim_id !== null || row.claimed_at !== null || row.lesson_json === null
+        : row.claim_id !== null || row.claimed_at !== null || row.lesson_json !== null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid lesson claim/status" });
+    }
+  }),
+  learning_check_attempts: z.object({
+    id: text.min(1), lesson_id: text, client_attempt_id: text.uuid(), answers_json: answersJson,
+    score: integer.nonnegative(), total: integer.min(2).max(3), created_at: integer,
+  }).strict().refine((row) => row.score <= row.total, "Invalid check score"),
 } as const;
 
-const countsSchema = z.object({
+const legacyCountsSchema = z.object({
   sessions: integer.nonnegative(), message_turns: integer.nonnegative(),
   cv_extracts: integer.nonnegative(), evaluations: integer.nonnegative(),
   evaluation_attempts: integer.nonnegative(), model_configs: integer.nonnegative(),
 }).strict();
+const countsSchema = legacyCountsSchema.extend({
+  learning_lessons: integer.nonnegative(), learning_check_attempts: integer.nonnegative(),
+});
 export type BackupCounts = z.infer<typeof countsSchema>;
 
 const backupSchema = z.object({
@@ -92,14 +128,21 @@ const backupSchema = z.object({
     evaluations: z.array(rowSchemas.evaluations),
     evaluation_attempts: z.array(rowSchemas.evaluation_attempts),
     model_configs: z.array(rowSchemas.model_configs),
+    learning_lessons: z.array(rowSchemas.learning_lessons),
+    learning_check_attempts: z.array(rowSchemas.learning_check_attempts),
   }).strict(), counts: countsSchema,
 }).strict();
 export type BackupData = z.infer<typeof backupSchema>;
-// v1 used the same envelope, but its sessions had no focus_json. Validate it
-// independently and strictly before upgrading in memory; never relax v2 rows.
-const legacyBackupSchema = backupSchema.extend({
+// Independently validate exactly the six historical tables/counts before projection.
+// v1 had no focus_json; v2 included it. Neither accepted learning tables.
+const v2BackupSchema = backupSchema.extend({
+  schemaVersion: z.literal(2),
+  tables: backupSchema.shape.tables.omit({ learning_lessons: true, learning_check_attempts: true }),
+  counts: legacyCountsSchema,
+});
+const v1BackupSchema = v2BackupSchema.extend({
   schemaVersion: z.literal(1),
-  tables: backupSchema.shape.tables.extend({
+  tables: v2BackupSchema.shape.tables.extend({
     sessions: z.array(rowSchemas.sessions.omit({ focus_json: true })),
   }),
 });
@@ -111,8 +154,10 @@ const columns: { [K in TableName]: readonly (keyof BackupData["tables"][K][numbe
   evaluations: ["id", "session_id", "report_json", "overall_score", "recommendation", "schema_valid", "repair_attempts", "created_at"],
   evaluation_attempts: ["id", "session_id", "attempt_id", "outcome", "max_tokens", "finish_reason", "response_chars", "raw_response", "error_message", "duration_ms", "created_at"],
   model_configs: ["provider", "model", "base_url", "temperature", "max_tokens", "top_p", "updated_at"],
+  learning_lessons: ["id", "session_id", "report_revision", "source_kind", "source_index", "mode", "source_label", "source_context", "status", "claim_id", "claimed_at", "lesson_json", "provider", "model", "base_url", "created_at", "updated_at"],
+  learning_check_attempts: ["id", "lesson_id", "client_attempt_id", "answers_json", "score", "total", "created_at"],
 };
-const childrenFirst = ["message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "sessions", "model_configs"] as const;
+const childrenFirst = ["learning_check_attempts", "learning_lessons", "message_turns", "cv_extracts", "evaluations", "evaluation_attempts", "sessions", "model_configs"] as const;
 const autoincrementTables = ["message_turns", "cv_extracts", "evaluations", "evaluation_attempts"] as const;
 /** Rows per round trip while scanning. Peak memory is the kept rows plus one batch. */
 const BATCH = 512;
@@ -137,7 +182,7 @@ export function countsMatch(actual: BackupCounts, expected: BackupCounts): boole
 }
 
 /**
- * Walk all six tables once, in a stable order, handing each row to `onRow`.
+ * Walk all eight tables once, in a stable order, handing each row to `onRow`.
  * Keyset paging on rowid keeps the scan O(n); an `OFFSET` scan re-reads the
  * skipped prefix on every batch. Row order is fixed so export bytes and the
  * fingerprint are reproducible from the same data.
@@ -170,7 +215,7 @@ function fingerprintNow(): string {
 }
 
 /**
- * Content revision of the six tables. Row counts alone cannot distinguish a
+ * Content revision of the eight tables. Row counts alone cannot distinguish a
  * reviewed session from a rewritten one that happens to have the same rows.
  */
 export function getBackupFingerprint(): string {
@@ -204,17 +249,29 @@ function validate(input: unknown): BackupData {
     throw new BackupError("Invalid backup format", 400);
   }
   const header = input as Record<string, unknown>;
-  if (header.formatVersion !== FORMAT_VERSION || (header.schemaVersion !== 1 && header.schemaVersion !== SCHEMA_VERSION)) {
+  if (header.formatVersion !== FORMAT_VERSION || (header.schemaVersion !== 1 && header.schemaVersion !== 2 && header.schemaVersion !== SCHEMA_VERSION)) {
     throw new BackupError("Unsupported backup version", 422);
   }
-  const parsed = (header.schemaVersion === 1 ? legacyBackupSchema : backupSchema).safeParse(input);
-  if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
-  const data: BackupData = header.schemaVersion === 1
-    ? { ...parsed.data, schemaVersion: SCHEMA_VERSION, tables: {
-      ...parsed.data.tables,
-      sessions: parsed.data.tables.sessions.map((row) => ({ ...row, focus_json: "[]" })),
-    } }
-    : parsed.data as BackupData;
+  let data: BackupData;
+  if (header.schemaVersion === 3) {
+    const parsed = backupSchema.safeParse(input);
+    if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
+    data = parsed.data;
+  } else if (header.schemaVersion === 2) {
+    const parsed = v2BackupSchema.safeParse(input);
+    if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
+    data = { ...parsed.data, schemaVersion: SCHEMA_VERSION,
+      tables: { ...parsed.data.tables, learning_lessons: [], learning_check_attempts: [] },
+      counts: { ...parsed.data.counts, learning_lessons: 0, learning_check_attempts: 0 } };
+  } else {
+    const parsed = v1BackupSchema.safeParse(input);
+    if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
+    data = { ...parsed.data, schemaVersion: SCHEMA_VERSION,
+      tables: { ...parsed.data.tables,
+        sessions: parsed.data.tables.sessions.map((row) => ({ ...row, focus_json: "[]" })),
+        learning_lessons: [], learning_check_attempts: [] },
+      counts: { ...parsed.data.counts, learning_lessons: 0, learning_check_attempts: 0 } };
+  }
   for (const table of TABLE_NAMES) {
     if (data.counts[table] !== data.tables[table].length) {
       throw new BackupError("Backup row counts do not match", 422);
@@ -249,6 +306,37 @@ function validate(input: unknown): BackupData {
       }
     }
     if (table === "message_turns") seen.clear();
+  }
+  const lessons = new Map<string, BackupData["tables"]["learning_lessons"][number]>();
+  const slots = new Set<string>();
+  for (const row of data.tables.learning_lessons) {
+    if (lessons.has(row.id)) throw new BackupError("Duplicate lesson ID", 422);
+    if (!sessionIds.has(row.session_id)) throw new BackupError("Orphan lesson row", 422);
+    lessons.set(row.id, row);
+    const slot = JSON.stringify([row.session_id, row.report_revision, row.source_kind, row.source_index, row.mode]);
+    if (slots.has(slot)) throw new BackupError("Duplicate lesson slot", 422);
+    slots.add(slot);
+  }
+  const checkIds = new Set<string>();
+  const checkSlots = new Set<string>();
+  for (const row of data.tables.learning_check_attempts) {
+    if (checkIds.has(row.id)) throw new BackupError("Duplicate check ID", 422);
+    checkIds.add(row.id);
+    const lesson = lessons.get(row.lesson_id);
+    if (!lesson) throw new BackupError("Orphan check row", 422);
+    if (lesson.status !== "ready" || lesson.lesson_json === null) throw new BackupError("Check requires ready lesson", 422);
+    const slot = JSON.stringify([row.lesson_id, row.client_attempt_id]);
+    if (checkSlots.has(slot)) throw new BackupError("Duplicate check attempt", 422);
+    checkSlots.add(slot);
+    const parsed: unknown = JSON.parse(lesson.lesson_json);
+    const questions = (parsed as { questions: unknown[] }).questions;
+    const answers = JSON.parse(row.answers_json) as unknown[];
+    if (answers.length !== questions.length || row.total !== questions.length) {
+      throw new BackupError("Check answers/total do not match lesson", 422);
+    }
+    const score = questions.reduce<number>((count, question, index) =>
+      count + ((question as { correctOption: string }).correctOption === answers[index] ? 1 : 0), 0);
+    if (row.score !== score) throw new BackupError("Check score does not match lesson", 422);
   }
   return data;
 }
@@ -314,7 +402,7 @@ function verifyDatabase(expected: BackupCounts): void {
 export type BackupRevision = { counts: BackupCounts; fingerprint: string };
 
 /**
- * Replace all six application tables atomically, preserving IDs and future
+ * Replace all eight application tables atomically, preserving IDs and future
  * AUTOINCREMENT values. When `expected` is supplied, the current revision is
  * re-checked inside the transaction and a mismatch aborts without touching data.
  */
@@ -323,8 +411,8 @@ export function restoreBackup(input: BackupData, expected?: BackupRevision): voi
   try {
     // Revalidate at commit: callers can mutate the object returned by parseBackup.
     // Upload size is checked against the original bytes in parseBackup. A valid
-    // v1 file can grow past 50 MiB in memory when each legacy session gains its
-    // v2 focus_json default; that projection must not make commit fail after
+    // v1/v2 files can grow past 50 MiB in memory when legacy fields gain
+    // v3 defaults; that projection must not make commit fail after
     // validate-restore accepted the exact same uploaded bytes.
     const json = JSON.stringify(input);
     data = validate(JSON.parse(json) as unknown);

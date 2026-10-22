@@ -50,6 +50,23 @@ function seed(): void {
       VALUES ('custom', 'model', 0.4, 4096, 0.95)`).run();
 }
 
+const lessonJson = JSON.stringify({
+  version: 1, title: "SQL joins", goal: "Explain joins", objectives: ["Identify join types"],
+  explanation: "Join tables by keys", example: "A joins B", sections: [{ heading: "Inner", body: "Matching keys" }],
+  questions: [
+    { stem: "First?", options: [{ id: "A", text: "Yes" }, { id: "B", text: "No" }, { id: "C", text: "Maybe" }], correctOption: "A", explanation: "Because" },
+    { stem: "Second?", options: [{ id: "A", text: "Yes" }, { id: "B", text: "No" }, { id: "C", text: "Maybe" }], correctOption: "B", explanation: "Because" },
+  ],
+});
+function seedLearning(): void {
+  db.prepare(`INSERT INTO learning_lessons (id, session_id, report_revision, source_kind, source_index, mode,
+    source_label, source_context, status, lesson_json, provider, model)
+    VALUES ('lesson-a', 'sess_α', ?, 'improvement', 0, 'fundamentals', 'SQL joins', 'context', 'ready', ?, 'custom', 'model')`)
+    .run("a".repeat(64), lessonJson);
+  db.prepare(`INSERT INTO learning_check_attempts (id, lesson_id, client_attempt_id, answers_json, score, total)
+    VALUES ('check-a', 'lesson-a', 'a649523b-1c14-41ba-b2d0-f7cf0a3d77d0', '["A","C"]', 1, 2)`).run();
+}
+
 function snapshot(): BackupData {
   return backup.parseBackup(backup.exportBackup());
 }
@@ -62,20 +79,20 @@ function expectRejected(data: BackupData, matcher: RegExp): void {
   assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(data))), matcher);
 }
 
-test("empty backup has all six tables, exact counts, and supported version", () => {
+test("empty backup has all eight tables, exact counts, and supported version", () => {
   const data = snapshot();
   assert.equal(data.formatVersion, 1);
-  assert.equal(data.schemaVersion, 2);
+  assert.equal(data.schemaVersion, 3);
   assert.deepEqual(Object.keys(data.tables), [...backup.TABLE_NAMES]);
   assert.deepEqual(data.counts, backup.getBackupCounts());
   assert.ok(Object.values(data.counts).every((n) => n === 0));
 });
 
-test("WAL snapshot round-trips six tables and migrated columns, including NULL and Unicode", () => {
+test("WAL snapshot round-trips eight tables and migrated columns, including NULL and Unicode", () => {
   seed();
   assert.equal((db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode, "wal");
   const original = snapshot();
-  assert.deepEqual(Object.values(original.counts), [1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(Object.values(original.counts), [1, 1, 1, 1, 1, 1, 0, 0]);
   assert.equal(original.tables.sessions[0].evaluation_started_at, 123);
   assert.equal(original.tables.sessions[0].focus_json, '["Practice ;\\n Unicode 新"]');
   assert.equal(original.tables.sessions[0].base_url, null);
@@ -106,8 +123,8 @@ test("counts, unknown fields, versions, invalid UTF-8, SQL, and oversized files 
   expectRejected(modified(data, (d) => { d.counts.sessions++; }), /counts/);
   expectRejected(modified(data, (d) => { (d.tables.sessions[0] as object as Record<string, string>).api_key = "never"; }), /schema/);
   expectRejected(modified(data, (d) => { d.formatVersion = 2 as 1; }), /version/);
-  expectRejected(modified(data, (d) => { d.schemaVersion = 3 as 2; }), /version/);
-  expectRejected(modified(data, (d) => { d.schemaVersion = 1 as 2; }), /schema/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 4 as 3; }), /version/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 1 as 3; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["", "invalid"]'; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["a","b","c","d"]'; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = JSON.stringify(["x".repeat(121)]); }), /schema/);
@@ -127,11 +144,17 @@ test("strict v1 backup restores with empty focus, preserving reports and attempt
   const old = structuredClone(v2) as unknown as Record<string, unknown>;
   old.schemaVersion = 1;
   const tables = old.tables as { sessions: Record<string, unknown>[] };
+  delete (old.tables as Record<string, unknown>).learning_lessons;
+  delete (old.tables as Record<string, unknown>).learning_check_attempts;
+  delete (old.counts as Record<string, unknown>).learning_lessons;
+  delete (old.counts as Record<string, unknown>).learning_check_attempts;
   for (const row of tables.sessions) delete row.focus_json;
   const bytes = Buffer.from(JSON.stringify(old));
   const upgraded = backup.parseBackup(bytes);
-  assert.equal(upgraded.schemaVersion, 2);
+  assert.equal(upgraded.schemaVersion, 3);
   assert.equal(upgraded.tables.sessions[0].focus_json, "[]");
+  assert.deepEqual(upgraded.tables.learning_lessons, []);
+  assert.deepEqual(upgraded.tables.learning_check_attempts, []);
   backup.restoreBackup(upgraded);
   assert.equal(snapshot().tables.sessions[0].focus_json, "[]");
   assert.deepEqual(snapshot().tables.evaluations, v2.tables.evaluations);
@@ -143,10 +166,87 @@ test("strict v1 backup restores with empty focus, preserving reports and attempt
   assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
 });
 
+test("strict v2 backup imports six tables and projects two empty learning tables", () => {
+  seed();
+  seedLearning();
+  const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
+  old.schemaVersion = 2;
+  for (const name of ["learning_lessons", "learning_check_attempts"]) {
+    delete (old.tables as Record<string, unknown>)[name];
+    delete (old.counts as Record<string, unknown>)[name];
+  }
+  const projected = backup.parseBackup(Buffer.from(JSON.stringify(old)));
+  assert.deepEqual(projected.counts, { ...old.counts as object, learning_lessons: 0, learning_check_attempts: 0 });
+  backup.restoreBackup(projected);
+  assert.equal(backup.getBackupCounts().learning_lessons, 0);
+  assert.equal(backup.getBackupCounts().learning_check_attempts, 0);
+  assert.equal(backup.getBackupCounts().evaluations, 1);
+  for (const name of ["learning_lessons", "learning_check_attempts"]) {
+    (old.tables as Record<string, unknown>)[name] = [];
+    assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
+    delete (old.tables as Record<string, unknown>)[name];
+    (old.counts as Record<string, unknown>)[name] = 0;
+    assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
+    delete (old.counts as Record<string, unknown>)[name];
+  }
+});
+
+test("v3 learning lessons and checks round-trip, cascade, wipe and fingerprint", () => {
+  seed();
+  seedLearning();
+  const original = snapshot();
+  assert.deepEqual(Object.values(original.counts), [1, 1, 1, 1, 1, 1, 1, 1]);
+  assert.equal(original.tables.learning_lessons[0].lesson_json, lessonJson);
+  assert.equal(JSON.stringify(original).includes("api_key"), false);
+  const fingerprint = backup.getBackupFingerprint();
+  db.prepare("UPDATE learning_check_attempts SET answers_json = '[\"B\",\"C\"]', score = 0 WHERE id = 'check-a'").run();
+  assert.notEqual(backup.getBackupFingerprint(), fingerprint);
+  backup.restoreBackup(original);
+  assert.deepEqual(snapshot().tables, original.tables);
+  db.prepare("DELETE FROM sessions WHERE id = 'sess_α'").run();
+  assert.equal(backup.getBackupCounts().learning_lessons, 0);
+  assert.equal(backup.getBackupCounts().learning_check_attempts, 0);
+  backup.restoreBackup(original);
+  backup.wipeBackupData("wipe-sessions");
+  assert.equal(backup.getBackupCounts().learning_lessons, 0);
+  assert.equal(backup.getBackupCounts().learning_check_attempts, 0);
+});
+
+test("v3 rejects invalid lesson/check data and leaves existing rows untouched", () => {
+  seed();
+  seedLearning();
+  const original = snapshot();
+  const invalid: Array<(data: BackupData) => void> = [
+    (d) => { d.tables.learning_lessons[0].lesson_json = "{}"; },
+    (d) => { d.tables.learning_lessons[0].report_revision = "bad"; },
+    (d) => { d.tables.learning_lessons[0].status = "generating"; },
+    (d) => { d.tables.learning_lessons[0].source_label = "x".repeat(121); },
+    (d) => { (d.tables.learning_lessons[0] as unknown as Record<string, string>).api_key = "secret"; },
+    (d) => { d.tables.learning_lessons.push({ ...d.tables.learning_lessons[0], id: "second" }); d.counts.learning_lessons++; },
+    (d) => { d.tables.learning_lessons.push({ ...d.tables.learning_lessons[0] }); d.counts.learning_lessons++; },
+    (d) => { d.tables.learning_lessons[0].session_id = "missing"; },
+    (d) => { d.tables.learning_check_attempts[0].lesson_id = "missing"; },
+    (d) => { d.tables.learning_check_attempts[0].answers_json = '["A"]'; },
+    (d) => { d.tables.learning_check_attempts[0].score = 2; },
+    (d) => { d.tables.learning_check_attempts.push({ ...d.tables.learning_check_attempts[0], id: "check-b" }); d.counts.learning_check_attempts++; },
+    (d) => { d.tables.learning_check_attempts.push({ ...d.tables.learning_check_attempts[0] }); d.counts.learning_check_attempts++; },
+  ];
+  for (const change of invalid) {
+    const data = modified(original, change);
+    assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(data))));
+    assert.throws(() => backup.restoreBackup(data));
+    assert.deepEqual(snapshot().tables, original.tables);
+  }
+});
+
 test("a legal near-limit v1 upload remains restorable after in-memory v2 projection", () => {
   seed();
   const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
   old.schemaVersion = 1;
+  delete (old.tables as Record<string, unknown>).learning_lessons;
+  delete (old.tables as Record<string, unknown>).learning_check_attempts;
+  delete (old.counts as Record<string, unknown>).learning_lessons;
+  delete (old.counts as Record<string, unknown>).learning_check_attempts;
   const session = (old.tables as { sessions: Record<string, unknown>[] }).sessions[0];
   delete session.focus_json;
   const baseBytes = Buffer.byteLength(JSON.stringify(old), "utf8");
@@ -213,7 +313,7 @@ test("wipe-sessions cascades children but preserves configs; wipe-all clears all
   seed();
   backup.wipeBackupData("wipe-sessions");
   const counts = backup.getBackupCounts();
-  assert.deepEqual(Object.values(counts), [0, 0, 0, 0, 0, 1]);
+  assert.deepEqual(Object.values(counts), [0, 0, 0, 0, 0, 1, 0, 0]);
   backup.wipeBackupData("wipe-all");
   assert.ok(Object.values(backup.getBackupCounts()).every((n) => n === 0));
   assert.throws(() => backup.wipeBackupData("unsupported" as "wipe-all"), /wipe/);
@@ -235,14 +335,14 @@ test("fingerprint tracks row content, not just row counts", () => {
 
   // Same row count, different content: a counts-only check would miss this.
   db.prepare("UPDATE sessions SET role = 'Role rewritten' WHERE id = 'sess_α'").run();
-  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1, 0, 0]);
   assert.notEqual(backup.getBackupFingerprint(), seeded);
 
   // A delete + insert that balances the count is still a change.
   const beforeSwap = backup.getBackupFingerprint();
   db.prepare("DELETE FROM message_turns WHERE turn_number = 1").run();
   db.prepare("INSERT INTO message_turns (session_id, turn_number, role, content) VALUES ('sess_α', 1, 'assistant', 'replacement')").run();
-  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1, 0, 0]);
   assert.notEqual(backup.getBackupFingerprint(), beforeSwap);
 });
 
@@ -257,7 +357,7 @@ test("restoreBackup aborts on a stale revision and leaves the newer rows in plac
     (error: unknown) => error instanceof backup.BackupError && error.status === 409,
   );
   assert.equal(role(), "newer", "a rejected restore must not delete or overwrite anything");
-  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(Object.values(backup.getBackupCounts()), [1, 1, 1, 1, 1, 1, 0, 0]);
 
   // A revision matching the current state still restores.
   backup.restoreBackup(original, revision());

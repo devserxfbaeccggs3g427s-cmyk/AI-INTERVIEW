@@ -75,6 +75,8 @@ try {
       evaluations: db.prepare("SELECT COUNT(*) AS n FROM evaluations").get().n,
       evaluation_attempts: db.prepare("SELECT COUNT(*) AS n FROM evaluation_attempts").get().n,
       model_configs: db.prepare("SELECT COUNT(*) AS n FROM model_configs").get().n,
+      learning_lessons: db.prepare("SELECT COUNT(*) AS n FROM learning_lessons").get().n,
+      learning_check_attempts: db.prepare("SELECT COUNT(*) AS n FROM learning_check_attempts").get().n,
     };
     db.prepare("INSERT INTO message_turns (session_id, turn_number, role, content) VALUES (?, 2, 'user', 'after-restart')")
       .run(sessionId);
@@ -128,7 +130,7 @@ function runChild(): {
 test("restore survives a real child-process restart and AUTOINCREMENT continues from restored max", () => {
   seed();
   const snapshot = backup.parseBackup(backup.exportBackup());
-  assert.deepEqual(Object.values(snapshot.counts), [1, 1, 1, 1, 1, 1]);
+  assert.deepEqual(Object.values(snapshot.counts), [1, 1, 1, 1, 1, 1, 0, 0]);
 
   // Wipe + restore. After this, the data lives only on disk in the SQLite file.
   backup.wipeBackupData("wipe-all");
@@ -140,12 +142,12 @@ test("restore survives a real child-process restart and AUTOINCREMENT continues 
   assert.equal(status, 0, `child must exit zero (stderr=${stderr})`);
   assert.equal(payload.ok, true, `child reported failure: ${JSON.stringify(payload)}`);
 
-  assert.equal(payload.version, 2, "PRAGMA user_version must be 2 after restore");
+  assert.equal(payload.version, 3, "PRAGMA user_version must be 3 after restore");
   assert.equal(payload.focusJson, '["questions"]');
   assert.equal(payload.sessionFound, true, "restored session row must be visible to the child");
   assert.equal(payload.sessionRole, "restart-role", "Unicode/control-character content must round-trip through disk");
 
-  // All six tables must show the restored row counts.
+  // All eight tables must show the restored row counts.
   assert.deepEqual(payload.beforeCounts, snapshot.counts, "child sees the full restored row set");
 
   // AUTOINCREMENT must continue from the restored max id, not reset to 1.

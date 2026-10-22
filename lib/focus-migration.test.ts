@@ -38,7 +38,7 @@ test("v1 migration retains legacy rows/reports and gives sessions default focus"
     legacy.close();
     const result = invoke(paths[0]);
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 2, focus: "'[]'" });
+    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 3, focus: "'[]'" });
     const reopened = new DatabaseSync(paths[0]);
     try {
       assert.deepEqual({ ...(reopened.prepare("SELECT role, evaluation_started_at, evaluation_attempt_id, focus_json FROM sessions WHERE id = 'old'").get() as Record<string, unknown>) },
@@ -47,13 +47,13 @@ test("v1 migration retains legacy rows/reports and gives sessions default focus"
         { report_json: '{"legacy":"report"}', overall_score: 73 });
       assert.equal((reopened.prepare("PRAGMA integrity_check").get() as { integrity_check: string }).integrity_check, "ok");
     } finally { reopened.close(); }
-    assert.equal(invoke(paths[0]).status, 0, "reopening v2 is idempotent");
+    assert.equal(invoke(paths[0]).status, 0, "reopening v3 is idempotent");
   });
 
-  test("fresh DB opens at v2 with a usable default focus column", () => {
+  test("fresh DB opens at v3 with a usable default focus column", () => {
     const result = invoke(paths[1]);
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 2, focus: "'[]'" });
+    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 3, focus: "'[]'" });
     const db = new DatabaseSync(paths[1]);
     try {
       db.exec("INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model) VALUES ('fresh', 'dev', 'en', 'strict', 1, 'custom', 'm')");
@@ -63,14 +63,14 @@ test("v1 migration retains legacy rows/reports and gives sessions default focus"
 
   test("future version is refused before any schema writes", () => {
     const db = new DatabaseSync(paths[2]);
-    db.exec("PRAGMA user_version = 3");
+    db.exec("PRAGMA user_version = 4");
     db.close();
     const result = invoke(paths[2]);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Unsupported database version: 3/);
+    assert.match(result.stderr, /Unsupported database version: 4/);
     const reopened = new DatabaseSync(paths[2]);
     try {
-      assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 3);
+      assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4);
       assert.equal(reopened.prepare("SELECT name FROM sqlite_master WHERE name = 'sessions'").get(), undefined);
     } finally { reopened.close(); }
   });

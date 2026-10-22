@@ -14,15 +14,15 @@ export function FooterBar() {
     <footer className="w-full bg-surface-container-lowest py-space-sm mt-auto"
             style={{ borderTop: "1px solid var(--border-hairline)" }}>
       <div className="w-full px-gutter flex flex-col sm:flex-row items-center justify-between gap-space-xs text-on-surface-variant">
-        <div className="flex items-center gap-space-sm label-code-sm">
-          <div className="flex items-center gap-space-xs">
+        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-space-sm label-code-sm min-w-0 max-w-full sm:flex-1">
+          <div className="flex items-center gap-space-xs shrink-0">
             <span className={`w-1.5 h-1.5 rounded-full ${db?.ok ? "bg-tertiary pulse-dot" : "bg-warning"}`} />
             <span className={db?.ok ? "text-tertiary" : "text-warning"}>
               SQLite Server-side: {db?.ok ? "Connected" : "Disconnected"}
             </span>
           </div>
           <span className="text-outline">|</span>
-          <span className="text-secondary">{db?.dbPath ?? "—"} (WAL mode active)</span>
+          <span className="text-secondary min-w-0 break-all">{db?.dbPath ?? "—"} (WAL mode active)</span>
           {db?.counters ? (
             <>
               <span className="text-outline">|</span>
@@ -30,7 +30,7 @@ export function FooterBar() {
             </>
           ) : null}
         </div>
-        <div className="flex items-center gap-space-sm label-caps text-on-surface-variant">
+        <div className="flex flex-wrap items-center justify-center gap-space-sm label-caps text-on-surface-variant">
           <span>Node {">="} 22 · node:sqlite</span>
           <span>•</span>
           <span>Zero Cloud Retention</span>
