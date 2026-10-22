@@ -3,7 +3,7 @@
 > Source: Google Stitch project **AI Interview Practice Platform**
 > Project ID: `7152366827888150836`
 > Design system asset: `assets/876803d92a6c482fbf1fbe78f8547f9a`
-> Version: 1 · Synced: 2026-10-18
+> Version: 1 · Design system checked: 2026-10-22
 
 ---
 
@@ -280,15 +280,17 @@ Built with `label-caps` typography + pill borders.
 
 ---
 
-## 9. Project Screens (5 generated + 1 spec)
+## 9. Project Screens (7 UI records + 1 spec)
 
-| # | Title | Screen ID | Resolution | Status |
+| # | Title | Screen ID | Resolution | Local reference |
 |---|---|---|---|---|
-| 1 | `01-Requirements.md` (spec) | `30f674e9d97b4bad89dc3e4831562fc0` | 600×600 | markdown |
-| 2 | `Cấu hình AI (BYOK)` | `f1eb8a78745149de987fc81ca8910ed4` | 1280×1263 | ✅ Downloaded |
-| 3 | `2. Bắt đầu phỏng vấn` | `5282ae1d49fb4528987e1c5357dd1020` | 2560×4182 | 🔒 auth-gated |
-| 4 | `3. Phiên đang diễn ra` | `392921d1447d49b1bb27e06c9f51ad69` | 2560×3984 | 🔒 auth-gated |
-| 5 | `4. Báo cáo đánh giá chi tiết` | `f698edb312ee4350a201d4781f51332e` | 2560×5788 | 🔒 auth-gated |
-| 6 | `5. Lịch sử & Dữ liệu SQLite` | `dbf19795aa99465c9318b3bcb0499e59` | 2560×2852 | 🔒 auth-gated |
+| 1 | `01-Requirements.md` (spec) | `30f674e9d97b4bad89dc3e4831562fc0` | Markdown (no screenshot) | `screens/00-requirements.md` |
+| 2 | `Cấu hình AI (BYOK)` | `f1eb8a78745149de987fc81ca8910ed4` | 2560×2526 | `screens/01-byok-config.*` |
+| 3 | `2. Bắt đầu phỏng vấn` | `5282ae1d49fb4528987e1c5357dd1020` | 2560×4182 | `screens/02-start-interview.*` |
+| 4 | `3. Phiên đang diễn ra` | `392921d1447d49b1bb27e06c9f51ad69` | 2560×3984 | `screens/03-active-session.*` |
+| 5 | `4. Báo cáo đánh giá chi tiết` | `f698edb312ee4350a201d4781f51332e` | 2560×5788 | `screens/04-evaluation-report.*` |
+| 6 | `5. Lịch sử & Dữ liệu SQLite` | `dbf19795aa99465c9318b3bcb0499e59` | HTML 2560×2852 | `screens/05-history-sqlite.*` |
+| 7 | `5. Lịch sử & Dữ liệu SQLite` (variant) | `09e5bc7a1e1c40a29b82e2cdefb4d287` | HTML 1280×1024 (no screenshot) | `screens/05-history-sqlite-variant.html` |
+| 8 | `Học & Tự kiểm tra chủ đề đề xuất` | `7689b44258f94aaa97ae04e764156326` | HTML 2560×6260 | `screens/06-learning-self-test.*` |
 
-Auth-gated means the Stitch download URLs require OAuth credentials that aren't exposed to CLI curl; fetch via Stitch UI.
+See `screens/INDEX.md` for the precise image formats and screenshot dimensions; Stitch metadata for a screen can differ from those of its screenshot. Assets are accessible through the Stitch MCP `download_file` tool using names from `list_screens`; the former “auth-gated” labels were outdated.
