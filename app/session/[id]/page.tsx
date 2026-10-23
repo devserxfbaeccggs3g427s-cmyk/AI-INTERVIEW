@@ -14,6 +14,8 @@ import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 
 interface Props { params: { id: string } }
 
+type SessionDetail = SessionRow & { focus: string[] };
+
 const MAX_ANSWER = 4000;
 
 interface UiMessage {
@@ -32,7 +34,7 @@ export default function ActiveSessionPage({ params }: Props) {
   const { cfg } = useByok();
   const { streaming, error, submit, stop } = useStreamingChat();
 
-  const [session, setSession] = useState<SessionRow | null>(null);
+  const [session, setSession] = useState<SessionDetail | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [answer, setAnswer] = useState("");
   const [plan, setPlan] = useState<{ planned: number; completed: number; turn: number } | null>(null);
@@ -46,7 +48,7 @@ export default function ActiveSessionPage({ params }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inFlightRef = useRef(false);
 
-  const hydrateSession = (json: { session: SessionRow; turns: MessageTurnRow[] }) => {
+  const hydrateSession = (json: { session: SessionDetail; turns: MessageTurnRow[] }) => {
     setSession(json.session);
     const answered = json.turns.filter((t) => t.role === "user").length;
     const asked = json.turns.filter((t) => t.role === "assistant").length;
@@ -318,6 +320,8 @@ export default function ActiveSessionPage({ params }: Props) {
             </p>
           </div>
 
+          {session.focus.length > 0 ? <FocusCard focus={session.focus} /> : null}
+
           <div className="card p-space-sm flex flex-col gap-space-sm">
             <div className="flex items-center justify-between">
               <span className="label-caps text-on-surface-variant uppercase">Tiến trình</span>
@@ -363,6 +367,9 @@ export default function ActiveSessionPage({ params }: Props) {
       <section className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto scrollbar-thin px-gutter py-space-md" ref={scrollRef}>
           <div className="max-w-3xl mx-auto flex flex-col gap-space-md">
+            {session.focus.length > 0 ? (
+              <div className="lg:hidden"><FocusCard focus={session.focus} /></div>
+            ) : null}
             {messages.length === 0 ? (
               <div className="card p-space-md text-center text-on-surface-variant">
                 <span className="material-symbols-outlined text-[36px] text-primary">play_circle</span>
@@ -520,6 +527,17 @@ export default function ActiveSessionPage({ params }: Props) {
         </aside>
       ) : null}
       </div>
+    </div>
+  );
+}
+
+function FocusCard({ focus }: { focus: string[] }) {
+  return (
+    <div className="card p-space-sm flex flex-col gap-space-xs min-w-0">
+      <span className="label-caps text-on-surface-variant uppercase">Chủ đề cần luyện</span>
+      <ul className="list-disc pl-space-md flex flex-col gap-space-xs font-body-sm text-body-sm text-on-surface">
+        {focus.map((topic, index) => <li key={index} className="break-words">{topic}</li>)}
+      </ul>
     </div>
   );
 }
