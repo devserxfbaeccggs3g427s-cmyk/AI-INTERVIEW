@@ -133,10 +133,10 @@ export default function ActiveSessionPage({ params }: Props) {
     return () => { alive = false; };
   }, [params.id]);
 
-  // Auto-scroll on new messages
+  // A saved interview opens at the first question; live sessions follow new messages.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+    if (scrollRef.current) scrollRef.current.scrollTop = stage === "completed" ? 0 : scrollRef.current.scrollHeight;
+  }, [messages, stage]);
 
   const sendMessage = async (opening: boolean, earlyStop = false, overrideAnswer?: string) => {
     if (inFlightRef.current || !session || stage !== "ready" || finalizing) return;
@@ -241,7 +241,7 @@ export default function ActiveSessionPage({ params }: Props) {
   };
 
   const cancelAndExit = () => {
-    if (!session) return;
+    if (!session || session.status !== "active" || stage !== "ready") return;
     if (confirm("Hủy phiên sẽ xóa phiên mà không tạo báo cáo. Bạn có chắc?")) {
       fetch(`/api/sessions/${session.id}`, { method: "DELETE" }).then(() => router.push("/history"));
     }
@@ -293,15 +293,17 @@ export default function ActiveSessionPage({ params }: Props) {
               {session.role}
             </span>
           </div>
-          <button
-            onClick={cancelAndExit}
-            aria-label="Hủy phiên"
-            className="btn btn-ghost text-error"
-            style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-            <span className="font-headline-sm text-headline-sm">Hủy phiên</span>
-          </button>
+          {stage === "ready" ? (
+            <button
+              onClick={cancelAndExit}
+              aria-label="Hủy phiên"
+              className="btn btn-ghost text-error"
+              style={{ borderColor: "rgba(244,63,94,0.5)", color: "var(--destructive)" }}
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+              <span className="font-headline-sm text-headline-sm">Hủy phiên</span>
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -356,12 +358,11 @@ export default function ActiveSessionPage({ params }: Props) {
             </div>
           ) : null}
 
-          <button
-            onClick={cancelAndExit}
-            className="btn btn-destructive w-full mt-auto"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span> Hủy phiên
-          </button>
+          {stage === "ready" ? (
+            <button onClick={cancelAndExit} className="btn btn-destructive w-full mt-auto">
+              <span className="material-symbols-outlined text-[18px]">close</span> Hủy phiên
+            </button>
+          ) : null}
         </div>
       </aside>
 
@@ -373,10 +374,17 @@ export default function ActiveSessionPage({ params }: Props) {
             {session.focus.length > 0 ? (
               <div className="lg:hidden"><FocusCard focus={session.focus} /></div>
             ) : null}
+            {stage === "completed" ? (
+              <div className="card p-space-md flex flex-wrap items-center gap-space-sm" role="status">
+                <span className="material-symbols-outlined text-tertiary">history</span>
+                <span className="font-body-md text-body-md text-on-surface flex-1">Phiên đã hoàn thành · Chỉ xem hội thoại đã lưu</span>
+                <a href="/history" className="btn btn-ghost">Về lịch sử</a>
+              </div>
+            ) : null}
             {messages.length === 0 ? (
               <div className="card p-space-md text-center text-on-surface-variant">
-                <span className="material-symbols-outlined text-[36px] text-primary">play_circle</span>
-                <p className="mt-2">Bấm "Bắt đầu" để AI đặt câu hỏi mở đầu.</p>
+                <span className="material-symbols-outlined text-[36px] text-primary">{stage === "completed" ? "chat_bubble_outline" : "play_circle"}</span>
+                <p className="mt-2">{stage === "completed" ? "Phiên này không có hội thoại được lưu." : "Bấm \"Bắt đầu\" để AI đặt câu hỏi mở đầu."}</p>
                 {stage === "ready" ? (
                   <button type="button" onClick={() => sendMessage(true)} disabled={streaming || finalizing || inFlightRef.current} className="btn btn-primary mt-space-md">
                     <span className="material-symbols-outlined text-[18px]">play_arrow</span> Bắt đầu
@@ -404,8 +412,8 @@ export default function ActiveSessionPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Composer */}
-        <div className="border-t" style={{ borderColor: "var(--border-hairline)" }}>
+        {/* Composer is not rendered when reviewing a completed interview. */}
+        {stage !== "completed" ? <div className="border-t" style={{ borderColor: "var(--border-hairline)" }}>
           <div className="max-w-3xl mx-auto px-gutter py-space-md flex flex-col gap-space-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-space-sm">
@@ -485,7 +493,7 @@ export default function ActiveSessionPage({ params }: Props) {
               </div>
             </div>
           </div>
-        </div>
+        </div> : null}
       </section>
 
       {/* Right drawer: live coaching rubric */}

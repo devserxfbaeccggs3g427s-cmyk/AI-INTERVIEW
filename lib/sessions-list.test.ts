@@ -32,16 +32,19 @@ loader._load = function (id: string, ...args: [unknown, boolean?]) {
 type DbModule = typeof import("./db");
 type ListModule = typeof import("./sessions-list");
 type RouteModule = typeof import("../app/api/sessions/route");
+type DetailRouteModule = typeof import("../app/api/sessions/[id]/route");
 
 let db: DbModule;
 let list: ListModule;
 let route: RouteModule;
+let detailRoute: DetailRouteModule;
 
 before(async () => {
-    [db, list, route] = await Promise.all([
+    [db, list, route, detailRoute] = await Promise.all([
         import("./db"),
         import("./sessions-list"),
         import("../app/api/sessions/route"),
+        import("../app/api/sessions/[id]/route"),
     ]);
 });
 
@@ -578,6 +581,25 @@ test("GET /api/sessions returns the backward-compatible envelope plus pagination
     for (const row of json2.sessions) {
         assert.ok(!page1.has(row.id), "page 2 must not repeat page 1 rows");
     }
+});
+
+test("GET /api/sessions/[id] restores a completed interview's questions, answers and coaching", async () => {
+    seed([{ id: sid(1), status: "completed", created_at: BASE_EPOCH }]);
+    db.exec(`INSERT INTO message_turns (session_id, turn_number, role, content) VALUES (?, 1, 'user', 'My answer')`, [sid(1)]);
+    db.exec(`INSERT INTO message_turns (session_id, turn_number, role, content, micro_rubric)
+        VALUES (?, 1, 'assistant', 'First question', ?)`, [sid(1), JSON.stringify({ score: 85, strengths: ["Clear"], improvements: ["Examples"] })]);
+    db.exec(`INSERT INTO message_turns (session_id, turn_number, role, content) VALUES (?, 2, 'assistant', 'Second question')`, [sid(1)]);
+    const res = await detailRoute.GET(new Request(`https://interview.example.com/api/sessions/${sid(1)}`), { params: { id: sid(1) } });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.session.status, "completed");
+    assert.deepEqual(data.turns.map((turn: { turn_number: number; role: string; content: string }) =>
+        [turn.turn_number, turn.role, turn.content]), [
+        [1, "assistant", "First question"], [1, "user", "My answer"], [2, "assistant", "Second question"],
+    ]);
+    assert.deepEqual(JSON.parse(data.turns[0].micro_rubric), { score: 85, strengths: ["Clear"], improvements: ["Examples"] });
+    const missing = await detailRoute.GET(new Request("https://interview.example.com/api/sessions/unknown"), { params: { id: "unknown" } });
+    assert.equal(missing.status, 404);
 });
 
 test("GET /api/sessions clamps limit and ignores a garbage limit", async () => {

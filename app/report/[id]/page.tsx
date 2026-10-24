@@ -312,6 +312,9 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
             <a href="/new" className="btn btn-primary w-full">
               <span className="material-symbols-outlined text-[18px]">add</span> Tạo phiên mới
             </a>
+            <a href={`/session/${encodeURIComponent(session.id)}`} className="btn btn-ghost w-full">
+              <span className="material-symbols-outlined text-[18px]">forum</span> Xem lại hội thoại
+            </a>
             <a href="/history" className="btn btn-ghost w-full">
               <span className="material-symbols-outlined text-[18px]">history</span> Về lịch sử
             </a>

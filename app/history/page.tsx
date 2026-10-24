@@ -82,7 +82,7 @@ export default function HistoryPage() {
    *  the (still populated) list is empty. */
   const [pageLoading, setPageLoading] = useState<boolean>(false);
   const [provider, setProvider] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
+  const [status, setStatus] = useState<string>("completed");
   const [mode, setMode] = useState<string>("all");
   const [sort, setSort] = useState<string>("newest");
   const [q, setQ] = useState<string>("");
@@ -519,7 +519,9 @@ export default function HistoryPage() {
                 </td></tr>
               ) : null}
               {!loading && !pageLoading && items.length === 0 ? (
-                <tr><td colSpan={10} className="px-space-md py-space-md text-on-surface-variant">Chưa có phiên nào.</td></tr>
+                <tr><td colSpan={10} className="px-space-md py-space-md text-on-surface-variant">
+                  {status === "completed" ? "Chưa có phiên hoàn thành nào phù hợp với bộ lọc. Bạn có thể chọn Tất cả để xem các phiên khác." : "Chưa có phiên nào phù hợp với bộ lọc."}
+                </td></tr>
               ) : null}
               {items.map((s) => (
                 <tr key={s.id} className="border-b hover:bg-surface-elevated transition-colors" style={{ borderColor: "var(--border-hairline)" }}>
@@ -547,9 +549,14 @@ export default function HistoryPage() {
                   <td className="px-space-md py-space-sm">
                     <div className="flex gap-space-xs">
                       {s.status === "completed" ? (
-                        <Link href={`/report/${s.id}`} className="btn btn-ghost text-label-code-sm py-1 px-2">
-                          <span className="material-symbols-outlined text-[14px]">analytics</span> Báo cáo
-                        </Link>
+                        <>
+                          <Link href={`/session/${s.id}`} className="btn btn-ghost text-label-code-sm py-1 px-2 whitespace-nowrap">
+                            <span className="material-symbols-outlined text-[14px]">forum</span> Xem hội thoại
+                          </Link>
+                          <Link href={`/report/${s.id}`} className="btn btn-ghost text-label-code-sm py-1 px-2 whitespace-nowrap">
+                            <span className="material-symbols-outlined text-[14px]">analytics</span> Báo cáo
+                          </Link>
+                        </>
                       ) : (
                         <Link href={`/session/${s.id}`} className="btn btn-ghost text-label-code-sm py-1 px-2">
                           <span className="material-symbols-outlined text-[14px]">play_arrow</span> Mở
