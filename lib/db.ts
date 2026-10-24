@@ -28,7 +28,7 @@ function open(): DatabaseSync {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
   const version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version !== 0 && version !== 1 && version !== 2 && version !== 3) {
+  if (version !== 0 && version !== 1 && version !== 2 && version !== 3 && version !== 4) {
     db.close();
     throw new Error(`Unsupported database version: ${version}`);
   }
@@ -38,24 +38,35 @@ function open(): DatabaseSync {
   db.exec("BEGIN IMMEDIATE");
   try {
     db.exec(SCHEMA);
-    if (version === 0) {
+    // Re-read the version under the write lock. Another process may have migrated
+    // this file while we waited for it, and re-running an ALTER would abort the boot.
+    const current = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
+    if (current !== 0 && current !== 1 && current !== 2 && current !== 3 && current !== 4) {
+      throw new Error(`Unsupported database version: ${current}`);
+    }
+    if (current === 0) {
       db.exec("ALTER TABLE sessions ADD COLUMN evaluation_started_at INTEGER");
       db.exec("ALTER TABLE sessions ADD COLUMN evaluation_attempt_id TEXT");
       db.exec("PRAGMA user_version = 1");
     }
-    if (version < 2) {
+    if (current < 2) {
       db.exec("ALTER TABLE sessions ADD COLUMN focus_json TEXT NOT NULL DEFAULT '[]'");
       db.exec("PRAGMA user_version = 2");
     }
     db.exec(LEARNING_SCHEMA);
-    if (version < 3) db.exec("PRAGMA user_version = 3");
+    if (current < 3) db.exec("PRAGMA user_version = 3");
+    if (current < 4) {
+      db.exec("ALTER TABLE sessions ADD COLUMN origin_lesson_id TEXT REFERENCES learning_lessons(id) ON DELETE SET NULL");
+      db.exec("PRAGMA user_version = 4");
+    }
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_origin_lesson ON sessions(origin_lesson_id, created_at DESC, id DESC)");
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
     db.close();
     throw error;
   }
-  // Before deploying v3, stop the app and take an offline SQLite-aware backup
+  // Before deploying a schema upgrade, stop the app and take an offline SQLite-aware backup
   // including WAL frames. Roll back the app only by restoring the pre-upgrade
   // database on a COPY of the volume, never by down-migrating a live database.
   return db;

@@ -9,10 +9,27 @@ export interface PracticePrefill {
 }
 
 const ALLOWED_KEYS = new Set(["role", "language", "focus"]);
+const LESSON_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ROLE_LENGTH = 120;
 // Four 120-character fields can expand beyond 4 KiB when UTF-8 is URI-encoded.
 const MAX_QUERY_LENGTH = 8192;
 const hasControlCharacters = (text: string) => /[\x00-\x1f\x7f-\x9f]/.test(text);
+
+/** Only an opaque saved lesson ID enters the lesson-practice URL. */
+export function encodeLessonPractice(lessonId: string): string | null {
+  return LESSON_ID.test(lessonId) ? `/new?lesson=${encodeURIComponent(lessonId)}` : null;
+}
+
+export function decodeLessonPractice(query: string): string | null {
+  const raw = query.startsWith("?") ? query.slice(1) : query;
+  if (!raw || raw.length > 100 || raw.includes("#") || raw.includes("&") || /%(?![\da-fA-F]{2})/.test(raw)) return null;
+  try {
+    for (const component of raw.split(/[&=]/)) decodeURIComponent(component.replace(/\+/g, " "));
+  } catch { return null; }
+  const params = new URLSearchParams(raw);
+  const ids = params.getAll("lesson");
+  return [...params.keys()].every((key) => key === "lesson") && ids.length === 1 && LESSON_ID.test(ids[0]) ? ids[0] : null;
+}
 
 /** Report prose is untrusted. Use only short plain-text labels, never markup or a report body. */
 export function practiceFocusLabel(value: unknown): string | null {

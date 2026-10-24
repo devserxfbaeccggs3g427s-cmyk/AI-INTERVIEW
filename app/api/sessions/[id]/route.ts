@@ -20,6 +20,10 @@ export async function GET(_req: Request, { params }: RouteParams) {
   );
   if (!session) return privateJson({ error: "Not found" }, { status: 404 });
 
+  const originLesson = session.origin_lesson_id ? queryOne<{
+    id: string; session_id: string; source_kind: string; source_index: number; source_label: string;
+  }>(`SELECT id, session_id, source_kind, source_index, source_label FROM learning_lessons WHERE id = ?`,
+    [session.origin_lesson_id]) : null;
   const turns = query<MessageTurnRow>(
     `SELECT * FROM message_turns WHERE session_id = ? ORDER BY turn_number, role, id`,
     [params.id],
@@ -28,7 +32,9 @@ export async function GET(_req: Request, { params }: RouteParams) {
     `SELECT source, filename, text, char_count FROM cv_extracts WHERE session_id = ? ORDER BY id DESC LIMIT 1`,
     [params.id],
   );
-  return privateJson({ session: { ...session, focus: parseStoredFocus(session.focus_json) }, turns, cv });
+  return privateJson({ session: { ...session, focus: parseStoredFocus(session.focus_json),
+    originLesson: originLesson ? { id: originLesson.id, sessionId: originLesson.session_id,
+      kind: originLesson.source_kind, index: originLesson.source_index, label: originLesson.source_label } : null }, turns, cv });
 }
 
 export async function DELETE(req: Request, { params }: RouteParams) {

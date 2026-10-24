@@ -12,6 +12,7 @@ import { env } from "@/lib/env";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { enterOperation } from "@/lib/maintenance";
 import { FocusSchema } from "@/lib/focus";
+import { readyPracticeLesson } from "@/lib/lesson-practice";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,7 @@ const Body = modelConfigInput.extend({
   mode: z.enum(["strict", "coaching"]),
   plannedRounds: z.union([z.literal(5), z.literal(8), z.literal(12)]),
   focus: FocusSchema.default([]),
+  originLessonId: z.string().uuid().optional(),
   cvSource: z.enum(["none", "paste", "pdf"]),
   // Server still length-checks cvText below; +100 headroom means the in-route
   // check produces a real "exceeds the 20,000 character limit" instead of a
@@ -100,6 +102,9 @@ export async function POST(req: Request) {
       cv_source: body.cvSource,
     });
     if (validationErr) return badRequest(validationErr);
+    if (body.originLessonId && (body.focus.length > 2 || !readyPracticeLesson(body.originLessonId))) {
+      return badRequest("Origin lesson is unavailable or too many added topics");
+    }
 
     // Remember the preview digest exactly once; absent stays absent (none / paste / pdf).
     const previewDigest: string | null = body.previewDigest ?? null;
@@ -144,16 +149,19 @@ export async function POST(req: Request) {
       const id = `sess_${randomUUID().replace(/-/g, "").slice(0, 14)}`;
       try {
         runInTransaction("IMMEDIATE", () => {
+          const origin = body.originLessonId ? readyPracticeLesson(body.originLessonId) : null;
+          if (body.originLessonId && !origin) throw new Error("Origin lesson is unavailable");
           exec(
-            `INSERT INTO sessions (id, role, language, mode, planned_rounds, focus_json, provider, model, base_url, temperature, max_tokens, top_p, cv_source, cv_filename)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO sessions (id, role, language, mode, planned_rounds, focus_json, origin_lesson_id, provider, model, base_url, temperature, max_tokens, top_p, cv_source, cv_filename)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id,
               body.role.trim(),
               body.language,
               body.mode,
               body.plannedRounds,
-              JSON.stringify(body.focus),
+              JSON.stringify(origin ? [origin.focus, ...body.focus] : body.focus),
+              origin?.id ?? null,
               cfg.provider,
               cfg.model,
               cfg.base_url ?? null,
@@ -196,6 +204,7 @@ export async function POST(req: Request) {
       } catch (err) {
         const message = (err as Error).message ?? "";
         if (/UNIQUE constraint failed/i.test(message) && attempt < 2) continue;
+        if (body.originLessonId && message === "Origin lesson is unavailable") return badRequest(message);
         return privateJson({ ok: false, error: message || "Session creation failed" }, { status: 500 });
       }
     }

@@ -311,7 +311,7 @@ nc -zv <VPS-IP> 12213    # expect connection refused
 
 ## Cập nhật phiên bản
 
-Trước lần nâng cấp có migration SQLite v3 (bảng `learning_lessons` và `learning_check_attempts`), **dừng app**, sao lưu SQLite nhất quán trên volume đang dùng (bao gồm các WAL frame) rồi kiểm tra bản backup bằng `PRAGMA integrity_check` trên **bản sao**, trước khi khởi chạy image mới. Giữ bản DB v2 nguyên vẹn ngoài volume production. Không dùng JSON backup v3 để rollback image v2: image cũ không đọc DB v3 và JSON import cũ không biết hai bảng học. Nếu cần rollback, dừng app và phục hồi bản DB v2 trước upgrade vào **bản sao volume**, kiểm chứng rồi mới chuyển volume; không chạy down-migration/xóa bảng trên DB đang hoạt động. Dữ liệu học phát sinh sau upgrade không thể biểu diễn trong DB v2 và sẽ mất khi rollback.
+Trước lần nâng cấp có migration SQLite v4 (cột `sessions.origin_lesson_id` trỏ tới bài học), **dừng app**, sao lưu SQLite nhất quán trên volume đang dùng (bao gồm các WAL frame) rồi kiểm tra bản backup bằng `PRAGMA integrity_check` trên **bản sao**, trước khi khởi chạy image mới. Giữ bản DB v3 nguyên vẹn ngoài volume production. Không dùng JSON backup v4 để rollback image v3: image cũ không đọc DB v4 và JSON import cũ không biết cột nguồn bài học. Nếu cần rollback, dừng app và phục hồi bản DB v3 trước upgrade vào **bản sao volume**, kiểm chứng rồi mới chuyển volume; không chạy down-migration/xóa cột trên DB đang hoạt động. Liên kết bài học gốc phát sinh sau upgrade không thể biểu diễn trong DB v3 và sẽ mất khi rollback.
 
 ```bash
 # local
@@ -349,7 +349,7 @@ docker image prune   # dọn manifest cũ
 
 ## Sao lưu SQLite (an toàn khi WAL đang bật)
 
-App dùng `node:sqlite` ở chế độ WAL → **không copy trực tiếp `.db`** lúc container đang chạy. Ví dụ trước migration v3, dừng app (không dùng `down -v`), dùng SQLite `.backup` trên volume, kiểm tra file nhận rồi mới chạy image mới:
+App dùng `node:sqlite` ở chế độ WAL → **không copy trực tiếp `.db`** lúc container đang chạy. Ví dụ trước migration v4, dừng app (không dùng `down -v`), dùng SQLite `.backup` trên volume, kiểm tra file nhận rồi mới chạy image mới:
 
 ```bash
 mkdir -p /opt/backups
@@ -368,7 +368,7 @@ docker run --rm -v /opt/backups:/backup:ro alpine sh -c \
 # Giữ file .db này ngoài volume ứng dụng trước `docker compose up -d`.
 ```
 
-Hoặc bấm **Backup** trong trang `/history` (JSON `schemaVersion=3`, 8 bảng; bao gồm CV text, transcripts, raw model output, endpoint URLs, bài học AI, đáp án quiz và lịch sử tự kiểm tra). File chứa dữ liệu nhạy cảm — encrypt + chmod + đặt ngoài webroot. Import v1/v2 chỉ khôi phục sáu bảng cũ, hai bảng học trống; restore thay thế toàn bộ dữ liệu, không gộp.
+Hoặc bấm **Backup** trong trang `/history` (JSON `schemaVersion=4`, 8 bảng; bao gồm CV text, transcripts, raw model output, endpoint URLs, bài học AI, đáp án quiz, lịch sử tự kiểm tra và liên kết buổi phỏng vấn với bài học gốc). File chứa dữ liệu nhạy cảm — encrypt + chmod + đặt ngoài webroot. Import v1/v2 chỉ khôi phục sáu bảng cũ, hai bảng học trống; import v3 giữ bài học và tự kiểm tra nhưng để liên kết nguồn trống. Restore thay thế toàn bộ dữ liệu, không gộp.
 
 Để kiểm thử restore vào volume khác:
 

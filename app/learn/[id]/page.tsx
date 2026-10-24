@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useByok } from "@/components/ByokConfigContext";
-import { encodePracticePrefill, practiceFocusLabel } from "@/lib/practice-prefill";
+import { encodeLessonPractice } from "@/lib/practice-prefill";
 import { getProviderSpec, isProviderEnabled, type ProviderId } from "@/lib/providers/registry";
 import styles from "./learning.module.css";
 
@@ -48,7 +48,9 @@ type LessonContent = {
   sections: { heading: string; body: string; code?: string }[];
   questions: Question[];
 };
-type Lesson = { id: string; sessionId: string; status: Status; mode?: Mode; source?: LessonSource; content?: LessonContent };
+type Lesson = { id: string; sessionId: string; status: Status; mode?: Mode; source?: LessonSource; content?: LessonContent; practiceFocus?: string | null };
+type PracticeSession = { id: string; role: string; status: string; createdAt: number; overallScore: number | null };
+type PracticeSessions = { sessions: PracticeSession[]; nextCursor: string | null; hasMore: boolean };
 type LessonResponse = { lesson: Lesson; oldRevision: boolean };
 type AttemptQuestion = { selectedOption: Option; correctOption: Option; explanation: string; isCorrect: boolean };
 type Attempt = { id: string; clientAttemptId: string; answers: Option[]; score: number; total: number; createdAt: number | string; questions: AttemptQuestion[] };
@@ -90,27 +92,6 @@ async function jsonResponse<T>(response: Response): Promise<T> {
     throw new Error(explain(message));
   }
   return data as T;
-}
-
-/** Only role, language and ONE short label from the original item may enter the practice URL. */
-function sourcePractice(source: LessonSource): { href: string; warning: string | null } {
-  const roleOnly = encodePracticePrefill({ role: source.role, language: source.language, focus: [] });
-  const fallback = roleOnly ?? "/new";
-  const focus = practiceFocusLabel(source.label);
-  if (!focus) {
-    return {
-      href: fallback,
-      warning: "Không dùng được nội dung mục này làm trọng tâm ngắn. Trang tạo phiên mở không có trọng tâm; bạn có thể tự nhập hoặc bỏ trống.",
-    };
-  }
-  const href = encodePracticePrefill({ role: source.role, language: source.language, focus: [focus] });
-  if (!href) {
-    return {
-      href: fallback,
-      warning: "Không chuyển được vai trò/trọng tâm của mục này sang trang tạo phiên. Trang sẽ mở không có trọng tâm; bạn tự chọn vai trò và nhập trọng tâm.",
-    };
-  }
-  return { href, warning: null };
 }
 
 /** Destination comparison that ignores trailing slashes but never a host change. */
@@ -166,6 +147,10 @@ export default function LearningPage({ params }: { params: { id: string } }) {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("fundamentals");
   const [lessons, setLessons] = useState<Record<string, LessonResponse>>({});
+  const [practiceSessionsState, setPracticeSessionsState] = useState<{ lessonId: string; page: PracticeSessions } | null>(null);
+  const [practiceSessionsErrorState, setPracticeSessionsErrorState] = useState<{ lessonId: string; message: string } | null>(null);
+  const [loadingMoreSessionsFor, setLoadingMoreSessionsFor] = useState<string | null>(null);
+  const [sessionsRetry, setSessionsRetry] = useState(0);
   // null marks a lesson whose attempt history failed to load, so the UI stops saying "loading".
   const [attemptsByLesson, setAttemptsByLesson] = useState<Record<string, Attempt[] | null>>({});
   const [attemptsLoading, setAttemptsLoading] = useState<string | null>(null);
@@ -179,6 +164,7 @@ export default function LearningPage({ params }: { params: { id: string } }) {
   const [pending, setPending] = useState<{ lessonId: string; id: string; answers: Option[] } | null>(null);
   const busyRef = useRef(false);
   const submitRef = useRef(false);
+  const sessionsRequest = useRef<AbortController | null>(null);
 
   const loadCatalog = useCallback(async (signal?: AbortSignal) => {
     if (!catalogUrl) return;
@@ -292,9 +278,48 @@ export default function LearningPage({ params }: { params: { id: string } }) {
     };
   }, [historical, lesson?.source, catalog]);
 
-  const practice = source
-    ? sourcePractice(source)
-    : { href: "/new", warning: "Không tải được mục gốc. Trang tạo phiên sẽ mở không có trọng tâm; bạn có thể tự nhập." };
+  const practiceHref = lesson?.status === "ready" && lesson.practiceFocus && lessonId
+    ? encodeLessonPractice(lessonId) : null;
+  const practiceSessions = practiceSessionsState && practiceSessionsState.lessonId === lessonId ? practiceSessionsState.page : null;
+  const practiceSessionsError = practiceSessionsErrorState && practiceSessionsErrorState.lessonId === lessonId ? practiceSessionsErrorState.message : null;
+  const loadingMoreSessions = loadingMoreSessionsFor === lessonId;
+
+  useEffect(() => {
+    sessionsRequest.current?.abort();
+    if (!lessonId || lesson?.status !== "ready") return;
+    const controller = new AbortController();
+    sessionsRequest.current = controller;
+    setPracticeSessionsErrorState(null);
+    (async () => {
+      try {
+        const data = await jsonResponse<PracticeSessions>(await fetch(`/api/learning/${encodeURIComponent(lessonId)}/sessions`, { cache: "no-store", signal: controller.signal }));
+        if (!controller.signal.aborted) setPracticeSessionsState({ lessonId, page: data });
+      } catch (cause) {
+        if (!controller.signal.aborted) setPracticeSessionsErrorState({ lessonId, message: (cause as Error).message });
+      }
+    })();
+    return () => controller.abort();
+  }, [lessonId, lesson?.status, sessionsRetry]);
+
+  const loadMoreSessions = async () => {
+    if (!lessonId || !practiceSessions?.nextCursor || loadingMoreSessions) return;
+    const id = lessonId;
+    const cursor = practiceSessions.nextCursor;
+    const controller = new AbortController();
+    sessionsRequest.current?.abort();
+    sessionsRequest.current = controller;
+    setLoadingMoreSessionsFor(id);
+    setPracticeSessionsErrorState(null);
+    try {
+      const page = await jsonResponse<PracticeSessions>(await fetch(`/api/learning/${encodeURIComponent(id)}/sessions?cursor=${encodeURIComponent(cursor)}`, { cache: "no-store", signal: controller.signal }));
+      if (!controller.signal.aborted) setPracticeSessionsState((previous) => previous?.lessonId === id
+        ? { lessonId: id, page: { ...page, sessions: [...previous.page.sessions, ...page.sessions] } } : previous);
+    } catch (cause) {
+      if (!controller.signal.aborted) setPracticeSessionsErrorState({ lessonId: id, message: (cause as Error).message });
+    } finally {
+      setLoadingMoreSessionsFor((current) => current === id ? null : current);
+    }
+  };
 
   const attempts = lessonId ? attemptsByLesson[lessonId] : undefined;
   // The checks API returns attempts oldest-first (ORDER BY created_at, rowid).
@@ -412,14 +437,14 @@ export default function LearningPage({ params }: { params: { id: string } }) {
             </a>
             {source ? <span className={styles.ribbonMeta}>{itemLabel(source)} <span aria-hidden="true">·</span> {source.role}</span> : null}
           </div>
-          <a href={practice.href} className={styles.primaryAction}>
+          {practiceHref ? <a href={practiceHref} className={styles.primaryAction}>
             Luyện lại chủ đề này <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span>
-          </a>
+          </a> : null}
         </div>
       </header>
       <div className={styles.content}>
 
-      {practice.warning ? <p role="status" className={styles.message}>{practice.warning}</p> : null}
+      {lesson?.status === "ready" && !practiceHref ? <p role="status" className={styles.message}>Không thể luyện từ bài này vì chủ đề gốc không hợp lệ.</p> : null}
       {query === null ? <p role="status" className={styles.message}>Đang tải mục từ báo cáo…</p> : null}
       {query !== null && !valid ? <p role="alert" className={`${styles.message} text-error`}>Đường dẫn không hợp lệ. Hãy mở một mục từ trang báo cáo.</p> : null}
       {catalogError ? (
@@ -687,6 +712,38 @@ export default function LearningPage({ params }: { params: { id: string } }) {
         </>
       ) : null}
 
+      {lesson?.status === "ready" ? (
+        <section className={styles.statePanel} aria-label="Phiên phỏng vấn từ bài học này">
+          <h2 className="font-headline-sm text-headline-sm">Phiên phỏng vấn từ bài học này</h2>
+          {!practiceSessions && !practiceSessionsError ? <p role="status">Đang tải các phiên đã luyện…</p> : null}
+          {practiceSessions?.sessions.length === 0 ? <p className="font-body-sm text-body-sm text-on-surface-variant">Chưa có phiên phỏng vấn nào bắt đầu từ bài học này.</p> : null}
+          {practiceSessions?.sessions.length ? (
+            <ul className="flex flex-col gap-space-sm">
+              {practiceSessions.sessions.map((entry) => (
+                <li key={entry.id} className="card p-space-sm min-w-0">
+                  <a className="underline break-words" href={`/${entry.status === "completed" ? "report" : "session"}/${encodeURIComponent(entry.id)}`}>
+                    {entry.role} · {entry.id}
+                  </a>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    {formatWhen(entry.createdAt)} · {entry.status === "completed" ? "Đã hoàn tất" : entry.status === "active" ? "Đang phỏng vấn" : entry.status === "evaluating" ? "Đang chấm điểm" : "Chấm điểm lỗi"}
+                    {entry.overallScore != null ? ` · ${entry.overallScore}/100` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {practiceSessionsError ? <div role="alert" className="flex flex-wrap items-center gap-space-sm text-error">
+            <span>{practiceSessionsError}</span>
+            <button type="button" className={styles.secondaryAction} onClick={() => setSessionsRetry((value) => value + 1)}>Tải lại</button>
+          </div> : null}
+          {practiceSessions?.hasMore ? (
+            <button type="button" className={styles.secondaryAction} onClick={() => void loadMoreSessions()} disabled={loadingMoreSessions}>
+              {loadingMoreSessions ? "Đang tải…" : "Xem thêm phiên"}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
       {catalog?.older.length ? (
         <section className={styles.statePanel}>
           <h2 className="font-headline-sm text-headline-sm">Bài đã tạo từ báo cáo trước</h2>
@@ -705,7 +762,7 @@ export default function LearningPage({ params }: { params: { id: string } }) {
       {source && !historical && lesson?.status === "ready" ? (
         <div className={styles.bottomActions}>
           <button type="button" className={styles.secondaryAction} onClick={() => setMode(otherMode)}>Chuyển sang {MODE_LABEL[otherMode]} →</button>
-          <a href={practice.href} className={styles.primaryAction}>Luyện lại chủ đề này <span aria-hidden="true">→</span></a>
+          {practiceHref ? <a href={practiceHref} className={styles.primaryAction}>Luyện lại chủ đề này <span aria-hidden="true">→</span></a> : null}
         </div>
       ) : null}
       </div>

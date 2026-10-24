@@ -7,7 +7,7 @@ import { Chip } from "@/components/Chip";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import { getProviderSpec, isProviderEnabled } from "@/lib/providers/registry";
 import { FocusSchema } from "@/lib/focus";
-import { decodePracticePrefill } from "@/lib/practice-prefill";
+import { decodeLessonPractice, decodePracticePrefill } from "@/lib/practice-prefill";
 
 const ROLE_SUGGESTIONS = [
   "Senior Frontend (React/TS)",
@@ -40,6 +40,13 @@ interface PdfPreview {
   digest: string;
 }
 
+interface PracticeLesson {
+  id: string;
+  sessionId: string;
+  source: { kind: "improvement" | "next_step"; index: number; label: string; role: string; language: Lang };
+  practiceFocus: string;
+}
+
 /** Browser-native SHA-256 hex digest (NFR-2 friendly, no third-party deps). */
 async function sha256Hex(s: string): Promise<string> {
   const enc = new TextEncoder().encode(s);
@@ -68,6 +75,9 @@ export default function StartInterviewPage() {
   const [mode, setMode] = useState<Mode>("coaching");
   const [rounds, setRounds] = useState<Rounds>(8);
   const [focus, setFocus] = useState<string[]>([]);
+  const [lessonLink, setLessonLink] = useState<string | null>(null);
+  const [practiceLesson, setPracticeLesson] = useState<PracticeLesson | null>(null);
+  const [lessonError, setLessonError] = useState<string | null>(null);
   const [cvSource, setCvSource] = useState<CvSource>("none");
   const [cvText, setCvText] = useState("");
   const [cvFilename, setCvFilename] = useState<string | null>(null);
@@ -86,12 +96,39 @@ export default function StartInterviewPage() {
 
   // Parse the navigation URL only after mount; no search-param hook or implicit POST.
   useEffect(() => {
-    const prefill = decodePracticePrefill(window.location.search);
+    const search = window.location.search;
+    if (new URLSearchParams(search).has("lesson")) {
+      const lessonId = decodeLessonPractice(search);
+      if (!lessonId) setLessonError("Đường dẫn bài học không hợp lệ. Hãy mở lại từ bài học.");
+      else setLessonLink(lessonId);
+      return;
+    }
+    const prefill = decodePracticePrefill(search);
     if (!prefill) return;
     setRole(prefill.role);
     setLang(prefill.language);
     setFocus(prefill.focus);
   }, []);
+
+  useEffect(() => {
+    if (!lessonLink) return;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const response = await fetch(`/api/learning/${encodeURIComponent(lessonLink)}`, { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("Bài học không còn tồn tại.");
+        const data = await response.json();
+        if (data.lesson?.status !== "ready" || !data.lesson.practiceFocus) throw new Error("Bài học chưa sẵn sàng để luyện lại.");
+        if (controller.signal.aborted) return;
+        setPracticeLesson(data.lesson as PracticeLesson);
+        setRole(data.lesson.source.role);
+        setLang(data.lesson.source.language);
+      } catch (cause) {
+        if (!controller.signal.aborted) setLessonError((cause as Error).message);
+      }
+    })();
+    return () => controller.abort();
+  }, [lessonLink]);
 
   // Block submit if no BYOK config
   useEffect(() => {
@@ -250,6 +287,8 @@ export default function StartInterviewPage() {
 
   const submit = async () => {
     setError(null);
+    if (lessonError || (lessonLink && !practiceLesson)) { setError("Không tải được bài học gốc. Hãy quay lại bài học và thử lại."); return; }
+    if (practiceLesson && focus.length > 2) { setError("Chỉ được thêm tối đa 2 chủ đề ngoài chủ đề gốc."); return; }
     if (role.trim().length < 2) { setError("Vui lòng nhập vị trí ứng tuyển (≥ 2 ký tự)"); return; }
     const parsedFocus = FocusSchema.safeParse(focus.map((item) => item.trim()));
     if (!parsedFocus.success) { setError("Tối đa 3 chủ đề, mỗi chủ đề từ 1 đến 120 ký tự."); return; }
@@ -286,6 +325,7 @@ export default function StartInterviewPage() {
         role: role.trim(),
         language: lang,
         focus: parsedFocus.data,
+        ...(practiceLesson ? { originLessonId: practiceLesson.id } : {}),
         mode,
         plannedRounds: rounds,
         cvSource,
@@ -319,6 +359,9 @@ export default function StartInterviewPage() {
   // Submit gating (extra — keeps the button disabled until preconditions hold).
   const submitDisabled =
     submitting
+    || Boolean(lessonError)
+    || Boolean(lessonLink && !practiceLesson)
+    || Boolean(practiceLesson && focus.length > 2)
     || !FocusSchema.safeParse(focus.map((item) => item.trim())).success
     || (cvSource === "paste" && cvText.length > MAX_CV_CHARS)
     || (cvSource === "paste" && cvText.length === 0)
@@ -371,10 +414,19 @@ export default function StartInterviewPage() {
           </StepCard>
 
           <StepCard step="+" label="TÙY CHỌN · LUYỆN TẬP" title="Chủ đề cần luyện (Focus)" right={
-            <span className="label-code-sm text-on-surface-variant">{focus.length} / 3 chủ đề</span>
+            <span className="label-code-sm text-on-surface-variant">{focus.length + (lessonLink ? 1 : 0)} / 3 chủ đề</span>
           }>
+            {lessonError ? <p role="alert" className="font-body-sm text-body-sm text-error">{lessonError}</p> : null}
+            {lessonLink && !practiceLesson && !lessonError ? <p role="status">Đang tải bài học gốc…</p> : null}
+            {practiceLesson ? (
+              <div className="card p-space-sm flex flex-col gap-space-xs min-w-0">
+                <span className="label-caps text-tertiary uppercase">Chủ đề từ bài học · không thể sửa hoặc xóa</span>
+                <span className="font-body-sm text-body-sm text-on-surface break-words">{practiceLesson.practiceFocus}</span>
+                <a className="underline text-body-sm break-words" href={`/learn/${encodeURIComponent(practiceLesson.sessionId)}?kind=${practiceLesson.source.kind}&index=${practiceLesson.source.index}&lesson=${encodeURIComponent(practiceLesson.id)}`}>Xem bài học gốc →</a>
+              </div>
+            ) : null}
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Gợi ý từ báo cáo chỉ là dữ liệu tham khảo. Bạn có thể sửa, xóa hoặc thêm chủ đề trước khi chủ động bắt đầu phiên mới.
+              {practiceLesson ? "Bạn có thể thêm tối đa 2 chủ đề khác, chỉ sửa hoặc xóa những chủ đề tự thêm." : "Gợi ý từ báo cáo chỉ là dữ liệu tham khảo. Bạn có thể sửa, xóa hoặc thêm chủ đề trước khi chủ động bắt đầu phiên mới."}
             </p>
             {focus.map((item, index) => (
               <div key={index} className="flex items-center gap-space-xs">
@@ -395,13 +447,16 @@ export default function StartInterviewPage() {
                 </button>
               </div>
             ))}
-            {focus.length < 3 ? (
+            {focus.length + (lessonLink ? 1 : 0) < 3 ? (
               <button type="button" className="btn btn-ghost self-start" onClick={() => setFocus((current) => [...current, ""])}>
                 <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Thêm chủ đề
               </button>
             ) : null}
             {focus.some((item) => !item.trim()) ? (
               <p className="font-body-sm text-body-sm text-error" role="alert">Nhập chủ đề hoặc xóa dòng trống trước khi bắt đầu.</p>
+            ) : null}
+            {lessonLink && focus.length > 2 ? (
+              <p className="font-body-sm text-body-sm text-error" role="alert">Chỉ được thêm tối đa 2 chủ đề ngoài chủ đề gốc. Hãy xóa bớt chủ đề.</p>
             ) : null}
           </StepCard>
 

@@ -14,7 +14,7 @@ type TableName = (typeof TABLE_NAMES)[number];
 export const BACKUP_MAX_BYTES = 50 * 1024 * 1024;
 const FORMAT = "interview-ai-backup";
 const FORMAT_VERSION = 1;
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 export class BackupError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -59,7 +59,8 @@ const rowSchemas = {
     cv_source: z.enum(["none", "paste", "pdf"]).nullable(), cv_filename: nullableText,
     created_at: integer, ended_at: nullableInteger, rubric_json: nullableText,
     error_count: integer, evaluation_started_at: nullableInteger,
-     evaluation_attempt_id: nullableText, focus_json: focusJson,
+    evaluation_attempt_id: nullableText, focus_json: focusJson,
+    origin_lesson_id: nullableText,
   }).strict(),
   message_turns: z.object({
     id: positiveId, session_id: text, turn_number: integer,
@@ -133,22 +134,28 @@ const backupSchema = z.object({
   }).strict(), counts: countsSchema,
 }).strict();
 export type BackupData = z.infer<typeof backupSchema>;
-// Independently validate exactly the six historical tables/counts before projection.
-// v1 had no focus_json; v2 included it. Neither accepted learning tables.
-const v2BackupSchema = backupSchema.extend({
+// Validate each historical envelope strictly before projecting to v4.
+// v1 had no focus_json; v1/v2 had no learning tables; v1-v3 had no origin_lesson_id.
+const v3BackupSchema = backupSchema.extend({
+  schemaVersion: z.literal(3),
+  tables: backupSchema.shape.tables.extend({
+    sessions: z.array(rowSchemas.sessions.omit({ origin_lesson_id: true })),
+  }),
+});
+const v2BackupSchema = v3BackupSchema.extend({
   schemaVersion: z.literal(2),
-  tables: backupSchema.shape.tables.omit({ learning_lessons: true, learning_check_attempts: true }),
+  tables: v3BackupSchema.shape.tables.omit({ learning_lessons: true, learning_check_attempts: true }),
   counts: legacyCountsSchema,
 });
 const v1BackupSchema = v2BackupSchema.extend({
   schemaVersion: z.literal(1),
   tables: v2BackupSchema.shape.tables.extend({
-    sessions: z.array(rowSchemas.sessions.omit({ focus_json: true })),
+    sessions: z.array(rowSchemas.sessions.omit({ focus_json: true, origin_lesson_id: true })),
   }),
 });
 
 const columns: { [K in TableName]: readonly (keyof BackupData["tables"][K][number] & string)[] } = {
-  sessions: ["id", "role", "language", "mode", "planned_rounds", "status", "provider", "model", "base_url", "temperature", "max_tokens", "top_p", "cv_source", "cv_filename", "created_at", "ended_at", "rubric_json", "error_count", "evaluation_started_at", "evaluation_attempt_id", "focus_json"],
+  sessions: ["id", "role", "language", "mode", "planned_rounds", "status", "provider", "model", "base_url", "temperature", "max_tokens", "top_p", "cv_source", "cv_filename", "created_at", "ended_at", "rubric_json", "error_count", "evaluation_started_at", "evaluation_attempt_id", "focus_json", "origin_lesson_id"],
   message_turns: ["id", "session_id", "turn_number", "role", "content", "raw_blocks_json", "latency_ms", "prompt_tokens", "completion_tokens", "micro_rubric", "finish_reason", "created_at"],
   cv_extracts: ["id", "session_id", "source", "filename", "text", "char_count", "created_at"],
   evaluations: ["id", "session_id", "report_json", "overall_score", "recommendation", "schema_valid", "repair_attempts", "created_at"],
@@ -249,26 +256,34 @@ function validate(input: unknown): BackupData {
     throw new BackupError("Invalid backup format", 400);
   }
   const header = input as Record<string, unknown>;
-  if (header.formatVersion !== FORMAT_VERSION || (header.schemaVersion !== 1 && header.schemaVersion !== 2 && header.schemaVersion !== SCHEMA_VERSION)) {
+  if (header.formatVersion !== FORMAT_VERSION || (header.schemaVersion !== 1 && header.schemaVersion !== 2 && header.schemaVersion !== 3 && header.schemaVersion !== SCHEMA_VERSION)) {
     throw new BackupError("Unsupported backup version", 422);
   }
   let data: BackupData;
-  if (header.schemaVersion === 3) {
+  if (header.schemaVersion === 4) {
     const parsed = backupSchema.safeParse(input);
     if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
     data = parsed.data;
+  } else if (header.schemaVersion === 3) {
+    const parsed = v3BackupSchema.safeParse(input);
+    if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
+    data = { ...parsed.data, schemaVersion: SCHEMA_VERSION,
+      tables: { ...parsed.data.tables,
+        sessions: parsed.data.tables.sessions.map((row) => ({ ...row, origin_lesson_id: null })) } };
   } else if (header.schemaVersion === 2) {
     const parsed = v2BackupSchema.safeParse(input);
     if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
     data = { ...parsed.data, schemaVersion: SCHEMA_VERSION,
-      tables: { ...parsed.data.tables, learning_lessons: [], learning_check_attempts: [] },
+      tables: { ...parsed.data.tables,
+        sessions: parsed.data.tables.sessions.map((row) => ({ ...row, origin_lesson_id: null })),
+        learning_lessons: [], learning_check_attempts: [] },
       counts: { ...parsed.data.counts, learning_lessons: 0, learning_check_attempts: 0 } };
   } else {
     const parsed = v1BackupSchema.safeParse(input);
     if (!parsed.success) throw new BackupError("Invalid backup schema", 422);
     data = { ...parsed.data, schemaVersion: SCHEMA_VERSION,
       tables: { ...parsed.data.tables,
-        sessions: parsed.data.tables.sessions.map((row) => ({ ...row, focus_json: "[]" })),
+        sessions: parsed.data.tables.sessions.map((row) => ({ ...row, focus_json: "[]", origin_lesson_id: null })),
         learning_lessons: [], learning_check_attempts: [] },
       counts: { ...parsed.data.counts, learning_lessons: 0, learning_check_attempts: 0 } };
   }
@@ -316,6 +331,11 @@ function validate(input: unknown): BackupData {
     const slot = JSON.stringify([row.session_id, row.report_revision, row.source_kind, row.source_index, row.mode]);
     if (slots.has(slot)) throw new BackupError("Duplicate lesson slot", 422);
     slots.add(slot);
+  }
+  for (const row of data.tables.sessions) {
+    if (row.origin_lesson_id !== null && lessons.get(row.origin_lesson_id)?.status !== "ready") {
+      throw new BackupError("Session origin requires ready lesson", 422);
+    }
   }
   const checkIds = new Set<string>();
   const checkSlots = new Set<string>();
@@ -411,8 +431,8 @@ export function restoreBackup(input: BackupData, expected?: BackupRevision): voi
   try {
     // Revalidate at commit: callers can mutate the object returned by parseBackup.
     // Upload size is checked against the original bytes in parseBackup. A valid
-    // v1/v2 files can grow past 50 MiB in memory when legacy fields gain
-    // v3 defaults; that projection must not make commit fail after
+    // v1-v3 files can grow past 50 MiB in memory when legacy fields gain
+    // v4 defaults; that projection must not make commit fail after
     // validate-restore accepted the exact same uploaded bytes.
     const json = JSON.stringify(input);
     data = validate(JSON.parse(json) as unknown);
@@ -433,8 +453,15 @@ export function restoreBackup(input: BackupData, expected?: BackupRevision): voi
       const names = columns[table];
       const statement = db.prepare(`INSERT INTO ${table} (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})`);
       for (const row of data.tables[table]) {
-        statement.run(...names.map((name) => (row as Record<string, string | number | null>)[name]));
+        // sessions -> lessons -> sessions is cyclic: insert sessions without their
+        // optional origin, then set it after the referenced lesson has been inserted.
+        statement.run(...names.map((name) => table === "sessions" && name === "origin_lesson_id"
+          ? null : (row as Record<string, string | number | null>)[name]));
       }
+    }
+    const setOrigin = db.prepare("UPDATE sessions SET origin_lesson_id = ? WHERE id = ?");
+    for (const row of data.tables.sessions) {
+      if (row.origin_lesson_id !== null) setOrigin.run(row.origin_lesson_id, row.id);
     }
     // DELETE does not reset sqlite_sequence. Rebuild from the restored IDs, including empty tables.
     for (const table of autoincrementTables) {

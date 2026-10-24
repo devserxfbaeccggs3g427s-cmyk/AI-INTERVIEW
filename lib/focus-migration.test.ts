@@ -10,9 +10,9 @@ import { FocusSchema, parseStoredFocus } from "./focus";
 // Every app import is in a separate process with INTERVIEW_DB_PATH already set.
 // Never load the singleton against the real DB, or change its path mid-process.
 const dir = mkdtempSync(join(tmpdir(), "focus-migration-"));
-const paths = ["legacy.db", "fresh.db", "future.db", "failure.db"].map((name) => join(dir, name));
+const paths = ["legacy.db", "fresh.db", "future.db", "failure.db", "v3.db"].map((name) => join(dir, name));
 const invoke = (path: string) => spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
-  "try { const { getDb } = await import('./lib/db.ts'); const db = getDb(); console.log(JSON.stringify({ version: db.prepare('PRAGMA user_version').get().user_version, focus: db.prepare('PRAGMA table_info(sessions)').all().find(c => c.name === 'focus_json')?.dflt_value })); db.close(); } catch (error) { console.error(String(error)); process.exitCode = 1; }",
+  "try { const { getDb } = await import('./lib/db.ts'); const db = getDb(); const columns = db.prepare('PRAGMA table_info(sessions)').all(); console.log(JSON.stringify({ version: db.prepare('PRAGMA user_version').get().user_version, focus: columns.find(c => c.name === 'focus_json')?.dflt_value, origin: columns.find(c => c.name === 'origin_lesson_id')?.dflt_value })); db.close(); } catch (error) { console.error(String(error)); process.exitCode = 1; }",
 ], { cwd: process.cwd(), env: { ...process.env, INTERVIEW_DB_PATH: path }, encoding: "utf8" });
 
 test("focus schema trims and enforces 3 entries of 1–120 characters", () => {
@@ -29,7 +29,9 @@ test("focus schema trims and enforces 3 entries of 1–120 characters", () => {
 test("v1 migration retains legacy rows/reports and gives sessions default focus", () => {
     assert.equal(invoke(paths[0]).status, 0);
     const legacy = new DatabaseSync(paths[0]);
-    legacy.exec(`ALTER TABLE sessions DROP COLUMN focus_json;
+     legacy.exec(`DROP INDEX idx_sessions_origin_lesson;
+     ALTER TABLE sessions DROP COLUMN origin_lesson_id;
+     ALTER TABLE sessions DROP COLUMN focus_json;
     INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, evaluation_started_at, evaluation_attempt_id)
       VALUES ('old', 'Engineer', 'en', 'strict', 3, 'custom', 'model', 123, 'attempt');
     INSERT INTO evaluations (session_id, report_json, overall_score, recommendation)
@@ -38,7 +40,7 @@ test("v1 migration retains legacy rows/reports and gives sessions default focus"
     legacy.close();
     const result = invoke(paths[0]);
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 3, focus: "'[]'" });
+    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 4, focus: "'[]'", origin: null });
     const reopened = new DatabaseSync(paths[0]);
     try {
       assert.deepEqual({ ...(reopened.prepare("SELECT role, evaluation_started_at, evaluation_attempt_id, focus_json FROM sessions WHERE id = 'old'").get() as Record<string, unknown>) },
@@ -47,30 +49,61 @@ test("v1 migration retains legacy rows/reports and gives sessions default focus"
         { report_json: '{"legacy":"report"}', overall_score: 73 });
       assert.equal((reopened.prepare("PRAGMA integrity_check").get() as { integrity_check: string }).integrity_check, "ok");
     } finally { reopened.close(); }
-    assert.equal(invoke(paths[0]).status, 0, "reopening v3 is idempotent");
+    assert.equal(invoke(paths[0]).status, 0, "reopening v4 is idempotent");
   });
 
-  test("fresh DB opens at v3 with a usable default focus column", () => {
+  test("fresh DB opens at v4 with default focus and nullable lesson origin", () => {
     const result = invoke(paths[1]);
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 3, focus: "'[]'" });
+    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 4, focus: "'[]'", origin: null });
     const db = new DatabaseSync(paths[1]);
     try {
       db.exec("INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model) VALUES ('fresh', 'dev', 'en', 'strict', 1, 'custom', 'm')");
-      assert.equal((db.prepare("SELECT focus_json FROM sessions WHERE id = 'fresh'").get() as { focus_json: string }).focus_json, "[]");
+       assert.deepEqual({ ...(db.prepare("SELECT focus_json, origin_lesson_id FROM sessions WHERE id = 'fresh'").get() as Record<string, unknown>) },
+         { focus_json: "[]", origin_lesson_id: null });
     } finally { db.close(); }
+  });
+
+  test("v3 migration keeps existing sessions and lessons and adds nullable origin FK", () => {
+    assert.equal(invoke(paths[4]).status, 0);
+    const legacy = new DatabaseSync(paths[4]);
+    legacy.exec(`DROP INDEX idx_sessions_origin_lesson;
+      ALTER TABLE sessions DROP COLUMN origin_lesson_id;
+      INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model)
+        VALUES ('old', 'Engineer', 'en', 'strict', 3, 'custom', 'model');
+      INSERT INTO learning_lessons (id, session_id, report_revision, source_kind, source_index,
+        mode, source_label, status, lesson_json, provider, model)
+        VALUES ('lesson-old', 'old', '${"a".repeat(64)}', 'improvement', 0,
+          'fundamentals', 'Practice SQL', 'ready', '{}', 'custom', 'model');
+      PRAGMA user_version = 3;`);
+    legacy.close();
+    const result = invoke(paths[4]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout.trim()), { version: 4, focus: "'[]'", origin: null });
+    const reopened = new DatabaseSync(paths[4]);
+    reopened.exec("PRAGMA foreign_keys = ON");
+    try {
+      assert.equal((reopened.prepare("SELECT origin_lesson_id FROM sessions WHERE id = 'old'").get() as { origin_lesson_id: string | null }).origin_lesson_id, null);
+      assert.equal((reopened.prepare("SELECT id FROM learning_lessons WHERE id = 'lesson-old'").get() as { id: string }).id, "lesson-old");
+      reopened.prepare("UPDATE sessions SET origin_lesson_id = 'lesson-old' WHERE id = 'old'").run();
+      assert.throws(() => reopened.prepare("UPDATE sessions SET origin_lesson_id = 'missing' WHERE id = 'old'").run(), /FOREIGN KEY/);
+      reopened.prepare("DELETE FROM learning_lessons WHERE id = 'lesson-old'").run();
+      assert.equal((reopened.prepare("SELECT origin_lesson_id FROM sessions WHERE id = 'old'").get() as { origin_lesson_id: string | null }).origin_lesson_id, null);
+      assert.equal(reopened.prepare("PRAGMA foreign_key_check").get(), undefined);
+    } finally { reopened.close(); }
+    assert.equal(invoke(paths[4]).status, 0, "v4 migration is idempotent");
   });
 
   test("future version is refused before any schema writes", () => {
     const db = new DatabaseSync(paths[2]);
-    db.exec("PRAGMA user_version = 4");
+    db.exec("PRAGMA user_version = 5");
     db.close();
     const result = invoke(paths[2]);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /Unsupported database version: 4/);
+    assert.match(result.stderr, /Unsupported database version: 5/);
     const reopened = new DatabaseSync(paths[2]);
     try {
-      assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 4);
+       assert.equal((reopened.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 5);
       assert.equal(reopened.prepare("SELECT name FROM sqlite_master WHERE name = 'sessions'").get(), undefined);
     } finally { reopened.close(); }
   });

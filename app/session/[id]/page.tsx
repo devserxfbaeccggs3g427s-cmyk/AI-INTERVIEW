@@ -14,7 +14,8 @@ import type { SessionRow, MessageTurnRow } from "@/lib/types-shared";
 
 interface Props { params: { id: string } }
 
-type SessionDetail = SessionRow & { focus: string[] };
+type OriginLesson = { id: string; sessionId: string; kind: "improvement" | "next_step"; index: number; label: string };
+type SessionDetail = SessionRow & { focus: string[]; originLesson: OriginLesson | null };
 
 const MAX_ANSWER = 4000;
 
@@ -321,6 +322,7 @@ export default function ActiveSessionPage({ params }: Props) {
           </div>
 
           {session.focus.length > 0 ? <FocusCard focus={session.focus} /> : null}
+          {session.originLesson ? <OriginLessonCard lesson={session.originLesson} /> : null}
 
           <div className="card p-space-sm flex flex-col gap-space-sm">
             <div className="flex items-center justify-between">
@@ -367,6 +369,7 @@ export default function ActiveSessionPage({ params }: Props) {
       <section className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-y-auto scrollbar-thin px-gutter py-space-md" ref={scrollRef}>
           <div className="max-w-3xl mx-auto flex flex-col gap-space-md">
+            {session.originLesson ? <div className="lg:hidden"><OriginLessonCard lesson={session.originLesson} /></div> : null}
             {session.focus.length > 0 ? (
               <div className="lg:hidden"><FocusCard focus={session.focus} /></div>
             ) : null}
@@ -527,6 +530,17 @@ export default function ActiveSessionPage({ params }: Props) {
         </aside>
       ) : null}
       </div>
+    </div>
+  );
+}
+
+function OriginLessonCard({ lesson }: { lesson: OriginLesson }) {
+  const href = `/learn/${encodeURIComponent(lesson.sessionId)}?kind=${lesson.kind}&index=${lesson.index}&lesson=${encodeURIComponent(lesson.id)}`;
+  return (
+    <div className="card p-space-sm flex flex-col gap-space-xs min-w-0">
+      <span className="label-caps text-on-surface-variant uppercase">Bài học gốc</span>
+      <span className="font-body-sm text-body-sm text-on-surface break-words">{lesson.label}</span>
+      <a href={href} className="font-body-sm text-body-sm text-primary underline break-words">Xem bài học đã tạo phiên này →</a>
     </div>
   );
 }

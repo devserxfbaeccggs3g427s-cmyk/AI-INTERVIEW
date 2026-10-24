@@ -65,7 +65,7 @@ try {
   const db = new DatabaseSync(path);
   try {
     const version = db.prepare("PRAGMA user_version").get().user_version;
-    const session = db.prepare("SELECT role, focus_json FROM sessions WHERE id = ?").get(sessionId);
+    const session = db.prepare("SELECT role, focus_json, origin_lesson_id FROM sessions WHERE id = ?").get(sessionId);
     const maxRow = db.prepare("SELECT MAX(id) AS id FROM message_turns").get();
     const beforeMaxId = maxRow && maxRow.id !== null ? maxRow.id : 0;
     const beforeCounts = {
@@ -86,6 +86,7 @@ try {
       version,
       sessionRole: session && session.role !== undefined ? session.role : null,
       focusJson: session && session.focus_json !== undefined ? session.focus_json : null,
+      originLessonId: session && session.origin_lesson_id !== undefined ? session.origin_lesson_id : null,
       sessionFound: !!session,
       beforeMaxId,
       newRowId: newRow.id,
@@ -142,8 +143,9 @@ test("restore survives a real child-process restart and AUTOINCREMENT continues 
   assert.equal(status, 0, `child must exit zero (stderr=${stderr})`);
   assert.equal(payload.ok, true, `child reported failure: ${JSON.stringify(payload)}`);
 
-  assert.equal(payload.version, 3, "PRAGMA user_version must be 3 after restore");
+  assert.equal(payload.version, 4, "PRAGMA user_version must be 4 after restore");
   assert.equal(payload.focusJson, '["questions"]');
+  assert.equal(payload.originLessonId, null);
   assert.equal(payload.sessionFound, true, "restored session row must be visible to the child");
   assert.equal(payload.sessionRole, "restart-role", "Unicode/control-character content must round-trip through disk");
 

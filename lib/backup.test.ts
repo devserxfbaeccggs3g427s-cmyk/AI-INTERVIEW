@@ -82,7 +82,7 @@ function expectRejected(data: BackupData, matcher: RegExp): void {
 test("empty backup has all eight tables, exact counts, and supported version", () => {
   const data = snapshot();
   assert.equal(data.formatVersion, 1);
-  assert.equal(data.schemaVersion, 3);
+  assert.equal(data.schemaVersion, 4);
   assert.deepEqual(Object.keys(data.tables), [...backup.TABLE_NAMES]);
   assert.deepEqual(data.counts, backup.getBackupCounts());
   assert.ok(Object.values(data.counts).every((n) => n === 0));
@@ -96,6 +96,7 @@ test("WAL snapshot round-trips eight tables and migrated columns, including NULL
   assert.equal(original.tables.sessions[0].evaluation_started_at, 123);
   assert.equal(original.tables.sessions[0].focus_json, '["Practice ;\\n Unicode 新"]');
   assert.equal(original.tables.sessions[0].base_url, null);
+  assert.equal(original.tables.sessions[0].origin_lesson_id, null);
   assert.match(original.tables.message_turns[0].content, /Ω/);
   assert.equal(JSON.stringify(original).includes("api_key"), false);
 
@@ -123,8 +124,8 @@ test("counts, unknown fields, versions, invalid UTF-8, SQL, and oversized files 
   expectRejected(modified(data, (d) => { d.counts.sessions++; }), /counts/);
   expectRejected(modified(data, (d) => { (d.tables.sessions[0] as object as Record<string, string>).api_key = "never"; }), /schema/);
   expectRejected(modified(data, (d) => { d.formatVersion = 2 as 1; }), /version/);
-  expectRejected(modified(data, (d) => { d.schemaVersion = 4 as 3; }), /version/);
-  expectRejected(modified(data, (d) => { d.schemaVersion = 1 as 3; }), /schema/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 5 as 4; }), /version/);
+  expectRejected(modified(data, (d) => { d.schemaVersion = 1 as 4; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["", "invalid"]'; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = '["a","b","c","d"]'; }), /schema/);
   expectRejected(modified(data, (d) => { d.tables.sessions[0].focus_json = JSON.stringify(["x".repeat(121)]); }), /schema/);
@@ -138,7 +139,7 @@ test("counts, unknown fields, versions, invalid UTF-8, SQL, and oversized files 
   assert.throws(() => backup.parseBackup(new Uint8Array(backup.BACKUP_MAX_BYTES + 1)), (e: unknown) => e instanceof backup.BackupError && e.status === 413);
 });
 
-test("strict v1 backup restores with empty focus, preserving reports and attempts", () => {
+test("strict v1 backup restores with empty focus and null origin, preserving reports and attempts", () => {
   seed();
   const v2 = snapshot();
   const old = structuredClone(v2) as unknown as Record<string, unknown>;
@@ -149,14 +150,17 @@ test("strict v1 backup restores with empty focus, preserving reports and attempt
   delete (old.counts as Record<string, unknown>).learning_lessons;
   delete (old.counts as Record<string, unknown>).learning_check_attempts;
   for (const row of tables.sessions) delete row.focus_json;
+  for (const row of tables.sessions) delete row.origin_lesson_id;
   const bytes = Buffer.from(JSON.stringify(old));
   const upgraded = backup.parseBackup(bytes);
-  assert.equal(upgraded.schemaVersion, 3);
+  assert.equal(upgraded.schemaVersion, 4);
   assert.equal(upgraded.tables.sessions[0].focus_json, "[]");
+  assert.equal(upgraded.tables.sessions[0].origin_lesson_id, null);
   assert.deepEqual(upgraded.tables.learning_lessons, []);
   assert.deepEqual(upgraded.tables.learning_check_attempts, []);
   backup.restoreBackup(upgraded);
   assert.equal(snapshot().tables.sessions[0].focus_json, "[]");
+  assert.equal(snapshot().tables.sessions[0].origin_lesson_id, null);
   assert.deepEqual(snapshot().tables.evaluations, v2.tables.evaluations);
   assert.deepEqual(snapshot().tables.evaluation_attempts, v2.tables.evaluation_attempts);
   // Direct callers can also supply a parsed legacy envelope; commit revalidates.
@@ -171,11 +175,13 @@ test("strict v2 backup imports six tables and projects two empty learning tables
   seedLearning();
   const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
   old.schemaVersion = 2;
+  for (const row of (old.tables as { sessions: Record<string, unknown>[] }).sessions) delete row.origin_lesson_id;
   for (const name of ["learning_lessons", "learning_check_attempts"]) {
     delete (old.tables as Record<string, unknown>)[name];
     delete (old.counts as Record<string, unknown>)[name];
   }
   const projected = backup.parseBackup(Buffer.from(JSON.stringify(old)));
+  assert.equal(projected.tables.sessions[0].origin_lesson_id, null);
   assert.deepEqual(projected.counts, { ...old.counts as object, learning_lessons: 0, learning_check_attempts: 0 });
   backup.restoreBackup(projected);
   assert.equal(backup.getBackupCounts().learning_lessons, 0);
@@ -188,6 +194,75 @@ test("strict v2 backup imports six tables and projects two empty learning tables
     (old.counts as Record<string, unknown>)[name] = 0;
     assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
     delete (old.counts as Record<string, unknown>)[name];
+  }
+});
+
+test("strict v3 backup projects null origins but preserves lessons and checks", () => {
+  seed();
+  seedLearning();
+  const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
+  old.schemaVersion = 3;
+  const session = (old.tables as { sessions: Record<string, unknown>[] }).sessions[0];
+  delete session.origin_lesson_id;
+  const projected = backup.parseBackup(Buffer.from(JSON.stringify(old)));
+  assert.equal(projected.schemaVersion, 4);
+  assert.equal(projected.tables.sessions[0].origin_lesson_id, null);
+  assert.equal(projected.counts.learning_lessons, 1);
+  assert.equal(projected.counts.learning_check_attempts, 1);
+  backup.restoreBackup(projected);
+  assert.deepEqual(snapshot().tables.learning_lessons, projected.tables.learning_lessons);
+  assert.deepEqual(snapshot().tables.learning_check_attempts, projected.tables.learning_check_attempts);
+  session.origin_lesson_id = null;
+  assert.throws(() => backup.parseBackup(Buffer.from(JSON.stringify(old))), /schema/);
+});
+
+test("v4 originating session round-trips cyclic lesson FK and changes fingerprint", () => {
+  seed();
+  seedLearning();
+  db.prepare(`INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, origin_lesson_id)
+    VALUES ('follow-up', 'SQL interview', 'en', 'strict', 2, 'custom', 'model', 'lesson-a')`).run();
+  const original = snapshot();
+  assert.equal(original.tables.sessions.find((row) => row.id === "follow-up")?.origin_lesson_id, "lesson-a");
+  const fingerprint = backup.getBackupFingerprint();
+  db.prepare("UPDATE sessions SET origin_lesson_id = NULL WHERE id = 'follow-up'").run();
+  assert.notEqual(backup.getBackupFingerprint(), fingerprint);
+  backup.restoreBackup(original);
+  assert.deepEqual(snapshot().tables, original.tables);
+  assert.equal((db.prepare("PRAGMA foreign_key_check").get()), undefined);
+  db.prepare("DELETE FROM learning_lessons WHERE id = 'lesson-a'").run();
+  assert.equal((db.prepare("SELECT origin_lesson_id FROM sessions WHERE id = 'follow-up'").get() as { origin_lesson_id: string | null }).origin_lesson_id, null);
+});
+
+test("wiping sessions clears the cyclic origin link without FK errors", () => {
+  seed();
+  seedLearning();
+  db.prepare(`INSERT INTO sessions (id, role, language, mode, planned_rounds, provider, model, origin_lesson_id)
+    VALUES ('follow-up', 'SQL interview', 'en', 'strict', 2, 'custom', 'model', 'lesson-a')`).run();
+  backup.wipeBackupData("wipe-sessions");
+  const counts = backup.getBackupCounts();
+  assert.equal(counts.sessions, 0);
+  assert.equal(counts.learning_lessons, 0);
+  assert.equal(counts.learning_check_attempts, 0);
+  assert.equal((db.prepare("PRAGMA foreign_key_check").get()), undefined);
+});
+
+test("v4 rejects missing or non-ready origin lessons without mutating data", () => {
+  seed();
+  seedLearning();
+  const original = snapshot();
+  for (const id of ["missing", "lesson-a"]) {
+    const invalid = modified(original, (data) => {
+      data.tables.sessions[0].origin_lesson_id = id;
+      if (id === "lesson-a") {
+        data.tables.learning_check_attempts = [];
+        data.counts.learning_check_attempts = 0;
+        data.tables.learning_lessons[0].status = "failed";
+        data.tables.learning_lessons[0].lesson_json = null;
+      }
+    });
+    expectRejected(invalid, /origin requires ready lesson/);
+    assert.throws(() => backup.restoreBackup(invalid), /origin requires ready lesson/);
+    assert.deepEqual(snapshot().tables, original.tables);
   }
 });
 
@@ -239,7 +314,7 @@ test("v3 rejects invalid lesson/check data and leaves existing rows untouched", 
   }
 });
 
-test("a legal near-limit v1 upload remains restorable after in-memory v2 projection", () => {
+test("a legal near-limit v1 upload remains restorable after in-memory v4 projection", () => {
   seed();
   const old = structuredClone(snapshot()) as unknown as Record<string, unknown>;
   old.schemaVersion = 1;
@@ -249,8 +324,9 @@ test("a legal near-limit v1 upload remains restorable after in-memory v2 project
   delete (old.counts as Record<string, unknown>).learning_check_attempts;
   const session = (old.tables as { sessions: Record<string, unknown>[] }).sessions[0];
   delete session.focus_json;
+  delete session.origin_lesson_id;
   const baseBytes = Buffer.byteLength(JSON.stringify(old), "utf8");
-  // The uploaded v1 file fits; the projected v2 JSON gains focus_json and exceeds the cap.
+  // The uploaded v1 file fits; the projected v4 JSON gains defaults and exceeds the cap.
   session.role = "x".repeat(backup.BACKUP_MAX_BYTES - baseBytes + String(session.role).length - 1);
   // The fixture's original Unicode role occupies three more UTF-8 bytes than
   // its JavaScript string length, so fill the remaining difference exactly.

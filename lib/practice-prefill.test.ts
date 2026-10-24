@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { decodePracticePrefill, encodePracticePrefill, practiceFocusLabel } from "./practice-prefill";
+import { decodeLessonPractice, encodeLessonPractice, decodePracticePrefill, encodePracticePrefill, practiceFocusLabel } from "./practice-prefill";
 
 test("short URI contains only the three allowed fields, and round-trips unicode", () => {
   const input = { role: "Kỹ sư Backend", language: "vi" as const, focus: ["Caching & consistency", "Kiểm thử"] };
@@ -54,4 +54,25 @@ test("query cannot carry CV, key or transcript into the next session", () => {
   assert.ok(url);
   assert.ok(!/cv|key|transcript|sessionId/i.test(url));
   assert.equal(decodePracticePrefill(`${url.slice(5)}&cvDataUrl=private`), null);
+});
+
+test("lesson practice URL carries only the saved lesson ID", () => {
+  const id = "e91c9ea5-91c3-4858-88c3-329959fa7274";
+  const url = encodeLessonPractice(id);
+  assert.equal(url, `/new?lesson=${id}`);
+  assert.equal(decodeLessonPractice(url!.slice(4)), id);
+  assert.equal(decodeLessonPractice(`lesson=${id}`), id);
+  assert.equal(encodeLessonPractice("report-index-0"), null);
+  assert.equal(decodePracticePrefill(url!.slice(4)), null);
+});
+
+test("lesson practice URL rejects extra fields, duplicate IDs and malformed data", () => {
+  const id = "e91c9ea5-91c3-4858-88c3-329959fa7274";
+  for (const query of [
+    "", "lesson=", "lesson=report-index-0", `lesson=${id}&lesson=${id}`,
+    `lesson=${id}&focus=other`, `lesson=${id}&apiKey=secret`, `lesson=${id}#fragment`,
+    `lesson=${id}&`, `lesson=${id}&lesson=%ZZ`, `lesson=%FF`, `lesson=${"x".repeat(101)}`,
+  ]) {
+    assert.equal(decodeLessonPractice(query), null, query);
+  }
 });

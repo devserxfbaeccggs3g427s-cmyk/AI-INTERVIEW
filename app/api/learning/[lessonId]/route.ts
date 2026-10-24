@@ -1,4 +1,5 @@
 import { queryOne } from "@/lib/db";
+import { readyPracticeLesson } from "@/lib/lesson-practice";
 import { privateJson } from "@/lib/origin-guard";
 import { parseLesson, publicLesson } from "@/lib/learning-schema";
 import { loadLearningSource } from "@/lib/learning-source";
@@ -27,6 +28,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
       id: row.id, sessionId: row.session_id, status: row.status, mode: row.mode,
       source: { kind: row.source_kind, index: row.source_index, label: row.source_label,
         context: row.source_context ?? "", role: session.role, language: session.language },
+      practiceFocus: row.status === "ready" ? readyPracticeLesson(row.id)?.focus ?? null : null,
       ...(content ? { content: publicLesson(content) } : {}),
     },
     oldRevision,
