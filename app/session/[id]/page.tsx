@@ -569,7 +569,7 @@ function Bubble({ msg }: { msg: UiMessage }) {
     return (
       <div className="flex flex-col gap-space-xs">
         <div className="flex items-center gap-space-sm">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-on-primary">
             <span className="material-symbols-outlined text-[16px]">psychology</span>
           </div>
           <span className="label-caps text-tertiary uppercase">Interviewer · Câu {msg.turnNumber}</span>

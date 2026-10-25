@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "@/components/ThemeProvider";
+import type { ThemePreference } from "@/lib/theme";
 
 const NAV = [
   { href: "/",         label: "1. Cấu hình AI (BYOK)" },
@@ -11,6 +13,35 @@ const NAV = [
   { href: "/report",   label: "4. Báo cáo đánh giá" },
   { href: "/history",  label: "5. Lịch sử & SQLite" },
 ];
+
+const THEME_MODES: ThemePreference[] = ["system", "light", "dark"];
+const THEME_ICONS: Record<ThemePreference, string> = {
+  system: "contrast",
+  light: "light_mode",
+  dark: "dark_mode",
+};
+const THEME_LABELS: Record<ThemePreference, string> = {
+  system: "Theo hệ thống",
+  light: "Sáng",
+  dark: "Tối",
+};
+
+function ThemeButton() {
+  const { preference, hydrated, setPreference } = useTheme();
+  const next = THEME_MODES[(THEME_MODES.indexOf(preference) + 1) % THEME_MODES.length];
+  return (
+    <button
+      type="button"
+      aria-label={`Giao diện: ${THEME_LABELS[preference]}. Bấm để chuyển sang ${THEME_LABELS[next]}`}
+      title={`Giao diện: ${THEME_LABELS[preference]}`}
+      className="w-9 h-9 rounded-md flex items-center justify-center text-on-surface-variant hover:bg-surface-elevated hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      disabled={!hydrated}
+      onClick={() => setPreference(next)}
+    >
+      <span className="material-symbols-outlined text-[22px]" aria-hidden="true">{THEME_ICONS[hydrated ? preference : "system"]}</span>
+    </button>
+  );
+}
 
 export function TopBar() {
   const path = usePathname() || "/";
@@ -48,7 +79,7 @@ export function TopBar() {
           </Link>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-space-xs flex-1 justify-center max-w-4xl">
+        <nav className="hidden 2xl:flex items-center gap-space-xs flex-1 justify-center max-w-4xl">
           {NAV.map((item) => {
             const active = path === item.href || (item.href !== "/" && path.startsWith(item.href));
             return (
@@ -65,6 +96,7 @@ export function TopBar() {
         </nav>
 
         <div className="flex items-center gap-space-md flex-shrink-0">
+          <ThemeButton />
           <div className="hidden 2xl:flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container-lowest text-on-surface-variant">
             <span className="material-symbols-outlined text-[16px] text-tertiary">verified_user</span>
             <span className="label-code-sm">BYOK · Key chỉ trong RAM request</span>
@@ -76,7 +108,7 @@ export function TopBar() {
             aria-expanded={menuOpen}
             aria-controls="primary-mobile-menu"
             onClick={() => setMenuOpen((v) => !v)}
-            className="lg:hidden p-space-xs rounded-md hover:bg-surface-elevated"
+            className="2xl:hidden p-space-xs rounded-md hover:bg-surface-elevated"
           >
             <span className="material-symbols-outlined text-[24px]">{menuOpen ? "close" : "menu"}</span>
           </button>
@@ -90,7 +122,7 @@ export function TopBar() {
         <nav
           id="primary-mobile-menu"
           aria-label="Điều hướng chính"
-          className="lg:hidden absolute top-full left-3 right-3 mt-2 z-50 shadow-2xl bg-[var(--bg-surface-overlay)] backdrop-blur-md rounded-xl p-space-md flex flex-col gap-space-xs"
+          className="2xl:hidden absolute top-full left-3 right-3 mt-2 z-50 shadow-2xl bg-[var(--bg-surface-overlay)] backdrop-blur-md rounded-xl p-space-md flex flex-col gap-space-xs"
           style={{ border: "1px solid var(--border-strong)" }}
         >
           {NAV.map((item) => {

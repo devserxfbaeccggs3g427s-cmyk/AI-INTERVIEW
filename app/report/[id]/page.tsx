@@ -267,7 +267,7 @@ export default function EvaluationPage({ params }: { params: { id: string } }) {
             <ol className="flex flex-col gap-space-sm">
               {report.next_steps.map((s, i) => (
                 <li key={`${s.title}-${i}`} className="card p-space-md flex items-start gap-space-sm" style={{ borderColor: "var(--border-focus)" }}>
-                  <span className="w-6 h-6 rounded-full bg-primary text-white label-code-sm flex items-center justify-center flex-shrink-0 font-bold">{i + 1}</span>
+                  <span className="w-6 h-6 rounded-full bg-primary text-on-primary label-code-sm flex items-center justify-center flex-shrink-0 font-bold">{i + 1}</span>
                   <div className="flex flex-col gap-1">
                     <span className="font-body-md text-body-md text-on-surface">{s.title}</span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">{s.description}</span>

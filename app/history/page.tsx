@@ -416,8 +416,8 @@ export default function HistoryPage() {
       </div>
 
       {loadFailed ? (
-        <div role="alert" className="flex items-start gap-space-sm rounded-xl border border-amber-500/40 bg-amber-500/10 p-space-md">
-          <span className="material-symbols-outlined text-[20px] text-amber-600">warning</span>
+        <div role="alert" className="flex items-start gap-space-sm rounded-xl border border-warning/40 bg-warning/10 p-space-md">
+          <span className="material-symbols-outlined text-[20px] text-warning">warning</span>
           <span className="font-body-md text-body-md text-on-surface">
             Không tải được danh sách hoặc thống kê từ máy chủ. Số liệu bên trên có thể đã cũ — không phải dữ liệu đã bị xoá. Vui lòng tải lại trang.
           </span>
@@ -706,7 +706,7 @@ function Stat({ label, value, icon, tone }: { label: string; value: number; icon
     <div className="card p-space-md flex flex-col gap-space-sm">
       <div className="flex items-center justify-between">
         <span className="label-caps text-on-surface-variant uppercase">{label}</span>
-        <span className={`material-symbols-outlined text-[20px] text-${tone === "indigo" ? "primary" : tone === "emerald" ? "tertiary" : tone === "amber" ? "warning" : "error"}`}>{icon}</span>
+        <span className={`material-symbols-outlined text-[20px] ${tone === "indigo" ? "text-primary" : tone === "emerald" ? "text-tertiary" : tone === "amber" ? "text-warning" : "text-error"}`}>{icon}</span>
       </div>
       <span className="font-display text-display text-on-surface">{value.toLocaleString("vi-VN")}</span>
     </div>

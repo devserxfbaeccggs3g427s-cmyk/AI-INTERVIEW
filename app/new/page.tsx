@@ -828,7 +828,7 @@ function StepCard({ step, label, title, right, children }: { step: string; label
     <div className="card p-space-md sm:p-space-lg flex flex-col gap-space-md">
       <div className="flex items-center justify-between gap-space-sm flex-wrap">
         <div className="flex items-center gap-space-sm">
-          <span className="w-6 h-6 rounded-full bg-primary text-white label-code-sm flex items-center justify-center font-bold">{step}</span>
+          <span className="w-6 h-6 rounded-full bg-primary text-on-primary label-code-sm flex items-center justify-center font-bold">{step}</span>
           <div>
             <span className="label-caps uppercase text-primary">{label}</span>
             <h2 className="font-headline-sm text-headline-sm text-on-surface">{title}</h2>

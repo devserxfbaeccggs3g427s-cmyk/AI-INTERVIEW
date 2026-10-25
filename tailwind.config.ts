@@ -15,57 +15,57 @@ const config: Config = {
     extend: {
       colors: {
         // Brand palette (per design-system § 2 & § 8)
-        primary: "#c3c0ff", // surface-tint light tint
-        "primary-container": "#4f46e5", // actionable deep indigo
-        "primary-hover": "#4338ca",
-        "inverse-primary": "#4d44e3",
-        secondary: "#bec6e0",
-        "secondary-container": "#3f465c",
-        tertiary: "#4edea3", // emerald (success)
-        "tertiary-container": "#006e4b",
-        success: "#10B981",
-        warning: "#F59E0B",
-        destructive: "#F43F5E", // rose
-        neutral: "#94A3B8", // slate muted 400
+        primary: "rgb(var(--tw-primary) / <alpha-value>)", // readable accent, distinct from the solid button --primary
+        "primary-container": "rgb(var(--tw-primary-container) / <alpha-value>)",
+        "primary-hover": "rgb(var(--tw-primary-hover) / <alpha-value>)",
+        "inverse-primary": "rgb(var(--tw-inverse-primary) / <alpha-value>)",
+        secondary: "rgb(var(--tw-secondary) / <alpha-value>)",
+        "secondary-container": "rgb(var(--tw-secondary-container) / <alpha-value>)",
+        tertiary: "rgb(var(--tw-tertiary) / <alpha-value>)",
+        "tertiary-container": "rgb(var(--tw-tertiary-container) / <alpha-value>)",
+        success: "rgb(var(--tw-success) / <alpha-value>)",
+        warning: "rgb(var(--tw-warning) / <alpha-value>)",
+        destructive: "rgb(var(--tw-destructive) / <alpha-value>)",
+        neutral: "rgb(var(--tw-neutral) / <alpha-value>)",
 
         // Material 3 surface scale (dark-mode Fidelity)
-        surface: "#051424",
-        "surface-dim": "#051424",
-        "surface-bright": "#2c3a4c",
-        background: "#051424",
-        "surface-container-lowest": "#010f1f",
-        "surface-container-low": "#0d1c2d",
-        "surface-container": "#122131",
-        "surface-container-high": "#1c2b3c",
-        "surface-container-highest": "#273647",
-        "surface-variant": "#273647",
+        surface: "rgb(var(--tw-surface) / <alpha-value>)",
+        "surface-dim": "rgb(var(--tw-surface-dim) / <alpha-value>)",
+        "surface-bright": "rgb(var(--tw-surface-bright) / <alpha-value>)",
+        background: "rgb(var(--tw-background) / <alpha-value>)",
+        "surface-container-lowest": "rgb(var(--tw-surface-container-lowest) / <alpha-value>)",
+        "surface-container-low": "rgb(var(--tw-surface-container-low) / <alpha-value>)",
+        "surface-container": "rgb(var(--tw-surface-container) / <alpha-value>)",
+        "surface-container-high": "rgb(var(--tw-surface-container-high) / <alpha-value>)",
+        "surface-container-highest": "rgb(var(--tw-surface-container-highest) / <alpha-value>)",
+        "surface-variant": "rgb(var(--tw-surface-variant) / <alpha-value>)",
 
         // On-* tokens
-        "on-surface": "#d4e4fa",
-        "on-surface-variant": "#c7c4d8",
-        "on-background": "#d4e4fa",
-        "on-primary": "#1d00a5",
-        "on-primary-container": "#dad7ff",
-        "on-secondary": "#283044",
-        "on-secondary-container": "#adb4ce",
-        "on-tertiary": "#003824",
-        "on-tertiary-container": "#67f4b7",
-        "on-error": "#690005",
-        "on-error-container": "#ffdad6",
+        "on-surface": "rgb(var(--tw-on-surface) / <alpha-value>)",
+        "on-surface-variant": "rgb(var(--tw-on-surface-variant) / <alpha-value>)",
+        "on-background": "rgb(var(--tw-on-background) / <alpha-value>)",
+        "on-primary": "rgb(var(--tw-on-primary) / <alpha-value>)",
+        "on-primary-container": "rgb(var(--tw-on-primary-container) / <alpha-value>)",
+        "on-secondary": "rgb(var(--tw-on-secondary) / <alpha-value>)",
+        "on-secondary-container": "rgb(var(--tw-on-secondary-container) / <alpha-value>)",
+        "on-tertiary": "rgb(var(--tw-on-tertiary) / <alpha-value>)",
+        "on-tertiary-container": "rgb(var(--tw-on-tertiary-container) / <alpha-value>)",
+        "on-error": "rgb(var(--tw-on-error) / <alpha-value>)",
+        "on-error-container": "rgb(var(--tw-on-error-container) / <alpha-value>)",
 
         // Outline
-        outline: "#918fa1",
-        "outline-variant": "#464555",
+        outline: "rgb(var(--tw-outline) / <alpha-value>)",
+        "outline-variant": "rgb(var(--tw-outline-variant) / <alpha-value>)",
 
         // Error
-        error: "#ffb4ab",
-        "error-container": "#93000a",
+        error: "rgb(var(--tw-error) / <alpha-value>)",
+        "error-container": "rgb(var(--tw-error-container) / <alpha-value>)",
 
         // Custom surface scale (deprecated alias)
-        "bg-canvas": "#090D16",
-        "bg-surface-subtle": "#0F172A",
-        "bg-surface-elevated": "#1E293B",
-        "bg-surface-overlay": "#334155",
+        "bg-canvas": "rgb(var(--tw-bg-canvas) / <alpha-value>)",
+        "bg-surface-subtle": "rgb(var(--tw-bg-surface-subtle) / <alpha-value>)",
+        "bg-surface-elevated": "rgb(var(--tw-bg-surface-elevated) / <alpha-value>)",
+        "bg-surface-overlay": "rgb(var(--tw-bg-surface-overlay) / <alpha-value>)",
       },
       borderRadius: {
         DEFAULT: "0.5rem", // design system base

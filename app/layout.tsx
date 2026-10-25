@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { TopBar } from "@/components/TopBar";
 import { FooterBar } from "@/components/FooterBar";
 import { ByokProvider } from "@/components/ByokConfigContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 /**
  * Next/font/google only ships fonts that Google has officially published.
@@ -19,10 +20,14 @@ export const metadata: Metadata = {
   description: "BYOK · Local SQLite · Mock technical interviews with AI",
 };
 
+// Runs before paint; the client provider takes over after hydration.
+const themeBootstrap = `(function(){try{var p=localStorage.getItem('ui.theme');var d=p==='dark'||(p!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.add(d?'dark':'light');document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){var d=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.add(d?'dark':'light');document.documentElement.style.colorScheme=d?'dark':'light'}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={`${sans.variable} ${mono.variable} dark`}>
+    <html lang="vi" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
           rel="stylesheet"
@@ -35,13 +40,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</style>
       </head>
       <body className="bg-canvas min-h-screen flex flex-col antialiased">
-        <ByokProvider>
-          <TopBar />
-          <main className="w-full pt-16 flex-1">
-            {children}
-          </main>
-          <FooterBar />
-        </ByokProvider>
+        <ThemeProvider>
+          <ByokProvider>
+            <TopBar />
+            <main className="w-full pt-16 flex-1">
+              {children}
+            </main>
+            <FooterBar />
+          </ByokProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
