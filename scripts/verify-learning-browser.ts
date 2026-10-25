@@ -630,8 +630,38 @@ async function main() {
             await cdp.navigate(`${origin}${href}`);
             await until(() => evaluate<boolean>(`document.querySelector('input[placeholder^="Nhập tên vị trí"]')?.value === ${JSON.stringify(row.role)}`), "/new role prefilled");
             check(await evaluate<boolean>(`document.querySelector('input[placeholder^="Nhập tên vị trí"]')?.value === ${JSON.stringify(row.role)}`), "/new role prefilled as editable input");
-            await until(() => evaluate<boolean>(`document.body.innerText.includes(${JSON.stringify(topic)})`), "/new topic from the saved lesson");
-            check(await evaluate<boolean>(`document.body.innerText.includes(${JSON.stringify(topic)})`), "/new shows the saved lesson topic as a read-only focus");
+            const slot = `document.querySelector('input[aria-label="Chủ đề từ bài học"]')`;
+            await until(() => evaluate<boolean>(`${slot}?.value === ${JSON.stringify(topic)}`), "/new topic from the saved lesson");
+            check(await evaluate<boolean>(`${slot}?.value === ${JSON.stringify(topic)}`), "/new shows the saved lesson topic in an editable focus slot");
+            check(await evaluate<boolean>(`!!${slot} && !${slot}.readOnly && !${slot}.disabled`), "/new lesson focus is editable, not read-only");
+            check(await evaluate<boolean>(`document.body.innerText.includes("1 / 3 chủ đề")`), "/new counts the lesson topic as one of three slots");
+            // Editing the topic is a real edit: the page state must follow.
+            const edited = "Redis connection pool";
+            await evaluate(`(() => {
+              const input = document.querySelector('input[aria-label="Chủ đề từ bài học"]');
+              const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+              setter.call(input, ${JSON.stringify(edited)});
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              return true;
+            })()`);
+            await until(() => evaluate<boolean>(`[...document.querySelectorAll('button')].some(e => e.textContent?.includes('Khôi phục'))`), "/new marks the edited lesson topic as changed");
+            check(await evaluate<boolean>(`${slot}?.value === ${JSON.stringify(edited)}`), "/new keeps the edited lesson topic");
+            // "Khôi phục" puts the saved topic back.
+            await evaluate(`([...document.querySelectorAll('button')].find(e => e.textContent?.includes('Khôi phục'))).click()`);
+            await until(() => evaluate<boolean>(`${slot}?.value === ${JSON.stringify(topic)}`), "/new lesson topic restored");
+            check(!(await evaluate<boolean>(`[...document.querySelectorAll('button')].some(e => e.textContent?.includes('Khôi phục'))`)),
+              "/new hides the restore button once the saved topic is back");
+            // Unpinning the lesson topic frees its slot for three extra topics.
+            await click('button[aria-label="Bỏ chủ đề từ bài học"]');
+            await until(() => evaluate<boolean>(`${slot}?.value === ""`), "/new lesson topic unpinned");
+            check(await evaluate<boolean>(`document.body.innerText.includes("0 / 3 chủ đề")`),
+              "/new frees the slot after the lesson topic is dropped");
+            check(await evaluate<boolean>(`document.body.innerText.includes("tối đa 3 chủ đề khác")`),
+              "/new allows three extra topics once the lesson topic is dropped");
+            await evaluate(`([...document.querySelectorAll('button')].find(e => e.textContent?.includes('Khôi phục'))).click()`);
+            await until(() => evaluate<boolean>(`${slot}?.value === ${JSON.stringify(topic)}`), "/new lesson topic restored after unpinning");
+            check(await evaluate<boolean>(`document.body.innerText.includes("1 / 3 chủ đề")`),
+              "/new counts the restored lesson topic again");
             check(await evaluate<boolean>(`[...document.querySelectorAll('button')].find(e => e.textContent?.includes(${JSON.stringify(row.language === "vi" ? "Tiếng Việt" : "English")}))?.style.boxShadow.includes('2px') ?? false`), "/new language prefilled");
           }
         } else {

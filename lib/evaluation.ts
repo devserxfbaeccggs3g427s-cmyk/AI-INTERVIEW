@@ -181,10 +181,11 @@ export async function runEvaluation(args: EvaluationConfig, attemptId: string): 
     }
     const turnList = Array.from(byTurn.entries())
       .sort(([a], [b]) => a - b)
+      .filter(([, turn]) => !!turn.question && !!turn.answer?.trim())
       .map(([, turn]) => ({
         question: turn.question ?? "", answer: turn.answer ?? "", micro_rubric: turn.micro_rubric,
       }));
-    if (!turnList.some((turn) => turn.answer)) throw new Error("No answered turns to evaluate");
+    if (turnList.length === 0) throw new Error("No answered turns to evaluate");
 
     const baseCfg: ModelConfig = {
       provider: args.provider,

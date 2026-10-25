@@ -15,6 +15,9 @@ import { env } from "@/lib/env";
 import { PRIVATE_HEADERS, privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { enterOperation } from "@/lib/maintenance";
 import { parseStoredFocus } from "@/lib/focus";
+import { recentCoveredTopics } from "@/lib/recent-topics";
+import { MAX_QUESTION_CHARS, parseInterviewQuestion } from "@/lib/interview-question";
+import { MAX_COACHING_CHARS, extractCoachingRubric } from "@/lib/coaching-rubric";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +33,8 @@ const Body = modelConfigInput.extend({
 type SseEvent =
   | { type: "start"; turn: number; plan: { planned: number; completed: number }; mode: "strict" | "coaching" }
   | { type: "delta"; text: string }
-  | { type: "coaching"; score: number; strengths: string[]; improvements: string[] }
+  | { type: "coaching"; turn: number; score: number; strengths: string[]; improvements: string[] }
+  | { type: "coaching_unavailable"; turn: number; message: string }
   | { type: "persisted"; userTurn: number; assistantTurn: number }
   | { type: "error"; message: string; status?: number }
   | { type: "done"; reason: "next" | "complete" | "evaluating"; sessionId: string };
@@ -103,13 +107,22 @@ export async function POST(req: Request, { params }: RouteParams) {
     .map((t) => `[Turn ${t.turn_number} · ${t.role === "user" ? "Candidate" : "Interviewer"}]\n${t.content}`)
     .join("\n\n");
 
+  const focus = parseStoredFocus(session.focus_json);
+  // Cross-session topic memory: a new session should not open on a topic an
+  // earlier session already covered. A session started from a lesson repeats
+  // that lesson on purpose, so it keeps its own topic.
+  const avoidTopics = isOpener && !session.origin_lesson_id
+    ? recentCoveredTopics({ excludeSessionId: session.id, focus })
+    : undefined;
+
   const ctx: InterviewContext = {
     role: session.role,
     language: session.language,
     mode: session.mode,
     plannedRounds: session.planned_rounds,
     turnNumber: questionTurn,
-    focus: parseStoredFocus(session.focus_json),
+    focus,
+    avoidTopics,
     cvText: cv?.text,
   };
 
@@ -140,31 +153,60 @@ export async function POST(req: Request, { params }: RouteParams) {
 
         let meta: Awaited<Awaited<ReturnType<typeof provider.streamChat>>["meta"]> | null = null;
         if (!isFinalize) {
-          const handle = await provider.streamChat(
-            creds,
-            [
-              { role: "system", content: baseSystem },
-              { role: "user", content: userPrompt },
-            ],
-            { abortSignal: req.signal },
-          );
-          for await (const chunk of handle.textStream) {
-            fullText += chunk;
-            write({ type: "delta", text: chunk });
+          for (let attempt = 0; attempt < 2; attempt++) {
+            if (req.signal.aborted) throw new Error("Question generation was cancelled");
+            const handle = await provider.streamChat(
+              creds,
+              [
+                { role: "system", content: baseSystem },
+                { role: "user", content: attempt === 0 ? userPrompt : `${userPrompt}\n\nYour previous response was unusable. Return exactly one interviewer question or interview task. Do not answer it, evaluate the candidate, assign a score, or continue the conversation.` },
+              ],
+              { abortSignal: req.signal },
+            );
+            let candidate = "";
+            let oversized = false;
+            // Never publish a provider chunk before checking that it is a question.
+            // Bound collection even when a custom endpoint ignores max_tokens.
+            for await (const chunk of handle.textStream) {
+              if (candidate.length + chunk.length > MAX_QUESTION_CHARS) {
+                oversized = true;
+                break;
+              }
+              candidate += chunk;
+            }
+            // Breaking the iterator early must not leave meta unresolved forever.
+            // Provider meta promises resolve after the stream finishes; no need to
+            // await it when we already know the output is unusable.
+            if (oversized) continue;
+            const result = parseInterviewQuestion(candidate);
+            try {
+              meta = await handle.meta;
+            } catch {
+              meta = null;
+            }
+            const cutoff = /^(?:length|max_tokens|MAX_TOKENS)$/i.test(meta?.finish_reason ?? "");
+            if (result.ok && !cutoff && !req.signal.aborted) {
+              fullText = result.question;
+              break;
+            }
           }
-          if (!fullText.trim()) throw new Error("AI did not return a question");
-          try {
-            meta = await handle.meta;
-          } catch {
-            // Meta is best-effort; the user already has the question.
-            meta = null;
-          }
+          if (req.signal.aborted) throw new Error("Question generation was cancelled");
+          if (!fullText) throw new Error("AI chưa tạo được câu hỏi hợp lệ sau khi thử lại. Câu trả lời của bạn chưa được lưu; hãy gửi lại.");
+          write({ type: "delta", text: fullText });
         }
 
-        let coachingRubric: { score: number; strengths: string[]; improvements: string[] } | null = null;
-        if (session.mode === "coaching" && !isFinalize && !isOpener && !stopWithoutAnswer) {
-          const rubricPrompt = `You are a strict interview coach. Given the candidate's latest answer below, return ONLY a JSON object with this exact shape (no commentary, no markdown fences):
+        let coachingRubric: ReturnType<typeof extractCoachingRubric> = null;
+        let coachingFailure: string | null = null;
+        const needsCoaching = session.mode === "coaching" && !isOpener && !stopWithoutAnswer;
+        if (needsCoaching) {
+          const question = questions.find((t) => t.turn_number === answeredTurn)?.content ?? "";
+          const rubricPrompt = `You are a strict interview coach. Evaluate the candidate's answer to the interview question. Return ONLY a JSON object with this exact shape (no commentary, no markdown fences):
 {"score": <integer 0-100>, "strengths": [<short bullet>, <short bullet>], "improvements": [<short bullet>, <short bullet>]}
+
+Interview question:
+"""
+${question}
+"""
 
 Latest answer:
 """
@@ -175,10 +217,14 @@ ${body.answer}
               { role: "system", content: rubricPrompt },
               { role: "user", content: "Return only the JSON." },
             ], { abortSignal: req.signal });
-            const rubricText = await collectText(rubricHandle.textStream);
-            coachingRubric = extractCoachingRubric(rubricText);
+            const rubricText = await collectText(rubricHandle.textStream, MAX_COACHING_CHARS);
+            const rubricMeta = await rubricHandle.meta;
+            if (!/^(?:length|max_tokens|MAX_TOKENS)$/i.test(rubricMeta?.finish_reason ?? "")) {
+              coachingRubric = extractCoachingRubric(rubricText);
+            }
+            if (!coachingRubric) coachingFailure = "AI không trả về góp ý hợp lệ cho câu này. Câu trả lời vẫn được lưu; bạn có thể tiếp tục.";
           } catch {
-            // Coaching is best-effort; ignore failures.
+            coachingFailure = "Không tạo được góp ý cho câu này. Câu trả lời vẫn được lưu; bạn có thể tiếp tục.";
           }
         }
 
@@ -239,7 +285,8 @@ ${body.answer}
           throw e;
         }
 
-        if (coachingRubric) write({ type: "coaching", ...coachingRubric });
+        if (coachingRubric) write({ type: "coaching", turn: answeredTurn, ...coachingRubric });
+        else if (needsCoaching) write({ type: "coaching_unavailable", turn: answeredTurn, message: coachingFailure ?? "Không tạo được góp ý cho câu này." });
         write({ type: "persisted", userTurn: answeredTurn, assistantTurn: isFinalize ? questions.length : questionTurn });
 
         if (evaluationAttempt) {
@@ -287,24 +334,11 @@ ${body.answer}
   }
 }
 
-async function collectText(it: AsyncIterable<string>): Promise<string> {
+async function collectText(it: AsyncIterable<string>, maxChars: number): Promise<string> {
   let out = "";
-  for await (const s of it) out += s;
-  return out;
-}
-
-function extractCoachingRubric(text: string): { score: number; strengths: string[]; improvements: string[] } | null {
-  const fence = text.match(/\{[\s\S]*\}/);
-  const candidate = fence ? fence[0] : text;
-  try {
-    const o = JSON.parse(candidate);
-    if (typeof o.score !== "number") return null;
-    return {
-      score: Math.max(0, Math.min(100, Math.round(o.score))),
-      strengths: Array.isArray(o.strengths) ? o.strengths.map(String).slice(0, 4) : [],
-      improvements: Array.isArray(o.improvements) ? o.improvements.map(String).slice(0, 4) : [],
-    };
-  } catch {
-    return null;
+  for await (const s of it) {
+    if (out.length + s.length > maxChars) throw new Error("Coaching response is too long");
+    out += s;
   }
+  return out;
 }

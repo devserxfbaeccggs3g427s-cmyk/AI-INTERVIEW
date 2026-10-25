@@ -36,6 +36,7 @@ interface Scripted { body: string; finishReason: string }
 /** Consumed in order — one entry per provider round-trip. */
 let script: Scripted[] = [];
 let requestedMaxTokens: number[] = [];
+let requestedPrompts: string[] = [];
 
 before(async () => {
   tmpDir = mkdtempSync(join(tmpdir(), "eval-test-"));
@@ -49,8 +50,10 @@ before(async () => {
     if (req.url !== "/v1/chat/completions") { res.writeHead(404); res.end(); return; }
     let raw = "";
     for await (const chunk of req) raw += chunk;
-    const maxTokens = (JSON.parse(raw) as { max_tokens?: number }).max_tokens ?? -1;
+    const request = JSON.parse(raw) as { max_tokens?: number; messages?: { content: string }[] };
+    const maxTokens = request.max_tokens ?? -1;
     requestedMaxTokens.push(maxTokens);
+    requestedPrompts.push(request.messages?.map((message) => message.content).join("\n\n") ?? "");
 
     const next = script.shift() ?? { body: "{}", finishReason: "stop" };
     res.writeHead(200, { "content-type": "text/event-stream" });
@@ -70,6 +73,7 @@ before(async () => {
 beforeEach(() => {
   script = [];
   requestedMaxTokens = [];
+  requestedPrompts = [];
 });
 
 after(async () => {
@@ -166,6 +170,26 @@ test("the report no longer inherits the session's 4096-token ceiling", async () 
   assert.deepEqual(requestedMaxTokens, [EVALUATION_MAX_TOKENS]);
   assert.ok(EVALUATION_MAX_TOKENS > 4096, "budget must exceed the old hard-coded ceiling");
   assert.equal(db.queryOne<{ status: string }>("SELECT status FROM sessions WHERE id = ?", ["sess_budget"])?.status, "completed");
+});
+
+test("early stop evaluates only turns the candidate actually answered", async () => {
+  const { db, evaluation } = await seed("sess_unanswered");
+  db.exec(
+    `INSERT INTO message_turns (session_id, turn_number, role, content)
+     VALUES (?, 2, 'assistant', 'Bạn sẽ debug deadlock thế nào?')`,
+    ["sess_unanswered"],
+  );
+  script = [{ body: validReport(), finishReason: "stop" }];
+
+  const attemptId = evaluation.claimEvaluation("sess_unanswered");
+  assert.ok(attemptId);
+  await evaluation.runEvaluation({ sessionId: "sess_unanswered", baseUrl, ...CONFIG }, attemptId);
+
+  assert.equal(db.queryOne<{ status: string }>("SELECT status FROM sessions WHERE id = ?", ["sess_unanswered"])?.status, "completed");
+  assert.ok(requestedPrompts[0].includes("Kể lại một lần payment bị timeout?"));
+  assert.ok(requestedPrompts[0].includes("Tôi dùng idempotency key và retry backoff."));
+  assert.ok(!requestedPrompts[0].includes("Bạn sẽ debug deadlock thế nào?"));
+  assert.ok(!requestedPrompts[0].includes("--- Turn 2 ---"));
 });
 
 test("a truncated body escalates to a larger budget instead of failing", async () => {

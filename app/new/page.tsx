@@ -77,6 +77,8 @@ export default function StartInterviewPage() {
   const [focus, setFocus] = useState<string[]>([]);
   const [lessonLink, setLessonLink] = useState<string | null>(null);
   const [practiceLesson, setPracticeLesson] = useState<PracticeLesson | null>(null);
+  /** The lesson topic slot: editable, and empty means the user dropped it. */
+  const [lessonTopic, setLessonTopic] = useState("");
   const [lessonError, setLessonError] = useState<string | null>(null);
   const [cvSource, setCvSource] = useState<CvSource>("none");
   const [cvText, setCvText] = useState("");
@@ -121,6 +123,7 @@ export default function StartInterviewPage() {
         if (data.lesson?.status !== "ready" || !data.lesson.practiceFocus) throw new Error("Bài học chưa sẵn sàng để luyện lại.");
         if (controller.signal.aborted) return;
         setPracticeLesson(data.lesson as PracticeLesson);
+        setLessonTopic(data.lesson.practiceFocus);
         setRole(data.lesson.source.role);
         setLang(data.lesson.source.language);
       } catch (cause) {
@@ -285,13 +288,23 @@ export default function StartInterviewPage() {
     };
   }, [editing, editableText, pdfPreview]);
 
+  // The lesson topic occupies one of the three focus slots; an empty slot means
+  // the user dropped it (RQ-L05).
+  const lessonTopicActive = Boolean(practiceLesson) && lessonTopic.trim().length > 0;
+  const totalTopics = focus.length + (lessonTopicActive ? 1 : 0);
+
   const submit = async () => {
     setError(null);
     if (lessonError || (lessonLink && !practiceLesson)) { setError("Không tải được bài học gốc. Hãy quay lại bài học và thử lại."); return; }
-    if (practiceLesson && focus.length > 2) { setError("Chỉ được thêm tối đa 2 chủ đề ngoài chủ đề gốc."); return; }
     if (role.trim().length < 2) { setError("Vui lòng nhập vị trí ứng tuyển (≥ 2 ký tự)"); return; }
     const parsedFocus = FocusSchema.safeParse(focus.map((item) => item.trim()));
     if (!parsedFocus.success) { setError("Tối đa 3 chủ đề, mỗi chủ đề từ 1 đến 120 ký tự."); return; }
+    // The lesson topic occupies one of the three focus slots (RQ-L05).
+    const lessonTopicValue = practiceLesson ? lessonTopic.trim() : "";
+    if (lessonTopicValue && parsedFocus.data.length + 1 > 3) {
+      setError("Tối đa 3 chủ đề. Hãy xóa bớt chủ đề tự thêm.");
+      return;
+    }
     if (cvSource === "paste") {
       if (cvText.length === 0) { setError("Vui lòng dán nội dung CV"); return; }
       if (cvText.length > MAX_CV_CHARS) { setError(`CV vượt quá ${MAX_CV_CHARS.toLocaleString("vi-VN")} ký tự`); return; }
@@ -325,7 +338,9 @@ export default function StartInterviewPage() {
         role: role.trim(),
         language: lang,
         focus: parsedFocus.data,
-        ...(practiceLesson ? { originLessonId: practiceLesson.id } : {}),
+        ...(practiceLesson
+          ? { originLessonId: practiceLesson.id, lessonFocus: lessonTopicValue || null }
+          : {}),
         mode,
         plannedRounds: rounds,
         cvSource,
@@ -361,7 +376,7 @@ export default function StartInterviewPage() {
     submitting
     || Boolean(lessonError)
     || Boolean(lessonLink && !practiceLesson)
-    || Boolean(practiceLesson && focus.length > 2)
+    || totalTopics > 3
     || !FocusSchema.safeParse(focus.map((item) => item.trim())).success
     || (cvSource === "paste" && cvText.length > MAX_CV_CHARS)
     || (cvSource === "paste" && cvText.length === 0)
@@ -414,19 +429,49 @@ export default function StartInterviewPage() {
           </StepCard>
 
           <StepCard step="+" label="TÙY CHỌN · LUYỆN TẬP" title="Chủ đề cần luyện (Focus)" right={
-            <span className="label-code-sm text-on-surface-variant">{focus.length + (lessonLink ? 1 : 0)} / 3 chủ đề</span>
+            <span className="label-code-sm text-on-surface-variant">{totalTopics} / 3 chủ đề</span>
           }>
             {lessonError ? <p role="alert" className="font-body-sm text-body-sm text-error">{lessonError}</p> : null}
             {lessonLink && !practiceLesson && !lessonError ? <p role="status">Đang tải bài học gốc…</p> : null}
             {practiceLesson ? (
               <div className="card p-space-sm flex flex-col gap-space-xs min-w-0">
-                <span className="label-caps text-tertiary uppercase">Chủ đề từ bài học · không thể sửa hoặc xóa</span>
-                <span className="font-body-sm text-body-sm text-on-surface break-words">{practiceLesson.practiceFocus}</span>
+                <div className="flex items-center justify-between gap-space-xs flex-wrap">
+                  <span className="label-caps text-tertiary uppercase">Chủ đề từ bài học</span>
+                  {lessonTopic.trim() !== practiceLesson.practiceFocus ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost label-code-sm"
+                      onClick={() => setLessonTopic(practiceLesson.practiceFocus)}
+                    >
+                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">undo</span> Khôi phục
+                    </button>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-space-xs">
+                  <input
+                    className="input flex-1 min-w-0"
+                    aria-label="Chủ đề từ bài học"
+                    maxLength={120}
+                    placeholder="Chủ đề từ bài học — có thể sửa hoặc bỏ"
+                    value={lessonTopic}
+                    onChange={(e) => setLessonTopic(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    aria-label="Bỏ chủ đề từ bài học"
+                    onClick={() => setLessonTopic("")}
+                  >
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
+                  </button>
+                </div>
                 <a className="underline text-body-sm break-words" href={`/learn/${encodeURIComponent(practiceLesson.sessionId)}?kind=${practiceLesson.source.kind}&index=${practiceLesson.source.index}&lesson=${encodeURIComponent(practiceLesson.id)}`}>Xem bài học gốc →</a>
               </div>
             ) : null}
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              {practiceLesson ? "Bạn có thể thêm tối đa 2 chủ đề khác, chỉ sửa hoặc xóa những chủ đề tự thêm." : "Gợi ý từ báo cáo chỉ là dữ liệu tham khảo. Bạn có thể sửa, xóa hoặc thêm chủ đề trước khi chủ động bắt đầu phiên mới."}
+              {practiceLesson
+                ? `Chủ đề từ bài học có thể sửa hoặc bỏ. Bạn có thể thêm tối đa ${lessonTopicActive ? 2 : 3} chủ đề khác.`
+                : "Gợi ý từ báo cáo chỉ là dữ liệu tham khảo. Bạn có thể sửa, xóa hoặc thêm chủ đề trước khi chủ động bắt đầu phiên mới."}
             </p>
             {focus.map((item, index) => (
               <div key={index} className="flex items-center gap-space-xs">
@@ -447,7 +492,7 @@ export default function StartInterviewPage() {
                 </button>
               </div>
             ))}
-            {focus.length + (lessonLink ? 1 : 0) < 3 ? (
+            {totalTopics < 3 ? (
               <button type="button" className="btn btn-ghost self-start" onClick={() => setFocus((current) => [...current, ""])}>
                 <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Thêm chủ đề
               </button>
@@ -455,8 +500,8 @@ export default function StartInterviewPage() {
             {focus.some((item) => !item.trim()) ? (
               <p className="font-body-sm text-body-sm text-error" role="alert">Nhập chủ đề hoặc xóa dòng trống trước khi bắt đầu.</p>
             ) : null}
-            {lessonLink && focus.length > 2 ? (
-              <p className="font-body-sm text-body-sm text-error" role="alert">Chỉ được thêm tối đa 2 chủ đề ngoài chủ đề gốc. Hãy xóa bớt chủ đề.</p>
+            {totalTopics > 3 ? (
+              <p className="font-body-sm text-body-sm text-error" role="alert">Chỉ được có tối đa 3 chủ đề. Hãy xóa bớt chủ đề.</p>
             ) : null}
           </StepCard>
 

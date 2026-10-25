@@ -179,6 +179,50 @@ test("linked focus permits exactly two extra topics, rejects a third and malform
   assert.deepEqual((await getSession(json.sessionId)).focus, ["Explain indexes", "one", "two"]);
 });
 
+test("the user may edit or drop the lesson topic; the origin link survives", async () => {
+  const id = addLesson({ label: "Explain indexes" });
+
+  // Dropped: only the extra topics remain, and all three slots are free.
+  const dropped = await create({ originLessonId: id, lessonFocus: null, focus: ["one", "two", "three"] });
+  assert.equal(dropped.response.status, 200, JSON.stringify(dropped.json));
+  const droppedRow = db.queryOne<{ focus_json: string; origin_lesson_id: string | null }>(
+    "SELECT focus_json, origin_lesson_id FROM sessions WHERE id = ?", [dropped.json.sessionId]);
+  assert.deepEqual(JSON.parse(droppedRow!.focus_json), ["one", "two", "three"]);
+  assert.equal(droppedRow!.origin_lesson_id, id, "the origin link must survive the removal");
+
+  // Edited: the replacement takes the lesson slot, the extra topics follow.
+  const edited = await create({ originLessonId: id, lessonFocus: "  Redis connection pool  ", focus: ["one"] });
+  assert.equal(edited.response.status, 200, JSON.stringify(edited.json));
+  const editedRow = db.queryOne<{ focus_json: string; origin_lesson_id: string | null }>(
+    "SELECT focus_json, origin_lesson_id FROM sessions WHERE id = ?", [edited.json.sessionId]);
+  assert.deepEqual(JSON.parse(editedRow!.focus_json), ["Redis connection pool", "one"]);
+  assert.equal(editedRow!.origin_lesson_id, id);
+  assert.deepEqual((await getSession(edited.json.sessionId)).focus, ["Redis connection pool", "one"]);
+});
+
+test("an invalid lesson topic is rejected without writes", async () => {
+  const id = addLesson();
+  // A lesson topic without an origin lesson is meaningless.
+  for (const lessonFocus of [null, "Redis"]) {
+    const { response } = await create({ lessonFocus });
+    assert.equal(response.status, 400, JSON.stringify(lessonFocus));
+  }
+  // Malformed lesson topics are rejected.
+  for (const lessonFocus of ["", "   ", "x".repeat(121), 42, {}]) {
+    const { response } = await create({ originLessonId: id, lessonFocus });
+    assert.equal(response.status, 400, JSON.stringify(lessonFocus));
+  }
+  // Dropping the topic frees the third slot, but not a fourth one.
+  const tooMany = await create({ originLessonId: id, lessonFocus: null, focus: ["a", "b", "c", "d"] });
+  assert.equal(tooMany.response.status, 400);
+  // A kept topic still leaves room for only two extra topics.
+  const tooManyWithTopic = await create({ originLessonId: id, lessonFocus: "Redis", focus: ["a", "b", "c"] });
+  assert.equal(tooManyWithTopic.response.status, 400);
+
+  assert.equal(count(), 1);
+  assert.equal(db.queryOne<{ n: number }>("SELECT count(*) n FROM model_configs")!.n, 0);
+});
+
 test("different lesson IDs stay distinct even for the same source label and report", async () => {
   const first = addLesson();
   const second = addLesson({ mode: "answering" });

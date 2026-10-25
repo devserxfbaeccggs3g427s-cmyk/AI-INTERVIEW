@@ -51,6 +51,11 @@ const Body = modelConfigInput.extend({
   plannedRounds: z.union([z.literal(5), z.literal(8), z.literal(12)]),
   focus: FocusSchema.default([]),
   originLessonId: z.string().uuid().optional(),
+  // Tri-state for the lesson topic (RQ-L05: the user may edit or drop it):
+  //   absent -> keep the lesson topic (legacy behaviour)
+  //   null   -> the user dropped the lesson topic
+  //   string -> the user replaced the lesson topic
+  lessonFocus: z.string().trim().min(1).max(120).nullable().optional(),
   cvSource: z.enum(["none", "paste", "pdf"]),
   // Server still length-checks cvText below; +100 headroom means the in-route
   // check produces a real "exceeds the 20,000 character limit" instead of a
@@ -74,6 +79,30 @@ function badRequest(message: string): Response {
 
 function stalePreview(message: string): Response {
   return privateJson({ ok: false, error: message }, { status: 409 });
+}
+
+const ORIGIN_UNAVAILABLE = "Origin lesson is unavailable";
+const TOO_MANY_TOPICS = "Origin lesson is unavailable or too many added topics";
+const LESSON_FOCUS_WITHOUT_ORIGIN = "lessonFocus requires an origin lesson";
+
+/**
+ * Resolve the focus list of a new session.
+ *
+ * The lesson topic occupies one of the three focus slots, and it is a suggestion
+ * the user may edit or drop (RQ-L05) — the origin link itself always survives:
+ *   - `lessonFocus` absent -> the lesson topic is kept (legacy behaviour)
+ *   - `lessonFocus` null   -> the user dropped the lesson topic
+ *   - `lessonFocus` "..."  -> the user replaced the lesson topic
+ */
+function resolveFocus(
+  focus: string[],
+  origin: { focus: string } | null,
+  lessonFocus: string | null | undefined,
+): { focus: string[] } | { error: string } {
+  if (lessonFocus !== undefined && !origin) return { error: LESSON_FOCUS_WITHOUT_ORIGIN };
+  const lessonTopic = lessonFocus === undefined ? (origin?.focus ?? null) : lessonFocus;
+  if (focus.length + (lessonTopic ? 1 : 0) > 3) return { error: TOO_MANY_TOPICS };
+  return { focus: lessonTopic ? [lessonTopic, ...focus] : [...focus] };
 }
 
 export async function POST(req: Request) {
@@ -102,9 +131,15 @@ export async function POST(req: Request) {
       cv_source: body.cvSource,
     });
     if (validationErr) return badRequest(validationErr);
-    if (body.originLessonId && (body.focus.length > 2 || !readyPracticeLesson(body.originLessonId))) {
-      return badRequest("Origin lesson is unavailable or too many added topics");
+    // The lesson topic is a suggestion the user may edit or drop; the origin
+    // link is kept either way. Validate before the expensive CV work.
+    if (body.lessonFocus !== undefined && !body.originLessonId) {
+      return badRequest(LESSON_FOCUS_WITHOUT_ORIGIN);
     }
+    const origin = body.originLessonId ? readyPracticeLesson(body.originLessonId) : null;
+    if (body.originLessonId && !origin) return badRequest(ORIGIN_UNAVAILABLE);
+    const resolved = resolveFocus(body.focus, origin, body.lessonFocus);
+    if ("error" in resolved) return badRequest(resolved.error);
 
     // Remember the preview digest exactly once; absent stays absent (none / paste / pdf).
     const previewDigest: string | null = body.previewDigest ?? null;
@@ -150,7 +185,10 @@ export async function POST(req: Request) {
       try {
         runInTransaction("IMMEDIATE", () => {
           const origin = body.originLessonId ? readyPracticeLesson(body.originLessonId) : null;
-          if (body.originLessonId && !origin) throw new Error("Origin lesson is unavailable");
+          if (body.originLessonId && !origin) throw new Error(ORIGIN_UNAVAILABLE);
+          // Re-derive the focus inside the transaction: the request body is not trusted.
+          const resolved = resolveFocus(body.focus, origin, body.lessonFocus);
+          if ("error" in resolved) throw new Error(resolved.error);
           exec(
             `INSERT INTO sessions (id, role, language, mode, planned_rounds, focus_json, origin_lesson_id, provider, model, base_url, temperature, max_tokens, top_p, cv_source, cv_filename)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -160,7 +198,7 @@ export async function POST(req: Request) {
               body.language,
               body.mode,
               body.plannedRounds,
-              JSON.stringify(origin ? [origin.focus, ...body.focus] : body.focus),
+              JSON.stringify(resolved.focus),
               origin?.id ?? null,
               cfg.provider,
               cfg.model,
@@ -204,7 +242,8 @@ export async function POST(req: Request) {
       } catch (err) {
         const message = (err as Error).message ?? "";
         if (/UNIQUE constraint failed/i.test(message) && attempt < 2) continue;
-        if (body.originLessonId && message === "Origin lesson is unavailable") return badRequest(message);
+        if (message === ORIGIN_UNAVAILABLE || message === TOO_MANY_TOPICS ||
+            message === LESSON_FOCUS_WITHOUT_ORIGIN) return badRequest(message);
         return privateJson({ ok: false, error: message || "Session creation failed" }, { status: 500 });
       }
     }

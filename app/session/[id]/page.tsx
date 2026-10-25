@@ -26,6 +26,7 @@ interface UiMessage {
   streaming?: boolean;
   difficulty?: "L3-Junior" | "L4-Mid" | "L5-Senior" | "Staff";
   coaching?: { score: number; strengths: string[]; improvements: string[] } | null;
+  coachingUnavailable?: string;
   turnNumber: number;
   ts: number;
 }
@@ -47,6 +48,7 @@ export default function ActiveSessionPage({ params }: Props) {
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const feedbackTurnRef = useRef<number | null>(null);
   const inFlightRef = useRef(false);
 
   const hydrateSession = (json: { session: SessionDetail; turns: MessageTurnRow[] }) => {
@@ -71,8 +73,8 @@ export default function ActiveSessionPage({ params }: Props) {
       if (t.role === "assistant" && t.micro_rubric) {
         try {
           const rubric = JSON.parse(t.micro_rubric);
-          const question = ui.find((m) => m.role === "interviewer" && m.turnNumber === t.turn_number);
-          if (question) question.coaching = rubric;
+          const candidate = ui.find((m) => m.role === "candidate" && m.turnNumber === t.turn_number);
+          if (candidate) candidate.coaching = rubric;
         } catch { /* Ignore malformed historical feedback. */ }
       }
     }
@@ -135,7 +137,16 @@ export default function ActiveSessionPage({ params }: Props) {
 
   // A saved interview opens at the first question; live sessions follow new messages.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = stage === "completed" ? 0 : scrollRef.current.scrollHeight;
+    if (!scrollRef.current) return;
+    const feedbackTurn = feedbackTurnRef.current;
+    if (feedbackTurn !== null) {
+      const answer = scrollRef.current.querySelector(`[data-answer-turn="${feedbackTurn}"]`);
+      if (answer) {
+        answer.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
+    }
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, stage]);
 
   const sendMessage = async (opening: boolean, earlyStop = false, overrideAnswer?: string) => {
@@ -148,6 +159,7 @@ export default function ActiveSessionPage({ params }: Props) {
     const submittedAnswer = opening ? "" : (overrideAnswer ?? answer).trim();
     if (!opening && !submittedAnswer && !earlyStop) return;
     inFlightRef.current = true;
+    feedbackTurnRef.current = null;
 
     const candidateUiId = `cand-${Date.now()}`;
     if (submittedAnswer) {
@@ -191,8 +203,12 @@ export default function ActiveSessionPage({ params }: Props) {
           setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, content: accum } : mm));
         },
         onCoaching: (rubric) => {
-          const scoredTurn = (plan?.completed ?? 0) + 1;
-          setMessages((m) => m.map((mm) => mm.role === "interviewer" && mm.turnNumber === scoredTurn ? { ...mm, coaching: rubric } : mm));
+          feedbackTurnRef.current = rubric.turn;
+          setMessages((m) => m.map((mm) => mm.role === "candidate" && mm.turnNumber === rubric.turn ? { ...mm, coaching: rubric } : mm));
+        },
+        onCoachingUnavailable: ({ turn, message }) => {
+          feedbackTurnRef.current = turn;
+          setMessages((m) => m.map((mm) => mm.role === "candidate" && mm.turnNumber === turn ? { ...mm, coachingUnavailable: message } : mm));
         },
         onPersisted: ({ userTurn, assistantTurn }) => {
           persisted = true;
@@ -206,7 +222,6 @@ export default function ActiveSessionPage({ params }: Props) {
           setMessages((m) => m.map((mm) => mm.id === placeholderId ? { ...mm, streaming: false } : mm));
           if (reason === "complete") {
             setStage("completed");
-            router.push(`/report/${params.id}`);
           }
         },
       });
@@ -505,10 +520,10 @@ export default function ActiveSessionPage({ params }: Props) {
               <Chip tone="emerald">Per-turn rubric</Chip>
             </div>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Mỗi câu trả lời (trừ câu cuối) hiện chấm 0-100 ở đây; câu cuối được chấm trong báo cáo tổng kết.
+              Mỗi câu trả lời có góp ý ngay bên dưới; báo cáo tổng kết đánh giá toàn bộ phiên.
             </p>
             <div className="flex flex-col gap-space-sm">
-              {messages.filter((m) => m.role === "interviewer" && m.coaching).slice().reverse().map((m) => (
+              {messages.filter((m) => m.role === "candidate" && m.coaching).slice().reverse().map((m) => (
                 <div key={m.id} className="card p-space-md flex flex-col gap-space-sm">
                   <div className="flex items-center justify-between">
                     <span className="label-caps text-on-surface uppercase">Câu {m.turnNumber}</span>
@@ -579,37 +594,12 @@ function Bubble({ msg }: { msg: UiMessage }) {
           <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content || "") }} />
           {msg.streaming ? <span className="streaming-cursor" /> : null}
         </div>
-        {msg.coaching ? (
-          <div className="card p-space-md flex flex-col gap-space-sm" style={{ borderColor: "var(--tertiary)" }}>
-            <div className="flex items-center justify-between">
-              <span className="label-caps text-tertiary uppercase">Coaching rubric</span>
-              <span className="label-code-sm text-tertiary">{msg.coaching.score}/100</span>
-            </div>
-            <RubricBar score={msg.coaching.score} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-              <ul className="flex flex-col gap-1">
-                {msg.coaching.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-space-xs font-body-sm text-body-sm text-on-surface">
-                    <span className="material-symbols-outlined text-[14px] text-tertiary flex-shrink-0 mt-0.5">check</span>{s}
-                  </li>
-                ))}
-              </ul>
-              <ul className="flex flex-col gap-1">
-                {msg.coaching.improvements.map((s, i) => (
-                  <li key={i} className="flex items-start gap-space-xs font-body-sm text-body-sm text-on-surface">
-                    <span className="material-symbols-outlined text-[14px] text-warning flex-shrink-0 mt-0.5">lightbulb</span>{s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ) : null}
       </div>
     );
   }
   // candidate
   return (
-    <div className="flex flex-col gap-space-xs items-end">
+    <div className="flex flex-col gap-space-xs items-end" data-answer-turn={msg.turnNumber}>
       <div className="flex items-center gap-space-sm">
         <span className="label-caps text-on-surface-variant uppercase">Candidate</span>
         <div className="w-7 h-7 rounded-lg bg-surface-overlay flex items-center justify-center text-on-surface">
@@ -619,6 +609,25 @@ function Bubble({ msg }: { msg: UiMessage }) {
       <div className="card p-space-md max-w-[85%] whitespace-pre-wrap font-body-md text-body-md text-on-surface" style={{ background: "var(--bg-surface-elevated)" }}>
         {msg.content}
       </div>
+      {msg.coaching ? (
+        <div className="card p-space-md flex flex-col gap-space-sm w-full" style={{ borderColor: "var(--tertiary)" }}>
+          <div className="flex items-center justify-between">
+            <span className="label-caps text-tertiary uppercase">Góp ý · Câu {msg.turnNumber}</span>
+            <span className="label-code-sm text-tertiary">{msg.coaching.score}/100</span>
+          </div>
+          <RubricBar score={msg.coaching.score} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+            <ul className="flex flex-col gap-1">
+              {msg.coaching.strengths.map((s, i) => <li key={i} className="flex items-start gap-space-xs font-body-sm text-body-sm text-on-surface"><span className="material-symbols-outlined text-[14px] text-tertiary flex-shrink-0 mt-0.5">check</span>{s}</li>)}
+            </ul>
+            <ul className="flex flex-col gap-1">
+              {msg.coaching.improvements.map((s, i) => <li key={i} className="flex items-start gap-space-xs font-body-sm text-body-sm text-on-surface"><span className="material-symbols-outlined text-[14px] text-warning flex-shrink-0 mt-0.5">lightbulb</span>{s}</li>)}
+            </ul>
+          </div>
+        </div>
+      ) : msg.coachingUnavailable ? (
+        <div className="card p-space-sm w-full font-body-sm text-body-sm text-on-surface-variant" role="status">{msg.coachingUnavailable}</div>
+      ) : null}
     </div>
   );
 }

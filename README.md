@@ -86,7 +86,7 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 
 1. **`/`** — BYOK config (provider, key, model, sliders)
 2. **`/new`** — 5 core setup options (FR-1): role, language, mode, length, CV
-3. **`/session/[id]`** — Streaming conversation + per-turn coaching rubric drawer
+3. **`/session/[id]`** — Interview conversation; each coaching answer shows feedback immediately below it (including the final answer), with the drawer as an additional desktop view. Invalid or unavailable feedback is reported rather than silently skipped. The interviewer's model output is validated before display/storage; invalid questions get one retry and do not advance the turn on failure. After the last answer, the completed conversation remains available with a link to the report.
 4. **`/report/[id]`** — Overall score, 4 pillars, strengths / improvements, next steps
 5. **`/learn/[id]?kind=...&index=...`** — Learn from one report recommendation in either mode; generate only on click, then read and self-check
 6. **`/history`** — SQLite-backed session list, filters, admin actions (wipe / vacuum / backup)
@@ -128,6 +128,11 @@ A model answer is reshaped before it is stored: fences, prose around the object,
 - `POST /api/sessions/preview` runs the identical extraction and returns `{ text, charCount, truncated, promptCharCount, promptTruncated, digest }`. It is authenticated by the same Origin guard, holds an operation lease so a concurrent restore cannot swap the database underneath it, and **writes nothing** — the PDF bytes are not stored in SQLite and never enter a backup.
 - The returned `digest` (SHA-256 of the stored text) is what ties preview to create. `/new` shows the text it will send and lets you edit or re-pick before confirming; the client sends `previewDigest` on create and the server recomputes it. If the text the user confirmed is not the text that would be stored, creation is refused with **409** rather than quietly storing something else. Editing the text invalidates the digest until the server is asked again, so a stale preview always re-prompts.
 - Session creation is **atomic**: the session row, its `cv_extracts` row and the `model_configs` upsert commit inside a single `BEGIN IMMEDIATE` transaction. PDF extraction runs *before* that transaction, so an async parser never holds a write lock; if any insert or the upsert fails, all three roll back and no orphan session or stale preference is left behind.
+
+## Focus topics and cross-session memory
+
+- `POST /api/sessions` accepts up to **3** focus topics (`focus`, each 1–120 characters) and an optional `originLessonId` that links the session to the lesson it was started from. The lesson's own topic occupies one of those three slots, and `lessonFocus` decides what happens to it: **omitted** keeps the saved topic, **`null`** drops it, a **string** replaces it with the user's own wording. Sending `lessonFocus` without `originLessonId`, an empty or over-long topic, or more than three topics in total is a **400** and writes nothing. The origin link survives the drop — it records where the session came from, not what it has to ask about — so the session still appears under that lesson's history. `/new` exposes the slot as an editable field with an unpin button and a restore button.
+- A session that starts **without** a lesson remembers what earlier interviews already covered: the opening question carries the topics of the last few **completed** sessions (read from their evaluation reports) and asks the model to pick a different one. Only the topic labels travel — never the CV, the transcript, the candidate's answers or any quote — and they are embedded as untrusted data, exactly like the focus topics. A topic the user asked for explicitly always wins over the memory, and a session started from a lesson repeats that lesson on purpose and skips the memory. The rule is a soft preference in the prompt rather than a hard filter, and it reaches the opening question only.
 
 ## Security & operations
 

@@ -13,7 +13,8 @@ import type { ProviderId } from "@/components/ByokConfigContext";
 export interface StreamHandlers {
   onStart?: (info: { turn: number; plan: { planned: number; completed: number }; mode: "strict" | "coaching" }) => void;
   onDelta?: (text: string) => void;
-  onCoaching?: (rubric: { score: number; strengths: string[]; improvements: string[] }) => void;
+  onCoaching?: (rubric: { turn: number; score: number; strengths: string[]; improvements: string[] }) => void;
+  onCoachingUnavailable?: (info: { turn: number; message: string }) => void;
   onPersisted?: (info: { userTurn: number; assistantTurn: number }) => void;
   onDone?: (info: { reason: "next" | "complete" | "evaluating"; sessionId: string }) => void;
 }
@@ -86,6 +87,7 @@ export function useStreamingChat() {
             if (evt.type === "start") handlers.onStart?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onStart"]>>[0]);
             else if (evt.type === "delta") handlers.onDelta?.((evt as unknown as { text: string }).text);
             else if (evt.type === "coaching") handlers.onCoaching?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onCoaching"]>>[0]);
+            else if (evt.type === "coaching_unavailable") handlers.onCoachingUnavailable?.(evt as unknown as { turn: number; message: string });
             else if (evt.type === "persisted") handlers.onPersisted?.(evt as unknown as Parameters<NonNullable<StreamHandlers["onPersisted"]>>[0]);
             else if (evt.type === "done") {
               finished = true;
