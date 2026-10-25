@@ -58,6 +58,64 @@ const lessonJson = JSON.stringify({
     { stem: "Second?", options: [{ id: "A", text: "Yes" }, { id: "B", text: "No" }, { id: "C", text: "Maybe" }], correctOption: "B", explanation: "Because" },
   ],
 });
+const fundamentalsJson = JSON.stringify({
+  version: 2, mode: "fundamentals", title: "SQL joins", goal: "Understand how SQL joins combine related rows.",
+  objectives: ["Explain how a join matches rows using a key."],
+  concepts: [
+    { term: "Join", meaning: "An operation that combines related rows from two tables." },
+    { term: "Key", meaning: "A column value used to match a row in one table to another." },
+  ],
+  mechanism: "The database compares join keys and produces rows according to the selected join type.",
+  walkthrough: {
+    situation: "Find the customer who placed each order in two related tables.",
+    input: "Customers have ids 1 and 2; orders refer to customer id 2.",
+    steps: [
+      { action: "Read the customer id on the order.", reason: "That value identifies the matching customer row." },
+      { action: "Match that id with the customers table.", reason: "The join condition keeps the related pair." },
+    ],
+    result: "The order appears alongside the customer with id 2.",
+    why: "Both rows share the same id under the join condition.",
+  },
+  questions: JSON.parse(lessonJson).questions,
+});
+const answeringJson = JSON.stringify({
+  version: 2, mode: "answering", title: "Explain SQL joins", goal: "Answer interview questions about joins with context.",
+  objectives: ["Explain when an inner join is appropriate and its limitations."],
+  interviewQuestion: "How would you select orders that belong to existing customers?",
+  modelAnswer: "I would use an inner join from orders to customers on customer_id. It returns orders with a matching customer. Before choosing it, I would check whether orphaned orders matter, since they will be excluded, and measure the query on the real dataset.",
+  annotations: [
+    { point: "States an explicit join condition.", reason: "It identifies the intended relationship between tables." },
+    { point: "Notes what rows are excluded.", reason: "Inner joins omit orders that lack a matching customer." },
+  ],
+  tradeOff: {
+    benefit: "Only matched orders and their customers are returned.",
+    cost: "Orders without a matching customer disappear from the result.",
+    when: "Use it when only valid customer-order pairs are needed.",
+  },
+  followUps: [{ question: "What if unmatched orders are required?", answer: "Use a left join from orders, and examine rows with null customer fields." }],
+  questions: JSON.parse(lessonJson).questions,
+});
+const flexibleJson = JSON.stringify({
+  version: 3, mode: "answering", title: "Explain SQL joins", goal: "Answer join questions with concrete reasoning instead of slogans.",
+  objectives: ["Describe what a join does with the rows it matches and the rows it drops."],
+  hook: "Two tables share one id, and the interviewer asks what happens to the rows that do not match.",
+  blocks: [
+    {
+      kind: "answer",
+      heading: "Saying it out loud in the interview",
+      question: "How would you select the orders that belong to customers who still exist in the customer table?",
+      answer: "I would join orders to customers on customer_id with an inner join, then decide whether the orders without a matching customer are acceptable to drop. If they matter, I would check for orphaned rows first and choose a left join from orders so nothing disappears silently. Either way I would look at the actual row counts before trusting the result.",
+      notes: [
+        { point: "Names the join condition explicitly.", reason: "It identifies the relationship between the two tables instead of relying on a default." },
+        { point: "Checks the rows the join would drop.", reason: "An inner join silently removes orders whose customer no longer exists." },
+      ],
+      followUps: [
+        { question: "What if unmatched orders are required?", answer: "I would switch to a left join from orders and then inspect the rows where the customer fields are null." },
+      ],
+    },
+  ],
+  questions: JSON.parse(lessonJson).questions,
+});
 function seedLearning(): void {
   db.prepare(`INSERT INTO learning_lessons (id, session_id, report_revision, source_kind, source_index, mode,
     source_label, source_context, status, lesson_json, provider, model)
@@ -65,6 +123,17 @@ function seedLearning(): void {
     .run("a".repeat(64), lessonJson);
   db.prepare(`INSERT INTO learning_check_attempts (id, lesson_id, client_attempt_id, answers_json, score, total)
     VALUES ('check-a', 'lesson-a', 'a649523b-1c14-41ba-b2d0-f7cf0a3d77d0', '["A","C"]', 1, 2)`).run();
+}
+
+function seedNewLessons(): void {
+  const insert = db.prepare(`INSERT INTO learning_lessons (id, session_id, report_revision, source_kind, source_index, mode,
+    source_label, status, lesson_json, provider, model)
+    VALUES (?, 'sess_α', ?, 'next_step', ?, ?, 'SQL joins', 'ready', ?, 'custom', 'model')`);
+  insert.run("lesson-f", "a".repeat(64), 0, "fundamentals", fundamentalsJson);
+  insert.run("lesson-b", "a".repeat(64), 1, "answering", answeringJson);
+  insert.run("lesson-c", "a".repeat(64), 2, "answering", flexibleJson);
+  db.prepare(`INSERT INTO learning_check_attempts (id, lesson_id, client_attempt_id, answers_json, score, total)
+    VALUES ('check-b', 'lesson-b', 'b649523b-1c14-41ba-b2d0-f7cf0a3d77d0', '["A","B"]', 2, 2)`).run();
 }
 
 function snapshot(): BackupData {
@@ -285,6 +354,46 @@ test("v3 learning lessons and checks round-trip, cascade, wipe and fingerprint",
   backup.wipeBackupData("wipe-sessions");
   assert.equal(backup.getBackupCounts().learning_lessons, 0);
   assert.equal(backup.getBackupCounts().learning_check_attempts, 0);
+});
+
+test("mixed legacy, both v2 modes and a v3 lesson restore with existing quiz attempts", () => {
+  seed();
+  seedLearning();
+  seedNewLessons();
+  const original = snapshot();
+  assert.equal(original.schemaVersion, 4);
+  assert.equal(original.counts.learning_lessons, 4);
+  assert.equal(original.counts.learning_check_attempts, 2);
+  assert.deepEqual(
+    original.tables.learning_lessons.map((row) => JSON.parse(row.lesson_json ?? "{}").version).sort(),
+    [1, 2, 2, 3],
+  );
+  backup.wipeBackupData("wipe-all");
+  backup.restoreBackup(backup.parseBackup(Buffer.from(JSON.stringify(original))));
+  assert.deepEqual(snapshot().tables, original.tables);
+  assert.equal((db.prepare("PRAGMA foreign_key_check").get()), undefined);
+});
+
+test("backup rejects content in the wrong mode without modifying the database", () => {
+  seed();
+  seedLearning();
+  seedNewLessons();
+  const original = snapshot();
+  for (const change of [
+    (data: BackupData) => { data.tables.learning_lessons[1].mode = "answering"; },
+    (data: BackupData) => { data.tables.learning_lessons[2].lesson_json = fundamentalsJson; },
+    (data: BackupData) => { data.tables.learning_lessons[3].mode = "fundamentals"; },
+    (data: BackupData) => { data.tables.learning_lessons[3].lesson_json = fundamentalsJson; },
+  ]) {
+    const data = modified(original, change);
+    expectRejected(data, /schema/);
+    assert.throws(() => backup.restoreBackup(data), /schema/);
+    assert.deepEqual(snapshot().tables, original.tables);
+  }
+  const legacyInAnsweringMode = modified(original, (data) => {
+    data.tables.learning_lessons[2].lesson_json = lessonJson;
+  });
+  assert.doesNotThrow(() => backup.parseBackup(Buffer.from(JSON.stringify(legacyInAnsweringMode))), "v1 has no embedded mode");
 });
 
 test("v3 rejects invalid lesson/check data and leaves existing rows untouched", () => {

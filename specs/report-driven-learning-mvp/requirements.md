@@ -1,6 +1,6 @@
 # Yêu cầu MVP — Học từ một đề xuất trong báo cáo phỏng vấn
 
-> Trạng thái: **đặc tả mục tiêu, chưa triển khai** · 2026-10-22  
+> Trạng thái: **đặc tả yêu cầu; mức kiểm chứng thực tế xem kết quả chạy test, không suy ra từ tài liệu** · cập nhật 2026-10-25
 > [Thiết kế](design.md) · [Backlog](tasks.md) · [FR/NFR gốc](../../stitch-screens/screens/00-requirements.md) · [Vòng luyện tập hiện có](../interview-studio-improvements/requirements.md)
 
 ## Bối cảnh và ranh giới sản phẩm
@@ -11,7 +11,7 @@ Ba HTML Stitch là **tham khảo trạng thái/bố cục**, không phải giao 
 
 **Luồng mục tiêu:** hoàn tất phỏng vấn → xem báo cáo → chọn CTA học cạnh đúng một mục → xem mục gốc và hai cách học → chọn tự do cách nào cũng được → chỉ khi bấm **“Tạo bài học”** mới gọi AI → đọc bài và tự kiểm tra → tùy lúc mở `/new` để luyện lại chủ đề. Bài đã tạo mở lại từ dữ liệu đã lưu, không gọi AI. Một mục có thể học cả hai cách, chuyển qua lại không mất bài hay kết quả.
 
-**Ngoài phạm vi MVP:** tạo roadmap mới/trước phỏng vấn, khóa bài theo thứ tự, danh sách tất cả chủ đề trên trang học, chat gia sư liên tục, AI chấm câu tự luận, chứng nhận thành thạo, thống kê tiến bộ liên báo cáo, spaced repetition, tạo lại bài **đã ready**, tự động đính kèm CV/transcript, tự động tạo phiên phỏng vấn, tài khoản nhiều người dùng, lưu provider key ở server hoặc hiển thị diagram/benchmark do AI tạo như sự thật đã kiểm định.
+**Ngoài phạm vi MVP:** tạo roadmap mới/trước phỏng vấn, khóa bài theo thứ tự, danh sách tất cả chủ đề trên trang học, chat gia sư liên tục, AI chấm câu tự luận, chứng nhận thành thạo, thống kê tiến bộ liên báo cáo, spaced repetition, tạo lại bài **đã ready**, **nâng khung bài cũ (v1/v2) lên khung bài mới**, tự động đính kèm CV/transcript, tự động tạo phiên phỏng vấn, tài khoản nhiều người dùng, lưu provider key ở server hoặc hiển thị diagram/benchmark do AI tạo như sự thật đã kiểm định.
 
 ## RQ-L01 — Chọn đúng một mục từ báo cáo (P1)
 
@@ -23,7 +23,7 @@ Ba HTML Stitch là **tham khảo trạng thái/bố cục**, không phải giao 
 
 ## RQ-L02 — Hai cách học độc lập, chọn không theo thứ tự (P1)
 
-- Mỗi mục có đúng hai cách học: **“Chưa biết”** (`fundamentals`) giải thích nền tảng, khái niệm, cơ chế, ví dụ đơn giản; **“Luyện diễn đạt & Đào sâu”** (`answering`) hướng dẫn diễn đạt câu trả lời phỏng vấn, lập luận, tình huống/phản biện, đánh đổi và câu hỏi đào sâu. Bài sinh theo vai trò, ngôn ngữ phiên và đúng mục được chọn; tránh giả định người dùng luôn là Senior hay chủ đề luôn là Redis.
+- Mỗi mục có đúng hai cách học: **“Chưa biết”** (`fundamentals`) và **“Luyện diễn đạt & Đào sâu”** (`answering`). Cả hai dùng chung **một khung bài linh hoạt**: **hook** mở đầu gắn đúng chủ đề, **1–5 khối có thứ tự** giải thích chính chủ đề đã chọn, rồi **quiz 2–3 câu ở cuối**. Mỗi khối có kiểu riêng và bài tự chọn kiểu phù hợp chủ đề: giải thích quan hệ nguyên nhân–kết quả, tình huống được giải từng bước, đối chiếu khi nào chọn gì, sửa một ngộ nhận thường gặp, hoặc một lời đáp nói được kèm chú giải và hỏi xoáy. `fundamentals` phải có ít nhất một khối **làm cụ thể hoá** (tình huống thật, đối chiếu điều kiện, hoặc cách kể lại cho người mới); `answering` phải có một khối **câu trả lời nói được** kèm lập luận cụ thể, chú giải và hướng trả lời cho câu hỏi hỏi xoáy. Số khối, thứ tự khối và kiểu khối **tùy nội dung**, không ép mọi bài có cùng một dàn ý. Bài sinh theo vai trò, ngôn ngữ phiên và đúng mục được chọn; tránh giả định người dùng luôn là Senior hay chủ đề luôn là Redis.
 - Hai cách **đều mở sẵn**; không bắt hoàn thành cách này để mở cách kia, không bắt làm quiz trước khi luyện phỏng vấn. Bộ chọn luôn cho chuyển qua lại bằng chuột/bàn phím; bài, trạng thái tạo và lịch sử tự kiểm tra được lưu **riêng theo mục × cách học × phiên bản báo cáo**. Chuyển cách chỉ đổi nội dung hiển thị, không tạo/gọi provider/xóa bài đã có.
 - Không đồng nhất “đã xem”, “đã có bài” hay “đã tự kiểm tra” với “đã thành thạo”. Thông báo nội dung AI tạo có thể sai; ví dụ code, các phát biểu kỹ thuật và số liệu nếu có chỉ là minh họa cần kiểm chứng, không gắn nhãn “production-safe” mặc định.
 
@@ -31,19 +31,27 @@ Ba HTML Stitch là **tham khảo trạng thái/bố cục**, không phải giao 
 
 ## RQ-L03 — Chủ động tạo **một** bài cho mỗi cách học (P1)
 
-- Với cách học **chưa có bài**, hiển thị **“Tạo bài học”** cùng cảnh báo có thể phát sinh phí API BYOK; mở trang/chuyển cách không tạo bài. Khi bấm mới gọi provider/model/đích custom **đã khóa trong phiên phỏng vấn gốc** bằng key BYOK do browser gửi trong request; thiếu key/không khớp provider/provider đã tắt phải báo rõ, không fallback sang cấu hình AI đang chọn hoặc nhà cung cấp khác. Không mặc định gửi CV, transcript, full report hoặc raw diagnostic cho tác vụ học.
+- Với cách học **chưa có bài**, hiển thị **“Tạo bài học”** cùng cảnh báo có thể phát sinh phí API BYOK (bài mới dài hơn bài ngắn trước đây: tối đa 4.000 output tokens, 24 KiB JSON, 90 giây); mở trang/chuyển cách không tạo bài. Khi bấm mới gọi provider/model/đích custom **đã khóa trong phiên phỏng vấn gốc** bằng key BYOK do browser gửi trong request; thiếu key/không khớp provider/provider đã tắt phải báo rõ, không fallback sang cấu hình AI đang chọn hoặc nhà cung cấp khác. Không mặc định gửi CV, transcript, full report hoặc raw diagnostic cho tác vụ học.
 - Trạng thái tạo: `chưa tạo → đang tạo → đã có bài` hoặc `tạo lỗi`. Chỉ hiện tiến trình không xác định (“Đang tạo…”), không báo `%`/ETA khi không đo được. Lỗi mạng, hết quota, timeout hoặc nội dung sai schema không lưu thành bài ready; thông báo an toàn và **“Thử lại”** có chủ đích, nêu khả năng một lần gọi trước đã phát sinh phí. Không tự gọi lại provider. Refresh hoặc rời trang trong lúc tạo không được gây hai lệnh tạo âm thầm.
-- **Quyết định MVP:** bài `ready` là bất biến. Ở cách đã có bài chỉ hiện bài đã lưu, **không có nút “Tạo bài học” hay “Tạo lại bài học”**. Bấm đôi/hai tab/retry request cùng thao tác không tạo hai bài, không ghi đè bài ready; nếu trạng thái “đang tạo” bị treo sau crash, chỉ cho thử lại có chủ đích sau khi hết hạn claim. Có thể làm lại quiz mà không tạo lại bài.
+- **Quyết định MVP:** bài `ready` là bất biến **ở mọi version nội dung**. Ở cách đã có bài chỉ hiện bài đã lưu, **không có nút “Tạo bài học” hay “Tạo lại bài học”**. Bài v1/v2 đã lưu không được nâng lên khung bài mới, kể cả khi khung nội dung vừa đổi: **không có đường tạo lại có phí**. Bấm đôi/hai tab/retry request cùng thao tác không tạo hai bài, không ghi đè bài ready; nếu trạng thái “đang tạo” bị treo sau crash, chỉ cho thử lại có chủ đích sau khi hết hạn claim. Có thể làm lại quiz mà không tạo lại bài.
 
 **Nghiệm thu:** không có request provider khi chỉ xem/chọn cách; có key hợp lệ thì một lệnh tạo cho mục/cách/version tạo một bài; ready mở lại không cần key; lỗi để lại trạng thái cho retry rõ ràng; hai request đồng thời không nhân đôi chi phí do backend chủ động gọi hai lần; key không xuất hiện trong URL/DB/backup/log/response.
 
 ## RQ-L04 — Bài học và tự kiểm tra trung thực (P1)
 
-- Mỗi bài ngắn, có mục tiêu, giải thích, ví dụ và phần phù hợp cách học: nền tảng có khái niệm/từng bước/ẩn dụ tùy chủ đề; luyện diễn đạt có cấu trúc trả lời, phản biện, đánh đổi và ví dụ câu trả lời. Chỉ hiển thị text/khối code đã escape, không chạy HTML/SVG/JavaScript do AI trả về. Nội dung và độ dài phải qua schema/giới hạn; không khẳng định mọi bài đều có diagram, code chạy production hay benchmark xác thực.
-- Mỗi bài có **2–3 câu trắc nghiệm một lựa chọn**, mỗi câu ba phương án và một đáp án có giải thích. Trước khi nộp, browser không nhận đáp án đúng hoặc giải thích đáp án qua API/HTML; người dùng chọn đủ câu rồi nộp. Server chấm **deterministic** từ bài bất biến đã lưu, không gọi AI khi chấm. Sau nộp cho xem lựa chọn, đúng/sai, đáp án đúng, giải thích, tổng **đúng x/y**. Phân biệt “đã trả lời y/y” với “đúng x/y”, không tự gắn nhãn “đậu”/“thành thạo”.
+- Bài **mới** theo khung v3: **hook**, **1–5 khối có thứ tự và đúng chủ đề** đã chọn, ít nhất một khối **làm cụ thể hoá** (nền tảng) hoặc **câu trả lời nói được** (diễn đạt), rồi **quiz 2–3 câu ở cuối**. Mỗi khối có kiểu riêng và nội dung theo kiểu đó; thứ tự khối là thứ tự đọc và được giữ nguyên. Không ép mọi chủ đề có code. Bài v1 và v2 đã lưu vẫn đọc và làm quiz được nguyên vẹn; không tạo lại bài `ready`, không nâng version, không xóa lịch sử để đổi khung. Chỉ hiển thị text/khối code đã escape, không chạy HTML/SVG/JavaScript do AI trả về. Nội dung và độ dài phải qua schema/giới hạn nhưng không vì thế đảm bảo tính đúng đắn hay đúng chủ đề; không khẳng định mọi bài đều có diagram, code chạy production hay benchmark xác thực.
+- Mỗi bài có **2–3 câu trắc nghiệm một lựa chọn** ở **cuối bài**, mỗi câu ba phương án và một đáp án có giải thích. Trước khi nộp, browser không nhận đáp án đúng hoặc giải thích đáp án qua API/HTML; người dùng chọn đủ câu rồi nộp. Server chấm **deterministic** từ bài bất biến đã lưu, không gọi AI khi chấm. Sau nộp cho xem lựa chọn, đúng/sai, đáp án đúng, giải thích, tổng **đúng x/y**. Phân biệt “đã trả lời y/y” với “đúng x/y”, không tự gắn nhãn “đậu”/“thành thạo”.
 - Lưu từng lần tự kiểm tra (số đúng, câu trả lời, thời gian), xem lại sau reload. Cho làm lại để ôn tập **sau khi đã thấy đáp án**, gắn nhãn không phải đánh giá độc lập; không reset hay thay đổi nội dung bài. Nộp lặp do mạng phải idempotent, hai tab không mất kết quả, input thiếu/thừa/sai lựa chọn không ghi attempt. Giới hạn số attempt/bài để tránh phình dữ liệu.
 
-**Nghiệm thu:** 0/y, x/y, y/y đều chấm đúng; chưa nộp không thể lấy key đáp án từ GET/HTML; POST không hợp lệ không ghi; reload trả kết quả thật và lịch sử; quiz hai cách độc lập, làm lại không gọi provider/tạo bài mới.
+**Nghiệm thu:** 0/y, x/y, y/y đều chấm đúng; chưa nộp không thể lấy key đáp án từ GET/HTML; POST không hợp lệ không ghi; reload trả kết quả thật và lịch sử; quiz hai cách độc lập, làm lại không gọi provider/tạo bài mới; bài v1/v2 cũ vẫn đọc và chấm quiz được sau khi khung bài mới chuyển sang v3.
+
+## RQ-L04b — Tạo bài phải thành công và phải nói lý do khi thất bại (P1)
+
+- Câu trả lời của provider được **định hình lại tại chỗ** trước khi lưu, không gọi provider lần hai: bỏ code fence, bỏ văn xuôi quanh JSON, mở object bị cắt, nhận payload v1/v2 hoặc payload của cách học còn lại, nhận bài bọc trong object khác, dựng lại quiz còn thiếu từ chính câu chữ của bài. Chỉ giữ **nội dung do chính model viết**; không bịa nội dung về chủ đề, không thêm benchmark hay trích dẫn.
+- Khi vẫn không lưu được, dòng bài lưu **mã lý do** (`provider_error`, `timeout`, `truncated`, `too_large`, `invalid_format`, `empty`); API trả mã đó cho client và trang hiển thị bằng tiếng Việt. **Không lưu, không log** nội dung model, thông báo lỗi của provider hay khóa API. Lỗi cũ không có mã thì ghi rõ là không được ghi lại.
+- Một lần bấm vẫn tốn **một** lệnh provider có phí; sửa bài không tốn thêm lệnh.
+
+**Nghiệm thu:** provider trả về fence/văn xuôi/payload cũ/cắt cụt/thiếu quiz vẫn tạo được bài `ready` và chỉ gọi provider một lần; khi thất bại thì API có `reason`, dòng DB có `failure_reason`, trang hiện lý do; không có text của model trong DB, log hay response lỗi.
 
 ## RQ-L05 — Quay lại vòng luyện phỏng vấn (P1)
 
@@ -54,7 +62,7 @@ Ba HTML Stitch là **tham khảo trạng thái/bố cục**, không phải giao 
 
 ## RQ-L06 — Dữ liệu bền vững và bảo vệ truy cập (P1)
 
-- Bài/attempt gắn session + phiên bản report + loại/vị trí mục + cách học, tồn tại qua reload/restart, xóa theo session khi xóa/wipe. Backup JSON versioned xuất/nhập đủ dữ liệu học và bài tự kiểm tra, đọc được backup cũ không có bảng học; restore lỗi phải rollback toàn bộ. Backup chứa bài học, lời khuyên gốc, đáp án và có thể có PII: cảnh báo trước tải/lưu/khôi phục.
+- Bài/attempt gắn session + phiên bản report + loại/vị trí mục + cách học, tồn tại qua reload/restart, xóa theo session khi xóa/wipe. Backup JSON versioned xuất/nhập đủ dữ liệu học và bài tự kiểm tra, đọc được backup cũ không có bảng học; **đổi khung bài (version nội dung v1/v2/v3) không đổi backup schema**, và mọi version lesson đều được giữ nguyên qua sao lưu/khôi phục; restore lỗi phải rollback toàn bộ. Backup chứa bài học, lời khuyên gốc, đáp án và có thể có PII: cảnh báo trước tải/lưu/khôi phục.
 - Ứng dụng hiện là single-owner **không có auth trong app**; trang học, API, admin/backup và tài nguyên phải qua HTTPS + xác thực ingress khi public. Mutation kiểm Origin chính xác trước đọc body/tác động DB/provider; response riêng tư `private, no-store` và `no-referrer`. Không coi Origin, session ID hoặc key provider là xác thực người dùng; custom endpoint tiếp tục bị chặn SSRF theo chính sách hiện có. Chỉ một process/volume SQLite hoặc cần cơ chế điều phối khác trước khi nhân bản.
 - UI tiếng Việt, bài theo `session.language` (vi/en), có nhãn ngôn ngữ cho nội dung tiếng Anh. 375px/desktop dùng được bằng touch và bàn phím; loading/lỗi/kết quả được thông báo cho screen reader; không chỉ dùng màu để chỉ trạng thái hoặc đúng/sai. Không hiện trạng thái sync, mã topic ngẫu tạo, encryption/latency/cost hay tiến độ phần trăm giả như trong HTML tham khảo.
 
@@ -62,4 +70,4 @@ Ba HTML Stitch là **tham khảo trạng thái/bố cục**, không phải giao 
 
 ## Cổng phát hành và kiểm chứng
 
-Trước khi đánh dấu MVP hoàn tất: kiểm thử schema/route/SQLite tạm và mock provider; chạy `npm run typecheck`, `npm test`, `npm run build`, `git diff --check`; thử browser desktop/375px/bàn phím cho cả ba trạng thái tham khảo (và trạng thái tạo lỗi), làm quiz trước/sau reload, report thay, hai tab và quay về `/new`. Trên staging dữ liệu giả phải thử ingress HTTPS/auth cho mọi page/API, Origin/no-store, backup→restore/rollback, restart và SSE phỏng vấn. `npm run lint` hiện có thể hỏi cấu hình do thiếu ESLint config; không được ghi “đã qua lint” nếu chưa chạy được. Bộ spec này **không xác nhận** bất kỳ kiểm thử hoặc triển khai nào đã hoàn tất.
+Trước khi đánh dấu MVP hoàn tất: kiểm thử schema/route/SQLite tạm và mock provider; chạy `npm run typecheck`, `npm test`, `npm run build`, `git diff --check`; thử browser desktop/375px/bàn phím cho cả ba trạng thái tham khảo (và trạng thái tạo lỗi), làm quiz trước/sau reload, report thay, hai tab và quay về `/new`; đọc và làm quiz lại bài **v1/v2 cũ** sau khi khung bài mới chuyển sang v3. Trên staging dữ liệu giả phải thử ingress HTTPS/auth cho mọi page/API, Origin/no-store, backup→restore/rollback, restart và SSE phỏng vấn. `npm run lint` hiện có thể hỏi cấu hình do thiếu ESLint config; không được ghi “đã qua lint” nếu chưa chạy được. Bộ spec này **không xác nhận** bất kỳ kiểm thử hoặc triển khai nào đã hoàn tất.

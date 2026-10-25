@@ -28,7 +28,7 @@ function open(): DatabaseSync {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
   const version = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version !== 0 && version !== 1 && version !== 2 && version !== 3 && version !== 4) {
+  if (version !== 0 && version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5) {
     db.close();
     throw new Error(`Unsupported database version: ${version}`);
   }
@@ -41,7 +41,7 @@ function open(): DatabaseSync {
     // Re-read the version under the write lock. Another process may have migrated
     // this file while we waited for it, and re-running an ALTER would abort the boot.
     const current = (db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-    if (current !== 0 && current !== 1 && current !== 2 && current !== 3 && current !== 4) {
+    if (current !== 0 && current !== 1 && current !== 2 && current !== 3 && current !== 4 && current !== 5) {
       throw new Error(`Unsupported database version: ${current}`);
     }
     if (current === 0) {
@@ -58,6 +58,15 @@ function open(): DatabaseSync {
     if (current < 4) {
       db.exec("ALTER TABLE sessions ADD COLUMN origin_lesson_id TEXT REFERENCES learning_lessons(id) ON DELETE SET NULL");
       db.exec("PRAGMA user_version = 4");
+    }
+    if (current < 5) {
+      // A fresh file already has the column from the DDL above, so the ALTER
+      // only runs on a database that was created before the column existed.
+      const columns = db.prepare("PRAGMA table_info(learning_lessons)").all() as { name: string }[];
+      if (!columns.some((column) => column.name === "failure_reason")) {
+        db.exec("ALTER TABLE learning_lessons ADD COLUMN failure_reason TEXT");
+      }
+      db.exec("PRAGMA user_version = 5");
     }
     db.exec("CREATE INDEX IF NOT EXISTS idx_sessions_origin_lesson ON sessions(origin_lesson_id, created_at DESC, id DESC)");
     db.exec("COMMIT");
@@ -219,6 +228,8 @@ CREATE TABLE IF NOT EXISTS learning_lessons (
   claim_id TEXT,
   claimed_at INTEGER,
   lesson_json TEXT,
+  -- Why a lesson could not be stored: a code only, never model text or a provider message.
+  failure_reason TEXT,
   provider TEXT NOT NULL,
   model TEXT NOT NULL,
   base_url TEXT,

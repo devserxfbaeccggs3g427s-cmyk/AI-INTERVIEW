@@ -3,7 +3,7 @@ import { TextDecoder, TextEncoder } from "node:util";
 import { z } from "zod";
 import { getDb } from "./db";
 import { FocusSchema } from "./focus";
-import { parseLesson } from "./learning-schema";
+import { LESSON_MAX_BYTES, parseLesson } from "./learning-schema";
 
 /** Only the eight application tables are portable; SQLite internals and secrets are not. */
 export const TABLE_NAMES = [
@@ -14,7 +14,14 @@ type TableName = (typeof TABLE_NAMES)[number];
 export const BACKUP_MAX_BYTES = 50 * 1024 * 1024;
 const FORMAT = "interview-ai-backup";
 const FORMAT_VERSION = 1;
+/** The backup file's own format version. It tracks the columns listed below. */
 const SCHEMA_VERSION = 4;
+/**
+ * Database versions whose tables still match that column list. Version 5 only
+ * added a nullable diagnostic column that no backup carries, so a v5 database
+ * still produces a v4 backup file and old backups still restore into it.
+ */
+const SUPPORTED_DB_VERSIONS = new Set([4, 5]);
 
 export class BackupError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -35,7 +42,7 @@ const focusJson = text.refine((value) => {
 }, "Invalid focus_json");
 const reportRevision = text.regex(/^[a-f0-9]{64}$/);
 const storedLesson = text.refine((value) => {
-  if (Buffer.byteLength(value, "utf8") > 16 * 1024) return false;
+  if (Buffer.byteLength(value, "utf8") > LESSON_MAX_BYTES) return false;
   try { return parseLesson(JSON.parse(value)) !== null; }
   catch { return false; }
 }, "Invalid lesson_json");
@@ -101,6 +108,9 @@ const rowSchemas = {
       : row.status === "ready" ? row.claim_id !== null || row.claimed_at !== null || row.lesson_json === null
         : row.claim_id !== null || row.claimed_at !== null || row.lesson_json !== null) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid lesson claim/status" });
+    }
+    if (row.lesson_json !== null && !parseLesson(row.lesson_json, row.mode)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Lesson mode does not match its content" });
     }
   }),
   learning_check_attempts: z.object({
@@ -173,7 +183,7 @@ const decoder = new TextDecoder("utf-8", { fatal: true });
 
 function readVersion(): void {
   const version = (getDb().prepare("PRAGMA user_version").get() as { user_version: number }).user_version;
-  if (version !== SCHEMA_VERSION) throw new BackupError("Unsupported database schema version", 409);
+  if (!SUPPORTED_DB_VERSIONS.has(version)) throw new BackupError("Unsupported database schema version", 409);
 }
 
 function readCounts(): BackupCounts {

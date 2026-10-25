@@ -58,6 +58,39 @@ const lesson = {
   ],
 };
 
+function structuredLesson(mode: "fundamentals" | "answering") {
+  const common = {
+    version: 2, mode, title: "Indexes", goal: "Understand when an index improves a query.",
+    objectives: ["Explain how an index affects a selective lookup."], questions: lesson.questions,
+  };
+  return mode === "fundamentals" ? {
+    ...common, concepts: [
+      { term: "Index", meaning: "A structure that maps a search key to rows in a table." },
+      { term: "Scan", meaning: "Reading the table rows one by one to find matching data." },
+    ],
+    mechanism: "An index narrows the rows that need reading, though its usefulness depends on the query and data.",
+    walkthrough: {
+      situation: "Find all orders belonging to one customer in a large table.",
+      input: "An orders table has customer_id values and a query filters by one customer_id.",
+      steps: [
+        { action: "Find the customer_id in the index.", reason: "The key points to candidate rows instead of scanning every row." },
+        { action: "Fetch the matching orders from the table.", reason: "The full order data remains in the underlying rows." },
+      ],
+      result: "The query can examine fewer rows when that customer has relatively few orders.",
+      why: "The index identifies candidate rows, but the query planner still decides whether it helps.",
+    },
+  } : {
+    ...common, interviewQuestion: "When would you add an index on customer_id?",
+    modelAnswer: "I would inspect the slow query and its execution plan first. If it filters selectively by customer_id, I would test an index and compare before and after. I would also account for the extra storage and work on each write, because indexes are not free.",
+    annotations: [
+      { point: "Start with evidence from the execution plan.", reason: "An index cannot fix every cause of a slow query." },
+      { point: "Measure the effect on the real workload.", reason: "Selectivity and query shape determine whether it helps." },
+    ],
+    tradeOff: { benefit: "Selective reads can inspect fewer rows.", cost: "Writes maintain the index and storage increases.", when: "Use it when measured read benefits justify those costs." },
+    followUps: [{ question: "What if the index is not used?", answer: "Inspect the plan and selectivity before changing the index or query." }],
+  };
+}
+
 before(async () => {
   [db, route, maintenance] = await Promise.all([
     import("./db"), import("../app/api/learning/[lessonId]/checks/route"), import("./maintenance"),
@@ -133,6 +166,39 @@ test("GET before submission has no answer or explanation; grades zero, partial, 
   assert.equal(history.attempts.length, 3);
   assert.deepEqual(history.attempts.map((attempt: { score: number }) => attempt.score), [0, 1, 2]);
   assert.equal(count(), 3);
+});
+
+test("both v2 modes preserve private answer keys, grading and independent history", async () => {
+  const detail = await import("../app/api/learning/[lessonId]/route");
+  const answeringId = randomUUID();
+  connection.prepare(`UPDATE learning_lessons SET lesson_json = ? WHERE id = ?`)
+    .run(JSON.stringify(structuredLesson("fundamentals")), lessonId);
+  connection.prepare(`INSERT INTO learning_lessons
+    (id, session_id, report_revision, source_kind, source_index, mode, source_label, status,
+      lesson_json, provider, model)
+    SELECT ?, session_id, report_revision, source_kind, source_index, 'answering', source_label, status,
+      ?, provider, model FROM learning_lessons WHERE id = ?`)
+    .run(answeringId, JSON.stringify(structuredLesson("answering")), lessonId);
+  for (const id of [lessonId, answeringId]) {
+    const response = await detail.GET(new Request(`${origin}/api/learning/${id}`), { params: { lessonId: id } });
+    assert.equal(response.status, 200);
+    const raw = await response.text();
+    assert.ok(!raw.includes("correctOption"));
+    assert.ok(!raw.includes("Because the first is correct."));
+    assert.equal((await get(id)).status, 200);
+    const submitted = await post(["A", "B"], randomUUID(), { lessonId: id });
+    assert.equal(submitted.status, 200);
+    assert.equal((await submitted.json()).attempt.score, 2);
+    assert.equal((await (await get(id)).json()).attempts.length, 1);
+  }
+  assert.equal(count(), 1);
+  assert.equal(count(answeringId), 1);
+  connection.prepare("UPDATE learning_lessons SET lesson_json = ? WHERE id = ?")
+    .run(JSON.stringify(structuredLesson("answering")), lessonId);
+  assert.equal((await detail.GET(new Request(`${origin}/api/learning/${lessonId}`), { params: { lessonId } })).status, 404);
+  assert.equal((await get(lessonId)).status, 409);
+  assert.equal((await post(["A", "B"])).status, 409);
+  assert.equal(count(), 1);
 });
 
 test("invalid JSON, missing/out-of-range/extra answers, unknown fields, and oversized streams never write", async () => {

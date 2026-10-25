@@ -68,13 +68,14 @@ export async function GET(req: Request, { params }: RouteParams) {
   if (!session) return privateJson({ error: "Learning source not found" }, { status: 404 });
   const modes = {} as Record<"fundamentals" | "answering", {
     id?: string; status: "uncreated" | "generating" | "failed" | "ready";
-    claimedAt?: number; retryable: boolean;
+    claimedAt?: number; retryable: boolean; failureReason?: string;
   }>;
   for (const mode of LearningModeSchema.options) {
     const lesson = findLearningLesson(source, mode);
     modes[mode] = lesson
       ? { id: lesson.id, status: lesson.status, retryable: lesson.status === "failed" || lessonIsStale(lesson),
-          ...(lesson.claimed_at == null ? {} : { claimedAt: lesson.claimed_at }) }
+          ...(lesson.claimed_at == null ? {} : { claimedAt: lesson.claimed_at }),
+          ...(lesson.failure_reason ? { failureReason: lesson.failure_reason } : {}) }
       : { status: "uncreated", retryable: false };
   }
   const older = query<Pick<LearningLessonRow, "id" | "mode" | "source_label" | "created_at">>(
@@ -125,7 +126,16 @@ export async function POST(req: Request, { params }: RouteParams) {
     if (claimed.kind === "existing") return privateJson({ id: claimed.id, status: claimed.status });
     const status = await generateLearningLesson(source, mode, resolved.cfg, claimed.id, claimed.claimId);
     if (status === "changed") return privateJson({ error: "Report or lesson changed. Reload this topic." }, { status: 409 });
-    if (status === "failed") return privateJson({ id: claimed.id, status, error: "Could not create lesson. A provider call may have incurred a charge; retry manually." }, { status: 502 });
+    if (status === "failed") {
+      const reason = queryOne<{ failure_reason: string | null }>(
+        `SELECT failure_reason FROM learning_lessons WHERE id = ?`, [claimed.id],
+      )?.failure_reason ?? null;
+      return privateJson({
+        id: claimed.id, status,
+        ...(reason ? { reason } : {}),
+        error: "Could not create lesson. A provider call may have incurred a charge; retry manually.",
+      }, { status: 502 });
+    }
     return privateJson({ id: claimed.id, status });
   } catch {
     return privateJson({ error: "Could not create lesson. Please try again." }, { status: 500 });

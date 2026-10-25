@@ -82,13 +82,18 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 | Server logs              | `safeRawBlocks()` regex-redacts `sk-…`, `sk-ant-…`, `AIza…` before write. |
 | Custom endpoint URL      | Persisted with the session; outbound requests check the URL and actual DNS/socket address, disallow redirects and metadata/link-local hosts. |
 
-## 5 screens
+## Main screens
 
 1. **`/`** — BYOK config (provider, key, model, sliders)
 2. **`/new`** — 5 core setup options (FR-1): role, language, mode, length, CV
 3. **`/session/[id]`** — Streaming conversation + per-turn coaching rubric drawer
 4. **`/report/[id]`** — Overall score, 4 pillars, strengths / improvements, next steps
-5. **`/history`** — SQLite-backed session list, filters, admin actions (wipe / vacuum / backup)
+5. **`/learn/[id]?kind=...&index=...`** — Learn from one report recommendation in either mode; generate only on click, then read and self-check
+6. **`/history`** — SQLite-backed session list, filters, admin actions (wipe / vacuum / backup)
+
+New lessons use a flexible structured JSON v3: a short hook, **1–5 ordered topic-specific blocks** — each one explains, works through a concrete situation, compares options, corrects a common misconception, or gives a speakable answer with notes and follow-ups — at least one **concrete application** (“Chưa biết”) or **speakable answer** (“Luyện diễn đạt & Đào sâu”), and a 2–3 question quiz at the end. Existing v1 and v2 lessons remain readable and gradable; opening or changing modes never regenerates them, and a ready lesson is never regenerated — there is no paid path to rewrite an old lesson in the new format. A new lesson can use up to 4,000 output tokens, stays within 24 KiB of JSON and a 90-second deadline on the configured BYOK provider, and can incur a higher charge than the earlier short format. Model explanations may be wrong; worked examples are illustrative, not verified benchmarks or production-ready code. The learning prompt uses only the selected report recommendation and bounded role/language context, not the CV, transcript, entire report or API key. The [learning specification](specs/report-driven-learning-mvp/requirements.md) describes the full contract.
+
+A model answer is reshaped before it is stored: fences, prose around the object, an older payload shape, a payload for the other mode, a cut-off object and a missing quiz are all repaired locally, without a second paid call. Only text the model itself wrote is kept — nothing about the topic is invented. When a lesson still cannot be saved, the row keeps a **reason code** (`provider_error`, `timeout`, `truncated`, `too_large`, `invalid_format`, `empty`), the API returns it and the page shows it in Vietnamese; the provider message, the raw answer and the API key are never stored or logged.
 
 ## API surface
 
@@ -104,6 +109,11 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 | POST   | `/api/sessions/[id]/messages`       | **SSE** — submit answer, stream next question (+ coaching rubric) |
 | POST   | `/api/sessions/[id]/evaluate`       | Force evaluation (same runner that fires when `plannedRounds` reached) |
 | GET    | `/api/sessions/[id]/report`         | Parsed evaluation report |
+| GET    | `/api/sessions/[id]/learning?kind=...&index=...` | Selected recommendation and two lesson slots |
+| POST   | `/api/sessions/[id]/learning`       | Explicitly generate one lesson for a selected mode; never auto-retry |
+| GET    | `/api/learning/[lessonId]`         | Public lesson details without quiz answer keys |
+| GET/POST | `/api/learning/[lessonId]/checks` | Read attempts / submit a deterministically graded quiz |
+| GET    | `/api/learning/[lessonId]/sessions` | Sessions practiced from a lesson |
 | GET    | `/api/sessions/[id]/attempts`       | Scoring audit trail (`?raw=1` includes the model's body) |
 | GET    | `/api/admin/db`                     | Path + counters |
 | POST   | `/api/admin/db`                     | `wipe-sessions` / `wipe-all` / `vacuum` / JSON `backup` |
@@ -125,10 +135,11 @@ PUBLIC_ORIGIN=http://localhost:3000 npm run dev
 - `ALLOW_PRIVATE_BASE_URL=1` permits custom endpoints on local/private networks (e.g. Ollama at `http://localhost:11434`) and can expose internal services to anyone able to call this unauthenticated app. Leave it unset in public deployments. Link-local and metadata addresses remain blocked even with opt-in.
 - A custom API key is sent directly to the user-selected endpoint; only enter endpoints you trust. The key is not persisted in SQLite, and custom requests never fall back to OpenAI.
 - Whatever the CV source — pasted text or a server-extracted PDF — **the CV text is sent to the AI provider as part of each prompt**, and the operator's chosen endpoint sees it. A PDF is parsed server-side; only the extracted text leaves the app, never the file. `/new` states this per mode rather than claiming nothing is uploaded. The raw PDF bytes are never persisted, logged, or included in a backup.
-- `VACUUM` periodically if you do a lot of wipes. The browser backup exports a versioned JSON snapshot (`schemaVersion=4`) of all eight application tables, including evaluation attempts, learning lessons, self-check attempts and each session's optional originating lesson. The file contains sensitive CV text, transcripts, raw model responses, custom endpoint URLs, lesson content and quiz answers: store it encrypted with restricted permissions, never in the repository or a public download folder. It does not contain provider keys or PDF bytes. Strict v1/v2 JSON imports restore their six historical tables and initialize learning tables empty; strict v3 imports preserve lessons and checks. All v1–v3 sessions have no originating lesson after import. Restore replaces, never merges.
+- `VACUUM` periodically if you do a lot of wipes. The browser backup exports a versioned JSON snapshot (`schemaVersion=4`) of all eight application tables, including evaluation attempts, learning lessons (lesson content of any version: v1, v2 or v3), self-check attempts and each session's optional originating lesson. The file contains sensitive CV text, transcripts, raw model responses, custom endpoint URLs, lesson content and quiz answers: store it encrypted with restricted permissions, never in the repository or a public download folder. It does not contain provider keys or PDF bytes. Strict backup `schemaVersion=1/2` imports restore their six historical tables and initialize learning tables empty; `schemaVersion=3` imports preserve lessons and checks but drop originating-lesson links, and `schemaVersion=4` imports keep them. All v1–v3 sessions have no originating lesson after import. Restore replaces, never merges.
 - Restore **replaces all application data** in a single transaction. The history page validates the selected JSON file, shows counts for the current and incoming data, and requires a separate confirmation. The server binds a short-lived token to the exact file bytes and to a content fingerprint of the database as reviewed. If anything changed in between — including an edit that leaves the row counts identical — the commit re-checks that fingerprint inside the restore transaction and aborts with 409 rather than overwriting newer data. A changed file, unsupported schema or legacy `.sql` upload is also rejected. A validated file is not a substitute for ingress authentication. Keep a copy of the current data before replacing it.
 - Browser backup and restore are limited to 50 MiB of UTF-8 JSON. An oversized export fails instead of downloading a partial file. For larger databases, use an offline SQLite-aware backup (SQLite backup API or `VACUUM INTO`) against a stopped/quiescent app, and restore into a **separate** volume for verification before swapping. Do not copy only the open `.db` file: WAL files (`*.db-wal`, `*.db-shm`) live beside it. See [the VPS runbook](deploy/README.md) for retention and recovery. Legacy SQL files must be converted offline on an isolated copy; the API never executes uploaded SQL.
 - Before deploying schema v4, stop the app and take an offline SQLite-aware backup with its WAL data, verify a copy, and retain the pre-upgrade v3 file. To roll back the app, stop it and restore that old DB on a **copy of the volume** before switching volumes; do not down-migrate a live DB. Originating-lesson links written after migration cannot be read by the v3 app and will not survive a v3 rollback.
+- Schema v5 adds one nullable column, `learning_lessons.failure_reason`, holding a failure reason code. The migration is additive and leaves every existing row untouched, and the browser backup format stays at `schemaVersion=4` — the reason code is diagnostic only and is not part of a backup. A v5 database still produces a v4 backup file, and a v4 backup still restores into a v5 database.
 
 ## Deploy
 

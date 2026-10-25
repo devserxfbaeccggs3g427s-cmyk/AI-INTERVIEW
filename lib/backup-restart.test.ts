@@ -143,7 +143,7 @@ test("restore survives a real child-process restart and AUTOINCREMENT continues 
   assert.equal(status, 0, `child must exit zero (stderr=${stderr})`);
   assert.equal(payload.ok, true, `child reported failure: ${JSON.stringify(payload)}`);
 
-  assert.equal(payload.version, 4, "PRAGMA user_version must be 4 after restore");
+  assert.equal(payload.version, 5, "PRAGMA user_version must be 5 after restore");
   assert.equal(payload.focusJson, '["questions"]');
   assert.equal(payload.originLessonId, null);
   assert.equal(payload.sessionFound, true, "restored session row must be visible to the child");

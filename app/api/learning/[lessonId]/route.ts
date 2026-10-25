@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     `SELECT role,language FROM sessions WHERE id = ?`, [row.session_id],
   );
   if (!session) return privateJson({ error: "Lesson not found" }, { status: 404 });
-  const content = row.status === "ready" ? parseLesson(row.lesson_json) : null;
+  const content = row.status === "ready" ? parseLesson(row.lesson_json, row.mode) : null;
   if (row.status === "ready" && !content) return privateJson({ error: "Lesson unavailable" }, { status: 404 });
   return privateJson({
     lesson: {

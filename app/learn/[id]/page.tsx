@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useByok } from "@/components/ByokConfigContext";
 import { encodeLessonPractice } from "@/lib/practice-prefill";
 import { getProviderSpec, isProviderEnabled, type ProviderId } from "@/lib/providers/registry";
@@ -35,19 +36,32 @@ type LessonSource = {
   role: string;
   language: "vi" | "en";
 };
-type ModeSlot = { id?: string; status: Status; retryable?: boolean; claimedAt?: number | string };
+type ModeSlot = { id?: string; status: Status; retryable?: boolean; claimedAt?: number | string; failureReason?: string };
 type OlderLesson = { id: string; mode: Mode; label: string; createdAt?: number | string };
 type Catalog = { source: Source; modes: Record<Mode, ModeSlot>; older: OlderLesson[] };
 type Question = { stem: string; options: { id: Option; text: string }[] };
-type LessonContent = {
-  title: string;
-  goal: string;
-  objectives: string[];
-  explanation: string;
-  example: string;
-  sections: { heading: string; body: string; code?: string }[];
-  questions: Question[];
-};
+type ContentBase = { title: string; goal: string; objectives: string[]; questions: Question[] };
+/** v3: one flexible lesson shape for both learning modes; the body is a list of typed blocks. */
+type V3BlockKind = "explain" | "walkthrough" | "compare" | "misconception" | "answer";
+type V3Step = { action: string; reason?: string };
+type V3CompareOption = { label: string; when?: string; why?: string };
+type V3Note = { point: string; reason?: string };
+type V3FollowUp = { question: string; answer: string };
+type V3Block =
+  | { kind: "explain"; heading: string; body: string; why?: string }
+  | { kind: "walkthrough"; heading: string; situation: string; input?: string; steps: V3Step[]; outcome: string; why?: string }
+  | { kind: "compare"; heading: string; options: V3CompareOption[]; takeaway: string }
+  | { kind: "misconception"; heading: string; belief: string; correction: string; evidence?: string }
+  | { kind: "answer"; heading: string; question: string; answer: string; notes: V3Note[]; followUps?: V3FollowUp[] };
+type LessonContent = ContentBase & (
+  | { version: 1; explanation: string; example: string; sections: { heading: string; body: string; code?: string }[] }
+  | { version: 2; mode: "fundamentals"; concepts: { term: string; meaning: string }[]; mechanism: string;
+      walkthrough: { situation: string; input: string; steps: { action: string; reason: string }[]; result: string; why: string } }
+  | { version: 2; mode: "answering"; interviewQuestion: string; modelAnswer: string;
+      annotations: { point: string; reason: string }[]; tradeOff: { benefit: string; cost: string; when: string };
+      followUps: { question: string; answer: string }[] }
+  | { version: 3; mode: Mode; hook?: string; blocks: V3Block[] }
+);
 type Lesson = { id: string; sessionId: string; status: Status; mode?: Mode; source?: LessonSource; content?: LessonContent; practiceFocus?: string | null };
 type PracticeSession = { id: string; role: string; status: string; createdAt: number; overallScore: number | null };
 type PracticeSessions = { sessions: PracticeSession[]; nextCursor: string | null; hasMore: boolean };
@@ -65,6 +79,23 @@ const MODE_DESC: Record<Mode, string> = {
 const STATUS_LABEL: Record<Status, string> = { uncreated: "Chưa tạo bài", generating: "Đang tạo…", failed: "Tạo lỗi", ready: "Đã có bài" };
 const MODE_ICON: Record<Mode, string> = { fundamentals: "auto_stories", answering: "record_voice_over" };
 
+/** v3 block vocabulary: a fixed set of kinds keeps the outline readable and the CSS stable. */
+const V3_KINDS: readonly V3BlockKind[] = ["explain", "walkthrough", "compare", "misconception", "answer"];
+const V3_KIND_LABEL: Record<V3BlockKind, string> = {
+  explain: "Giải thích",
+  walkthrough: "Từng bước",
+  compare: "So sánh",
+  misconception: "Sai lầm thường gặp",
+  answer: "Câu trả lời mẫu",
+};
+const V3_KIND_ICON: Record<V3BlockKind, string> = {
+  explain: "lightbulb",
+  walkthrough: "route",
+  compare: "compare_arrows",
+  misconception: "help",
+  answer: "format_quote",
+};
+
 /** Server messages are English; keep the reading experience in Vietnamese. */
 const ERROR_TEXT: [RegExp, string][] = [
   [/report (?:or lesson )?changed/i, "Báo cáo đã thay đổi. Hãy tải lại chủ đề này."],
@@ -77,9 +108,25 @@ const ERROR_TEXT: [RegExp, string][] = [
   [/maximum 20 attempts/i, "Bài này đã đạt tối đa 20 lần tự kiểm tra."],
   [/attempt id was already used/i, "Mã lần thử này đã dùng với đáp án khác. Hãy bắt đầu một lần tự kiểm tra mới."],
   [/maintenance in progress/i, "Cơ sở dữ liệu đang bảo trì. Vui lòng thử lại sau."],
+  [/could not create lesson/i, "Không tạo được bài học."],
   [/not ready|is unavailable/i, "Bài học chưa sẵn sàng."],
   [/not found/i, "Không tìm thấy nội dung yêu cầu."],
 ];
+
+/** The server reports why a lesson failed as a code; the reader gets the reason. */
+const REASON_TEXT: Record<string, string> = {
+  provider_error: "provider báo lỗi khi sinh bài (kết nối, xác thực hoặc máy chủ)",
+  timeout: "provider không trả lời trong 90 giây",
+  truncated: "AI trả lời bị cắt cụt vì quá dài nên không dựng được bài",
+  too_large: "câu trả lời của AI vượt quá 24 KiB mà hệ thống cho phép",
+  invalid_format: "AI trả về nội dung không đúng cấu trúc bài học",
+  empty: "provider trả về nội dung rỗng",
+};
+
+function reasonText(reason?: string | null): string | null {
+  if (!reason) return null;
+  return REASON_TEXT[reason] ?? `mã lỗi ${reason}`;
+}
 
 function explain(message: string): string {
   return ERROR_TEXT.find(([pattern]) => pattern.test(message))?.[1] ?? message;
@@ -89,7 +136,8 @@ async function jsonResponse<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.ok === false) {
     const message = typeof data?.error === "string" && data.error ? data.error : `Yêu cầu thất bại (HTTP ${response.status}).`;
-    throw new Error(explain(message));
+    const reason = typeof data?.reason === "string" ? reasonText(data.reason) : null;
+    throw new Error(reason ? `${explain(message)} Lý do: ${reason}.` : explain(message));
   }
   return data as T;
 }
@@ -117,6 +165,315 @@ function formatWhen(value: number | string | undefined) {
   if (value === undefined) return "";
   const date = typeof value === "number" ? new Date(value < 1e12 ? value * 1000 : value) : new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("vi-VN");
+}
+
+/* ------------------------------------------------------------------ */
+/*  v3 flexible lesson blocks                                          */
+/* ------------------------------------------------------------------ */
+
+/** Lesson content is model output, so every field is treated as untrusted before rendering. */
+function asText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+function asRecords(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+    : [];
+}
+function asSteps(value: unknown): V3Step[] {
+  return asRecords(value)
+    .map((item) => {
+      const action = asText(item.action);
+      const reason = asText(item.reason);
+      return reason ? { action, reason } : { action };
+    })
+    .filter((step) => step.action);
+}
+function asCompareOptions(value: unknown): V3CompareOption[] {
+  return asRecords(value)
+    .map((item) => {
+      const label = asText(item.label);
+      const when = asText(item.when);
+      const why = asText(item.why);
+      return {
+        label,
+        ...(when ? { when } : {}),
+        ...(why ? { why } : {}),
+      };
+    })
+    .filter((option) => option.label);
+}
+function asNotes(value: unknown): V3Note[] {
+  return asRecords(value)
+    .map((item) => {
+      const point = asText(item.point);
+      const reason = asText(item.reason);
+      return reason ? { point, reason } : { point };
+    })
+    .filter((note) => note.point);
+}
+function asFollowUps(value: unknown): V3FollowUp[] {
+  return asRecords(value)
+    .map((item) => ({ question: asText(item.question), answer: asText(item.answer) }))
+    .filter((item) => item.question && item.answer);
+}
+
+/** Keeps only blocks that carry the fields their renderer needs; unknown kinds are dropped. */
+function normalizeV3Blocks(raw: unknown): V3Block[] {
+  if (!Array.isArray(raw)) return [];
+  const blocks: V3Block[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as Record<string, unknown>;
+    const kind = String(record.kind ?? record.type ?? "") as V3BlockKind;
+    if (!V3_KINDS.includes(kind)) continue;
+    const heading = asText(record.heading);
+    if (kind === "explain") {
+      const body = asText(record.body);
+      if (!body) continue;
+      const why = asText(record.why);
+      blocks.push({ kind, heading, body, ...(why ? { why } : {}) });
+      continue;
+    }
+    if (kind === "walkthrough") {
+      const situation = asText(record.situation);
+      const outcome = asText(record.outcome);
+      const steps = asSteps(record.steps);
+      if (!situation || !outcome || !steps.length) continue;
+      const input = asText(record.input);
+      const why = asText(record.why);
+      blocks.push({ kind, heading, situation, steps, outcome, ...(input ? { input } : {}), ...(why ? { why } : {}) });
+      continue;
+    }
+    if (kind === "compare") {
+      const options = asCompareOptions(record.options);
+      const takeaway = asText(record.takeaway);
+      if (!options.length || !takeaway) continue;
+      blocks.push({ kind, heading, options, takeaway });
+      continue;
+    }
+    if (kind === "misconception") {
+      const belief = asText(record.belief);
+      const correction = asText(record.correction);
+      if (!belief || !correction) continue;
+      const evidence = asText(record.evidence);
+      blocks.push({ kind, heading, belief, correction, ...(evidence ? { evidence } : {}) });
+      continue;
+    }
+    const question = asText(record.question);
+    const answer = asText(record.answer);
+    if (!question || !answer) continue;
+    const notes = asNotes(record.notes);
+    const followUps = asFollowUps(record.followUps);
+    blocks.push({ kind, heading, question, answer, notes, ...(followUps.length ? { followUps } : {}) });
+  }
+  return blocks;
+}
+
+const v3BlockId = (index: number) => `lesson-block-${index + 1}`;
+
+/** Short, skimmable callout: a label plus one focused paragraph. */
+function LessonNote({ icon, label, children }: { icon: string; label: string; children: ReactNode }) {
+  return (
+    <div className={styles.noteBox}>
+      <p className={styles.noteLabel}>
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{icon}</span>
+        {label}
+      </p>
+      <div className={styles.noteBody}>{children}</div>
+    </div>
+  );
+}
+
+/** Outline of the lesson blocks; each entry jumps to its section and marks the visible one. */
+function LessonOutline({ blocks }: { blocks: V3Block[] }) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined" || !blocks.length) return;
+    const targets = blocks
+      .map((_, index) => document.getElementById(v3BlockId(index)))
+      .filter((element): element is HTMLElement => Boolean(element));
+    if (!targets.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) setActiveId(visible[0].target.id);
+      },
+      { rootMargin: "-120px 0px -60% 0px", threshold: 0 },
+    );
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [blocks]);
+
+  return (
+    <nav className={styles.outline} aria-labelledby="lesson-outline-heading">
+      <div className={styles.outlineHeader}>
+        <h3 id="lesson-outline-heading" className={styles.outlineTitle}>
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">list</span>
+          Dàn ý bài học
+        </h3>
+        <span className={styles.outlineHint}>Chọn một phần để nhảy tới nội dung tương ứng</span>
+      </div>
+      <a className={styles.outlineSkip} href="#quiz-heading">
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">fact_check</span>
+        Nhảy tới phần tự kiểm tra
+      </a>
+      <ol className={styles.outlineList}>
+        {blocks.map((block, index) => {
+          const id = v3BlockId(index);
+          const active = activeId === id;
+          return (
+            <li key={id}>
+              <a
+                href={`#${id}`}
+                className={`${styles.outlineLink} ${active ? styles.outlineLinkActive : ""}`}
+                aria-current={active ? "true" : undefined}
+              >
+                <span className={styles.outlineIndex} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                <span className={styles.outlineText}>
+                  <span className={styles.outlineKind}>{V3_KIND_LABEL[block.kind]}</span>
+                  <span className={styles.outlineHeading}>{block.heading || V3_KIND_LABEL[block.kind]}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/** Renders one v3 block; each kind keeps its own layout so the page stays skimmable. */
+function LessonBlock({ block, index }: { block: V3Block; index: number }) {
+  const id = v3BlockId(index);
+  const headingId = `${id}-heading`;
+  return (
+    <section id={id} className={`${styles.lessonSection} ${styles.blockSection}`} aria-labelledby={headingId}>
+      <h3 id={headingId} className={styles.subheading}>
+        <span className={styles.sectionIcon} aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+        {block.heading || V3_KIND_LABEL[block.kind]}
+        <span className={styles.blockKind}>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">{V3_KIND_ICON[block.kind]}</span>
+          {V3_KIND_LABEL[block.kind]}
+        </span>
+      </h3>
+      {block.kind === "explain" ? (
+        <>
+          <p className="whitespace-pre-wrap break-words">{block.body}</p>
+          {block.why ? <LessonNote icon="lightbulb" label="Vì sao">{block.why}</LessonNote> : null}
+        </>
+      ) : null}
+      {block.kind === "walkthrough" ? (
+        <>
+          <div className={styles.blockLead}>
+            <span className={styles.blockLabel}>Tình huống</span>
+            <p className="whitespace-pre-wrap break-words">{block.situation}</p>
+          </div>
+          {block.input ? (
+            <div className={styles.blockLead}>
+              <span className={styles.blockLabel}>Đầu vào</span>
+              <p className="whitespace-pre-wrap break-words">{block.input}</p>
+            </div>
+          ) : null}
+          <ol className={styles.teachingList}>
+            {block.steps.map((step, stepIndex) => (
+              <li key={stepIndex} className={styles.teachingItem}>
+                <h4 className={styles.itemTitle}>Bước {stepIndex + 1} · {step.action}</h4>
+                {step.reason ? <p className="whitespace-pre-wrap break-words"><strong>Vì sao:</strong> {step.reason}</p> : null}
+              </li>
+            ))}
+          </ol>
+          <div className={styles.blockLead}>
+            <span className={styles.blockLabel}>Kết quả</span>
+            <p className="whitespace-pre-wrap break-words">{block.outcome}</p>
+          </div>
+          {block.why ? <LessonNote icon="lightbulb" label="Vì sao có kết quả này">{block.why}</LessonNote> : null}
+        </>
+      ) : null}
+      {block.kind === "compare" ? (
+        <>
+          <ul className={styles.compareGrid}>
+            {block.options.map((option, optionIndex) => (
+              <li key={optionIndex} className={styles.compareCard}>
+                <h4 className={styles.compareLabel}>{option.label}</h4>
+                {option.when ? (
+                  <p className={styles.compareField}>
+                    <span className={styles.blockLabel}>Khi nào dùng</span>
+                    <span className="whitespace-pre-wrap break-words">{option.when}</span>
+                  </p>
+                ) : null}
+                {option.why ? (
+                  <p className={styles.compareField}>
+                    <span className={styles.blockLabel}>Vì sao</span>
+                    <span className="whitespace-pre-wrap break-words">{option.why}</span>
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <LessonNote icon="fact_check" label="Điều cần nhớ">{block.takeaway}</LessonNote>
+        </>
+      ) : null}
+      {block.kind === "misconception" ? (
+        <>
+          <div className={styles.misconception}>
+            <div className={styles.misconceptionSide}>
+              <h4 className={styles.misconceptionTitle}>
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">cancel</span>
+                Niềm tin phổ biến
+              </h4>
+              <p className="whitespace-pre-wrap break-words">{block.belief}</p>
+            </div>
+            <div className={`${styles.misconceptionSide} ${styles.misconceptionTruth}`}>
+              <h4 className={styles.misconceptionTitle}>
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span>
+                Điều đúng
+              </h4>
+              <p className="whitespace-pre-wrap break-words">{block.correction}</p>
+            </div>
+          </div>
+          {block.evidence ? <LessonNote icon="search" label="Bằng chứng">{block.evidence}</LessonNote> : null}
+        </>
+      ) : null}
+      {block.kind === "answer" ? (
+        <>
+          <div className={styles.blockLead}>
+            <span className={styles.blockLabel}>Câu hỏi phỏng vấn</span>
+            <p className="whitespace-pre-wrap break-words">{block.question}</p>
+          </div>
+          <blockquote className={`${styles.sampleAnswer} whitespace-pre-wrap break-words`}>{block.answer}</blockquote>
+          {block.notes.length ? (
+            <>
+              <h4 className={styles.blockSubheading}>Vì sao câu trả lời này hiệu quả</h4>
+              <ol className={styles.teachingList}>
+                {block.notes.map((note, noteIndex) => (
+                  <li key={noteIndex} className={styles.teachingItem}>
+                    <h5 className={styles.itemTitle}>Ý {noteIndex + 1} · {note.point}</h5>
+                    {note.reason ? <p className="whitespace-pre-wrap break-words">{note.reason}</p> : null}
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
+          {block.followUps?.length ? (
+            <>
+              <h4 className={styles.blockSubheading}>Câu hỏi đào sâu</h4>
+              <ol className={styles.teachingList}>
+                {block.followUps.map((item, followUpIndex) => (
+                  <li key={followUpIndex} className={styles.teachingItem}>
+                    <h5 className={styles.itemTitle}>Hỏi xoáy {followUpIndex + 1} · {item.question}</h5>
+                    <p className="whitespace-pre-wrap break-words"><strong>Gợi ý trả lời:</strong> {item.answer}</p>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </section>
+  );
 }
 
 /**
@@ -234,11 +591,11 @@ export default function LearningPage({ params }: { params: { id: string } }) {
   };
 
   useEffect(() => {
-    if (!lessonId || lessons[lessonId]) return;
+    if (!lessonId || (lessons[lessonId] && !(slot?.status === "ready" && lessons[lessonId].lesson.status !== "ready"))) return;
     const controller = new AbortController();
     void loadLesson(lessonId, controller.signal);
     return () => controller.abort();
-  }, [lessonId, lessons, loadLesson]);
+  }, [lessonId, slot?.status, lessons, loadLesson]);
 
   const loadAttempts = useCallback(async (targetLessonId: string) => {
     setAttemptsLoading(targetLessonId);
@@ -331,6 +688,13 @@ export default function LearningPage({ params }: { params: { id: string } }) {
   };
   const questions = lesson?.content?.questions ?? [];
   const answeredCount = selected.filter(Boolean).length;
+  // v3 lessons carry a flexible block list instead of a mode-specific body.
+  const lessonContent = lesson?.content ?? null;
+  const flexibleContent = lessonContent && lessonContent.version === 3 ? lessonContent : null;
+  const flexibleBlocks = useMemo(
+    () => (flexibleContent ? normalizeV3Blocks(flexibleContent.blocks) : []),
+    [flexibleContent],
+  );
 
   const generate = async () => {
     if (!catalog || oldRevision || !slot || busyRef.current) return;
@@ -576,9 +940,17 @@ export default function LearningPage({ params }: { params: { id: string } }) {
           </div>
           <div className={styles.costNotice}>
             <div className={styles.calloutHeading}><span className="material-symbols-outlined text-[20px]" aria-hidden="true">monetization_on</span> Lưu ý chi phí API (BYOK)</div>
-            <p>Lệnh tạo dùng provider, model và đích của phiên gốc, với khóa API bạn gửi kèm. Một lần bấm có thể phát sinh phí; mở trang hoặc chuyển cách học không tự gọi AI. Bài đã tạo được lưu và mở lại không mất phí tạo mới.</p>
+            <p>Lệnh tạo dùng provider, model và đích của phiên gốc, với khóa API bạn gửi kèm. Bài chi tiết có thể dùng tối đa 4.000 token đầu ra trong một lệnh nên có thể phát sinh phí cao hơn bài ngắn trước đây; mở trang hoặc chuyển cách học không tự gọi AI. Bài đã tạo được lưu và mở lại không mất phí tạo mới.</p>
             {catalog ? <p>Phiên gốc: {catalog.source.config?.provider ?? catalog.source.provider} · {catalog.source.config?.model ?? catalog.source.model}. Nếu cấu hình hiện tại khác, hãy <a className="underline" href="/">mở Cấu hình AI và nhập lại đúng khóa</a>; hệ thống không tự đổi provider.</p> : null}
-            {slot?.status === "failed" ? <p className="text-warning">Lần gọi trước có thể đã phát sinh phí. Chỉ thử lại khi bạn muốn gửi một lệnh mới.</p> : null}
+            {slot?.status === "failed" ? (
+              <p className="text-warning">
+                Lần gọi trước có thể đã phát sinh phí.
+                {slot.failureReason
+                  ? ` Lý do: ${reasonText(slot.failureReason)}.`
+                  : " Lý do: không được ghi lại (lần tạo này có trước khi hệ thống bắt đầu ghi lý do)."}
+                Chỉ thử lại khi bạn muốn gửi một lệnh mới.
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -592,33 +964,114 @@ export default function LearningPage({ params }: { params: { id: string } }) {
           <article lang={source?.language ?? "vi"} className={styles.lesson}>
             <section className={styles.lessonIntro}>
               <span className={styles.readyBadge}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span>
-                {MODE_LABEL[lesson.mode ?? mode]} · đã có bài (nội dung không đổi)
+                {lesson.content.version === 3 ? `${MODE_LABEL[lesson.content.mode]} · bài linh hoạt` : MODE_LABEL[lesson.mode ?? mode]} · đã có bài (nội dung không đổi)
                 {lesson.content.title && (lesson.source?.language ?? "vi") === "en" ? " · nội dung tiếng Anh" : ""}
               </span>
               <h2 className={styles.largeHeading}>{lesson.content.title}</h2>
               <p className={`${styles.muted} whitespace-pre-wrap break-words`}>{lesson.content.goal}</p>
+              {lesson.content.version === 3 && lesson.content.hook ? (
+                <p className={`${styles.hook} whitespace-pre-wrap break-words`}>{lesson.content.hook}</p>
+              ) : null}
               <h3 className={styles.subheading}>Mục tiêu bài học</h3>
               <ul className={styles.objectives}>
                 {lesson.content.objectives.map((objective, i) => <li key={i} className="whitespace-pre-wrap break-words">{objective}</li>)}
               </ul>
             </section>
-            <section className={styles.lessonSection}>
-              <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">01</span> Giải thích</h3>
-              <p className="whitespace-pre-wrap break-words">{lesson.content.explanation}</p>
-            </section>
-            {lesson.content.sections.map((part, i) => (
-              <section key={i} className={styles.lessonSection}>
-                <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">{String(i + 2).padStart(2, "0")}</span> {part.heading}</h3>
-                <p className="whitespace-pre-wrap break-words">{part.body}</p>
-                {part.code ? (
-                  <pre className={styles.code}><code>{part.code}</code></pre>
+            {lesson.content.version === 1 ? (
+              <>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">01</span> Giải thích</h3>
+                  <p className="whitespace-pre-wrap break-words">{lesson.content.explanation}</p>
+                </section>
+                {lesson.content.sections.map((part, i) => (
+                  <section key={i} className={styles.lessonSection}>
+                    <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">{String(i + 2).padStart(2, "0")}</span> {part.heading}</h3>
+                    <p className="whitespace-pre-wrap break-words">{part.body}</p>
+                    {part.code ? <pre className={styles.code}><code>{part.code}</code></pre> : null}
+                  </section>
+                ))}
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">{String(lesson.content.sections.length + 2).padStart(2, "0")}</span> Ví dụ</h3>
+                  <p className="whitespace-pre-wrap break-words">{lesson.content.example}</p>
+                </section>
+              </>
+            ) : lesson.content.version === 3 ? (
+              <>
+                {flexibleBlocks.length ? <LessonOutline blocks={flexibleBlocks} /> : null}
+                {flexibleBlocks.map((block, index) => <LessonBlock key={v3BlockId(index)} block={block} index={index} />)}
+                {flexibleBlocks.length === 0 ? (
+                  <p className={styles.muted}>Bài học này không có phần nội dung nào để hiển thị.</p>
                 ) : null}
-              </section>
-            ))}
-            <section className={styles.lessonSection}>
-              <h3 className={styles.subheading}><span className={styles.sectionIcon} aria-hidden="true">{String(lesson.content.sections.length + 2).padStart(2, "0")}</span> Ví dụ</h3>
-              <p className="whitespace-pre-wrap break-words">{lesson.content.example}</p>
-            </section>
+              </>
+            ) : lesson.content.mode === "fundamentals" ? (
+              <>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>01 · Khái niệm cần biết</h3>
+                  <dl className={styles.teachingList}>
+                    {lesson.content.concepts.map((item, i) => (
+                      <div key={i} className={styles.teachingItem}>
+                        <dt className={styles.itemTitle}>{item.term}</dt>
+                        <dd className="whitespace-pre-wrap break-words">{item.meaning}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>02 · Cơ chế hoạt động</h3>
+                  <p className="whitespace-pre-wrap break-words">{lesson.content.mechanism}</p>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>03 · Demo từng bước</h3>
+                  <p className="whitespace-pre-wrap break-words">{lesson.content.walkthrough.situation}</p>
+                  <div className={styles.teachingItem}><h4 className={styles.itemTitle}>Đầu vào / tình huống ban đầu</h4><p className="whitespace-pre-wrap break-words">{lesson.content.walkthrough.input}</p></div>
+                  <ol className={styles.teachingList}>
+                    {lesson.content.walkthrough.steps.map((step, i) => (
+                      <li key={i} className={styles.teachingItem}>
+                        <h4 className={styles.itemTitle}>Bước {i + 1} · Làm gì?</h4>
+                        <p className="whitespace-pre-wrap break-words">{step.action}</p>
+                        <p className="whitespace-pre-wrap break-words"><strong>Vì sao:</strong> {step.reason}</p>
+                      </li>
+                    ))}
+                  </ol>
+                  <div className={styles.teachingItem}><h4 className={styles.itemTitle}>Kết quả</h4><p className="whitespace-pre-wrap break-words">{lesson.content.walkthrough.result}</p><p className="whitespace-pre-wrap break-words"><strong>Vì sao có kết quả này:</strong> {lesson.content.walkthrough.why}</p></div>
+                </section>
+              </>
+            ) : (
+              <>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>01 · Câu hỏi phỏng vấn</h3>
+                  <p className="whitespace-pre-wrap break-words">{lesson.content.interviewQuestion}</p>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>02 · Câu trả lời mẫu</h3>
+                  <blockquote className={`${styles.sampleAnswer} whitespace-pre-wrap break-words`}>{lesson.content.modelAnswer}</blockquote>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>03 · Vì sao câu trả lời hiệu quả?</h3>
+                  <ol className={styles.teachingList}>
+                    {lesson.content.annotations.map((item, i) => (
+                      <li key={i} className={styles.teachingItem}><h4 className={styles.itemTitle}>Ý {i + 1} · {item.point}</h4><p className="whitespace-pre-wrap break-words">{item.reason}</p></li>
+                    ))}
+                  </ol>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>04 · Đánh đổi cần cân nhắc</h3>
+                  <dl className={styles.teachingList}>
+                    <div className={styles.teachingItem}><dt className={styles.itemTitle}>Lợi ích</dt><dd className="whitespace-pre-wrap break-words">{lesson.content.tradeOff.benefit}</dd></div>
+                    <div className={styles.teachingItem}><dt className={styles.itemTitle}>Chi phí / hạn chế</dt><dd className="whitespace-pre-wrap break-words">{lesson.content.tradeOff.cost}</dd></div>
+                    <div className={styles.teachingItem}><dt className={styles.itemTitle}>Khi nào phù hợp?</dt><dd className="whitespace-pre-wrap break-words">{lesson.content.tradeOff.when}</dd></div>
+                  </dl>
+                </section>
+                <section className={styles.lessonSection}>
+                  <h3 className={styles.subheading}>05 · Câu hỏi đào sâu</h3>
+                  <ol className={styles.teachingList}>
+                    {lesson.content.followUps.map((item, i) => (
+                      <li key={i} className={styles.teachingItem}><h4 className={styles.itemTitle}>Hỏi xoáy {i + 1} · {item.question}</h4><p className="whitespace-pre-wrap break-words"><strong>Gợi ý trả lời:</strong> {item.answer}</p></li>
+                    ))}
+                  </ol>
+                </section>
+              </>
+            )}
           </article>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
             Bài do AI tạo có thể sai hoặc không còn đúng. Hãy kiểm chứng các phát biểu, ví dụ và code trước khi dùng; code chỉ là minh họa, không phải bản đã kiểm định cho môi trường thật.

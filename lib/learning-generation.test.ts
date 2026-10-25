@@ -48,6 +48,7 @@ let connection: ReturnType<typeof db.getDb>;
 let server: Server;
 let baseUrl: string;
 interface Scripted { body: string; finishReason: string; hang?: boolean }
+let prompts: string[] = [];
 let script: Scripted[] = [];
 /** Every provider round-trip the mock actually served — the cost ledger. */
 let calls = 0;
@@ -64,6 +65,7 @@ before(async () => {
     if (req.url !== "/v1/chat/completions") { res.writeHead(404); res.end(); return; }
     let raw = "";
     for await (const chunk of req) raw += chunk;
+    prompts.push(raw);
     calls += 1;
     const next = script.shift() ?? { body: "{}", finishReason: "stop" };
     if (next.hang) { res.writeHead(200, { "content-type": "text/event-stream" }); return; }
@@ -78,7 +80,7 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}/v1`;
 });
 
-beforeEach(() => { script = []; calls = 0; });
+beforeEach(() => { script = []; calls = 0; prompts = []; });
 
 after(async () => {
   connection.close();
@@ -113,13 +115,54 @@ const report = {
   hiring_probability_pct: 40,
 };
 
-/** A body that satisfies LessonSchema exactly. */
-function validLesson(title = "Indexes"): string {
+/** A mode-specific v3 body accepted by the generator; the two modes use different block sets. */
+function validLesson(title = "Indexes", mode: "fundamentals" | "answering" = "fundamentals"): string {
+  const blocks = mode === "fundamentals"
+    ? [
+        {
+          kind: "explain",
+          heading: "What an index actually stores",
+          body: "An index keeps the key values it covers together with a pointer to the row that holds the rest of the record, so finding one row means reading a small sorted structure instead of every row in the table.",
+          why: "The pointer is why an index answers where a row is, not what the row contains.",
+        },
+        {
+          kind: "walkthrough",
+          heading: "Opening one customer's order history",
+          situation: "A support agent opens the order history of a single customer.",
+          input: "An orders table with one million rows and a customer_id column.",
+          steps: [
+            { action: "Look up customer_id in the index built on that column.", reason: "The index is ordered by the key, so the engine can jump close to the matching entries instead of reading every row." },
+            { action: "Follow the stored pointers to the matching rows.", reason: "The index entry holds only the key and the row location; the order details still live in the table." },
+          ],
+          outcome: "The engine touches the matching rows plus a small part of the index instead of the whole table.",
+          why: "The saving comes from skipping rows, so it shrinks when the customer owns a smaller share of the orders.",
+        },
+      ]
+    : [
+        {
+          kind: "answer",
+          heading: "Saying it out loud in the interview",
+          question: "When would you add an index to a table that is already slow?",
+          answer: "I would start from the slow query and its execution plan, then check whether the predicate is selective enough to benefit. If it is, I would add the index, measure the query again on representative data, and weigh the read gain against the extra write cost and storage. I would keep the index only when the measured improvement is worth that cost for the workload we actually have.",
+          notes: [
+            { point: "Begin with the measured query and its plan.", reason: "It avoids prescribing an index when the bottleneck sits somewhere else entirely." },
+            { point: "Compare the read gain with the write cost after measuring.", reason: "The benefit depends on the real data and query mix, so it cannot be assumed." },
+          ],
+          followUps: [
+            { question: "What if the query is still slow after indexing?", answer: "I would look again at the plan, the selectivity of the predicate and whether the index is actually used before changing strategy." },
+          ],
+        },
+      ];
   return JSON.stringify({
-    version: 1, title, goal: "Understand indexes", objectives: ["Explain trade-offs"],
-    explanation: "An index is a data structure that speeds up lookups.",
-    example: "CREATE INDEX ON orders(customer_id).",
-    sections: [{ heading: "Basics", body: "Reads get faster, writes pay more." }],
+    version: 3, mode, title,
+    goal: mode === "fundamentals"
+      ? "Understand what an index changes in a lookup and when it stops paying off."
+      : "Explain an indexing decision with reasoning instead of slogans.",
+    objectives: ["Explain the trade-off that makes an index worth adding."],
+    hook: mode === "fundamentals"
+      ? "A support agent opens one customer's orders and the page takes four seconds. Where did those four seconds go?"
+      : "The interviewer asks when you would add an index. The trap is answering 'always'.",
+    blocks,
     questions: [
       { stem: "What does an index cost?", options: [
         { id: "A", text: "Faster reads" }, { id: "B", text: "Slower writes" }, { id: "C", text: "No cost" },
@@ -250,7 +293,7 @@ test("one create call stores exactly one ready lesson with a provider snapshot",
 
 test("a ready lesson is terminal: a repeat create returns it without a second call", async () => {
   const sessionId = seedSession();
-  script = [{ body: validLesson(), finishReason: "stop" }];
+  script = [{ body: validLesson("Indexes", "answering"), finishReason: "stop" }];
   const first = await (await post(sessionId, "answering")).json() as { id: string };
 
   const second = await post(sessionId, "answering");
@@ -274,24 +317,69 @@ test("two concurrent creates produce one provider call and one lesson", async ()
   ).length, 1);
 });
 
-test("output that does not match the lesson schema fails instead of storing a partial lesson", async () => {
+test("output that does not match the lesson schema fails with a reason instead of storing a partial lesson", async () => {
   const sessionId = seedSession();
   script = [{ body: JSON.stringify({ version: 1, title: "no body" }), finishReason: "stop" }];
   const res = await post(sessionId, "fundamentals");
   assert.equal(res.status, 502);
   assert.equal(calls, 1, "invalid output is not repaired with a second paid call");
-  const row = db.queryOne<{ status: string; lesson_json: string | null }>(
-    `SELECT status, lesson_json FROM learning_lessons WHERE session_id = ?`, [sessionId],
+  const body = await res.json() as { reason?: string; error?: string };
+  assert.equal(body.reason, "invalid_format", "the caller learns why it failed");
+  const row = db.queryOne<{ status: string; lesson_json: string | null; failure_reason: string | null }>(
+    `SELECT status, lesson_json, failure_reason FROM learning_lessons WHERE session_id = ?`, [sessionId],
   );
   assert.equal(row?.status, "failed");
   assert.equal(row?.lesson_json, null);
+  assert.equal(row?.failure_reason, "invalid_format");
 
   const catalog = await catalogRoute.GET(
     new Request(`http://localhost/api/sessions/${sessionId}/learning?kind=improvement&index=0`),
     { params: { id: sessionId } },
   );
-  const modes = (await catalog.json() as { modes: Record<string, { retryable: boolean }> }).modes;
+  const modes = (await catalog.json() as { modes: Record<string, { retryable: boolean; failureReason?: string }> }).modes;
   assert.equal(modes.fundamentals.retryable, true, "a failure must offer an explicit retry");
+  assert.equal(modes.fundamentals.failureReason, "invalid_format");
+});
+
+test("an older payload is reshaped instead of wasting the paid call", async () => {
+  const sessionId = seedSession();
+  // A v1-shaped answer: the ideas are right, the wrapper is not.
+  script = [{ body: JSON.stringify({
+    schema_version: "v1",
+    title: "Chỉ mục cơ sở dữ liệu",
+    goal: "Hiểu chỉ mục giúp tìm dữ liệu nhanh hơn thế nào.",
+    explanation: "Chỉ mục là một cấu trúc dữ liệu phụ lưu các giá trị khóa cùng vị trí của dòng, giúp engine không phải đọc toàn bộ bảng mỗi khi tìm một bản ghi.",
+    example: "Khi báo cáo cần đếm đơn hàng của một khách hàng, truy vấn lọc theo customer_id nên chỉ đọc các dòng khớp thay vì quét cả bảng.",
+    takeaways: ["Chỉ mục giúp đọc ít dòng hơn khi điều kiện lọc chọn lọc."],
+    questions: [],
+  }), finishReason: "stop" }];
+  const res = await post(sessionId, "fundamentals");
+  assert.equal(res.status, 200, "an older shape is repaired instead of wasting the paid call");
+  assert.equal(calls, 1, "the repair is local: no second provider call");
+  const body = await res.json() as { id: string; status: string };
+  assert.equal(body.status, "ready");
+
+  const row = db.queryOne<{ lesson_json: string }>(
+    `SELECT lesson_json FROM learning_lessons WHERE session_id = ?`, [sessionId],
+  );
+  const stored = JSON.parse(row?.lesson_json ?? "{}") as { version: number; mode: string; questions: unknown[] };
+  assert.equal(stored.version, 3);
+  assert.equal(stored.mode, "fundamentals", "the slot's mode is the one that is stored");
+  assert.ok(stored.questions.length >= 2, "the self-check is always there");
+});
+
+test("a payload for the other mode is reshaped into the slot's mode", async () => {
+  const sessionId = seedSession();
+  script = [{ body: validLesson("Answering answer", "answering"), finishReason: "stop" }];
+  const res = await post(sessionId, "fundamentals");
+  assert.equal(res.status, 200);
+  assert.equal(calls, 1);
+  const row = db.queryOne<{ lesson_json: string }>(
+    `SELECT lesson_json FROM learning_lessons WHERE session_id = ?`, [sessionId],
+  );
+  const stored = JSON.parse(row?.lesson_json ?? "{}") as { version: number; mode: string };
+  assert.equal(stored.mode, "fundamentals", "the slot's mode decides, not the model's claim");
+  assert.equal(stored.version, 3);
 });
 
 test("a fenced claim cannot write over a retry that already started", async () => {
@@ -489,23 +577,34 @@ test("a hung provider times out, aborts and leaves only a retryable failure", as
   );
   assert.equal(outcome, "failed");
   assert.equal(calls, 1);
-  const row = db.queryOne<{ status: string; lesson_json: string | null; claim_id: string | null }>(
-    `SELECT status, lesson_json, claim_id FROM learning_lessons WHERE id = ?`, [(claim as { id: string }).id],
+  const row = db.queryOne<{ status: string; lesson_json: string | null; claim_id: string | null; failure_reason: string | null }>(
+    `SELECT status, lesson_json, claim_id, failure_reason FROM learning_lessons WHERE id = ?`, [(claim as { id: string }).id],
   );
   assert.equal(row?.status, "failed");
   assert.equal(row?.lesson_json, null);
   assert.equal(row?.claim_id, null);
+  assert.equal(row?.failure_reason, "timeout", "the learner is told it was a timeout");
 });
 
-test("a truncated body is rejected without persisting the partial JSON", async () => {
+test("a truncated body is salvaged into a lesson instead of being thrown away", async () => {
   const sessionId = seedSession();
   script = [{ body: validLesson().slice(0, 500), finishReason: "length" }];
   const res = await post(sessionId, "fundamentals");
-  assert.equal(res.status, 502);
+  assert.equal(res.status, 200, "a cut-off answer still carries teaching content");
   assert.equal(calls, 1);
-  assert.equal(db.queryOne<{ lesson_json: string | null }>(
-    `SELECT lesson_json FROM learning_lessons WHERE session_id = ?`, [sessionId],
-  )?.lesson_json, null);
+  const row = db.queryOne<{ lesson_json: string | null; failure_reason: string | null }>(
+    `SELECT lesson_json, failure_reason FROM learning_lessons WHERE session_id = ?`, [sessionId],
+  );
+  assert.ok(row?.lesson_json, "the lesson is stored");
+  assert.equal(row?.failure_reason, null);
+  const stored = JSON.parse(row?.lesson_json ?? "{}") as {
+    blocks: { kind: string; body?: string; answer?: string }[];
+    questions: unknown[];
+  };
+  assert.ok(stored.blocks.length >= 1);
+  assert.ok(stored.questions.length >= 2, "the self-check is still there");
+  const text = JSON.stringify(stored);
+  assert.ok(text.includes("…"), "the cut is visible in the text the learner reads");
 });
 
 test("oversized output is aborted mid-stream instead of being stored", async () => {
@@ -521,7 +620,8 @@ test("oversized output is aborted mid-stream instead of being stored", async () 
 
 test("the two modes of one topic are independent slots", async () => {
   const sessionId = seedSession();
-  script = [{ body: validLesson("Fundamentals"), finishReason: "stop" }];
+  script = [{ body: validLesson("Fundamentals"), finishReason: "stop" },
+    { body: validLesson("Answering", "answering"), finishReason: "stop" }];
   await post(sessionId, "fundamentals");
   assert.equal(db.queryOne<{ status: string }>(
     `SELECT status FROM learning_lessons WHERE session_id = ? AND mode = 'answering'`, [sessionId],
@@ -534,6 +634,20 @@ test("the two modes of one topic are independent slots", async () => {
   const modes = (await catalog.json() as { modes: Record<string, { status: string }> }).modes;
   assert.equal(modes.fundamentals.status, "ready");
   assert.equal(modes.answering.status, "uncreated");
+
+  assert.equal((await post(sessionId, "answering")).status, 200);
+  assert.equal(calls, 2);
+  const content = db.query<{ mode: string; lesson_json: string }>(
+    `SELECT mode, lesson_json FROM learning_lessons WHERE session_id = ? ORDER BY mode`, [sessionId],
+  );
+  assert.deepEqual(content.map(({ mode, lesson_json }) => [mode, JSON.parse(lesson_json).mode]),
+    [["answering", "answering"], ["fundamentals", "fundamentals"]]);
+  assert.ok(prompts[0].includes("Mode: fundamentals.") && prompts[1].includes("Mode: answering."));
+  // The prompt travels inside a JSON request body, so its quotes are escaped.
+  assert.ok(prompts.every((prompt) => prompt.includes('\\"version\\":3') && prompt.includes("blocks")));
+  assert.ok(prompts[0].includes("choose") || prompts[0].includes("Choose"),
+    "the prompt must ask the model to pick its own structure instead of filling one outline");
+  assert.ok(prompts.every((prompt) => !prompt.includes("per_turn") && !prompt.includes("sk-test-key")));
 });
 
 test("a lesson from an older report revision is listed as history and flagged", async () => {

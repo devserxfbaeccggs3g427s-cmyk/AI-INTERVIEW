@@ -4,7 +4,7 @@ import { getDb, query, queryOne, runInTransaction } from "@/lib/db";
 import { env } from "@/lib/env";
 import { learningAttemptDto, MAX_LEARNING_ATTEMPTS, type LearningAttemptRow } from "@/lib/learning-attempts";
 import { gradeAnswers } from "@/lib/learning-check";
-import { AttemptInputSchema, parseLesson } from "@/lib/learning-schema";
+import { AttemptInputSchema, parseLesson, type LearningMode } from "@/lib/learning-schema";
 import { enterOperation } from "@/lib/maintenance";
 import { privateJson, rejectCrossOrigin } from "@/lib/origin-guard";
 import { safeParseStoredReport } from "@/lib/zod-schemas";
@@ -17,6 +17,7 @@ const MAX_BODY_BYTES = 4096;
 interface RouteParams { params: { lessonId: string } }
 interface LessonRow {
   status: string;
+  mode: LearningMode;
   lesson_json: string | null;
   report_revision: string;
   source_kind: "improvement" | "next_step";
@@ -27,7 +28,7 @@ interface LessonRow {
 
 function loadLesson(lessonId: string, allowHistorical: boolean) {
   const row = queryOne<LessonRow>(
-    `SELECT l.status, l.lesson_json, l.report_revision, l.source_kind, l.source_index,
+    `SELECT l.status, l.mode, l.lesson_json, l.report_revision, l.source_kind, l.source_index,
             s.status AS session_status, e.report_json
        FROM learning_lessons l
        JOIN sessions s ON s.id = l.session_id
@@ -39,7 +40,7 @@ function loadLesson(lessonId: string, allowHistorical: boolean) {
   if (row.status !== "ready" || !row.lesson_json) {
     return { ok: false as const, status: 409, error: "Lesson is not ready" };
   }
-  const lesson = parseLesson(row.lesson_json);
+  const lesson = parseLesson(row.lesson_json, row.mode);
   if (!lesson) return { ok: false as const, status: 409, error: "Lesson is unavailable" };
   // A previous report's immutable lesson may still be opened read-only. Results
   // already earned on it are readable, but submission always checks the latest
