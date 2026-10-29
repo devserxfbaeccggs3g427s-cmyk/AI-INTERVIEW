@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# Environment — API key KHÔNG BAO GIỜ commit (AC-16)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Database
+prisma/dev.db
+prisma/dev.db-journal
+*.db
+
+# Test / coverage
+coverage/
+playwright-report/
+test-results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp

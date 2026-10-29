@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#262a34", "outline-variant": "#3c4a42", "on-tertiary-fixed-variant": "#653e00", "secondary-fixed-dim": "#c0c1ff", "surface-dim": "#0f131c", "on-primary-container": "#00422b", "primary": "#4edea3", "secondary": "#c0c1ff", "surface-container-highest": "#31353f", "on-primary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "inverse-primary": "#006c49", "on-secondary": "#1000a9", "tertiary-fixed-dim": "#ffb95f", "on-secondary-fixed-variant": "#2f2ebe", "primary-container": "#10b981", "surface-container": "#1c1f29", "on-secondary-container": "#b0b2ff", "tertiary": "#ffb95f", "secondary-fixed": "#e1e0ff", "on-surface-variant": "#bbcabf", "on-primary": "#003824", "tertiary-fixed": "#ffddb8", "on-background": "#dfe2ef", "outline": "#86948a", "surface-container-lowest": "#0a0e17", "on-tertiary": "#472a00", "on-error": "#690005", "error-container": "#93000a", "background": "#0f131c", "surface-variant": "#31353f", "inverse-on-surface": "#2c303a", "on-tertiary-container": "#523200", "inverse-surface": "#dfe2ef", "surface-bright": "#353943", "error": "#ffb4ab", "secondary-container": "#3131c0", "primary-fixed": "#6ffbbe", "primary-fixed-dim": "#4edea3", "on-surface": "#dfe2ef", "on-primary-fixed": "#002113", "surface-tint": "#4edea3", "surface-container-low": "#181b25", "on-secondary-fixed": "#07006c", "tertiary-container": "#e29100", "surface": "#0f131c", "on-tertiary-fixed": "#2a1700" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-lg": "1.25rem", "space-xl": "2rem", "gutter": "1rem", "gutter-lg": "1.5rem", "margin-md": "1.5rem", "space-xs": "0.25rem", "space-md": "0.75rem", "margin-lg": "2.5rem", "margin": "1rem", "space-sm": "0.5rem", "gutter-md": "1.25rem" }, "fontFamily": { "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "body-lg": [ "Be Vietnam Pro" ], "display": [ "Space Grotesk" ], "headline-lg": [ "Space Grotesk" ], "headline-sm": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "headline-lg-mobile": [ "Space Grotesk" ], "body-sm": [ "Be Vietnam Pro" ], "label-md": [ "JetBrains Mono" ], "headline-md": [ "Space Grotesk" ] }, "fontSize": { "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">Local-First v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cay-ky-nang" href="#">Cây kỹ năng</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="on-tap-ngoai-ngu-srs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-va-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="mock-interview" href="#">Mock Interview</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="bai-kiem-tra" href="#">Bài kiểm tra</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="bao-cao-tuan" href="#">Báo cáo tuần</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cai-dat" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" data-path="s05-quick-log" href="#"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></a><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full relative">
+<!-- Subtle ambient aura in background -->
+<div class="absolute -top-12 left-1/3 w-[600px] h-[350px] bg-primary/5 rounded-full blur-[140px] pointer-events-none"></div>
+<div class="absolute top-96 right-10 w-[450px] h-[300px] bg-secondary-container/20 rounded-full blur-[120px] pointer-events-none"></div>
+<!-- Main View Container: Panelled Bento Layout with High-Speed Overlay Sheet -->
+<div class="w-full max-w-[1520px] mx-auto px-gutter-lg py-margin-md flex flex-col gap-margin-lg">
+<!-- Top Status Bar & Context Header -->
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm font-label-sm text-label-sm text-outline tracking-wider uppercase">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span>Phân hệ ghi nhận / Fast Ingestion Engine</span>
+<span class="text-outline-variant">•</span>
+<span class="text-primary font-code-md">P2 Protocol: ≤10 Giây</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight mt-0.5">
+          Ghi Nhanh &amp; Luồng Hoạt Động
+        </h1>
+</div>
+<!-- Quick Metrics Strip -->
+<div class="flex items-center gap-space-sm bg-surface-container-low px-space-md py-space-xs rounded-xl shadow-sm">
+<div class="flex items-center gap-2 px-space-sm py-1">
+<span class="material-symbols-outlined text-[18px] text-primary">timer</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Thời gian trung bình</span>
+<span class="font-code-md text-code-md font-semibold text-on-surface">4.8s / mục</span>
+</div>
+</div>
+<div class="w-px h-6 bg-surface-container-high"></div>
+<div class="flex items-center gap-2 px-space-sm py-1">
+<span class="material-symbols-outlined text-[18px] text-tertiary">check_circle</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Hôm nay</span>
+<span class="font-code-md text-code-md font-semibold text-tertiary">7 hoạt động</span>
+</div>
+</div>
+<div class="w-px h-6 bg-surface-container-high"></div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface text-label-md font-label-md transition-all" id="toggle-sheet-btn">
+<span class="material-symbols-outlined text-[16px] text-primary">open_in_full</span>
+<span>Mở lại Sheet (⌘K)</span>
+</button>
+</div>
+</div>
+<!-- MAIN TWO-COLUMN SPLIT: ACTIVE LOGGING SHEET (LEFT/HERO) + ACTIVITY STREAM /log/history (RIGHT) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg items-start">
+<!-- LEFT/TOP: SPEED SHEET (MODAL/CARD INTEGRATED) -->
+<section class="xl:col-span-7 flex flex-col gap-space-md">
+<!-- Interactive Speed Sheet (Stage 1 & Stage 2 integrated) -->
+<div class="relative bg-surface-container-low rounded-xl shadow-xl p-gutter-lg flex flex-col gap-space-lg overflow-hidden" id="quicklog-sheet">
+<!-- Sheet Top Bar & Timer target indicator -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center text-on-primary font-code-md font-bold text-label-md">
+                ⚡
+              </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Ghi nhanh hoạt động (Mục tiêu ≤10s)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 chạm • Tự động nhận diện ngữ cảnh với Local AI</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-code-md text-label-sm flex items-center gap-1" id="speed-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Ready 00:00s</span>
+</span>
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-outline hover:text-on-surface transition-colors" id="close-sheet-trigger" title="Đóng thu nhỏ">
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+<!-- STEP 1: ULTRA-RAPID 2-TAP INTERFACE -->
+<div class="flex flex-col gap-space-md bg-surface-container-lowest p-space-md rounded-xl shadow-inner">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">BƯỚC 1: Chọn nhanh hoặc Gõ tự do</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-code-md">Phím tắt: [1 - 6]</span>
+</div>
+<!-- Quick Activity Tag Chips (2-tap presets) -->
+<div class="flex flex-wrap gap-2" id="preset-chips">
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Học 25 phút Pomodoro" data-type="study">
+<span class="text-primary font-bold">1</span>
+<span>⚡ Học 25'</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Luyện tập giải thuật toán LeetCode" data-type="practice">
+<span class="text-tertiary font-bold">2</span>
+<span>🎯 Luyện tập</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Viết bài phân tích Technical Design" data-type="writing">
+<span class="text-secondary font-bold">3</span>
+<span>✍️ Viết</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Luyện nói tiếng Anh / Shadowing Mock" data-type="speaking">
+<span class="text-tertiary font-bold">4</span>
+<span>🎙️ Luyện nói</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Nhật ký suy ngẫm cuối ngày" data-type="journal">
+<span class="text-outline font-bold">5</span>
+<span>📓 Nhật ký</span>
+</button>
+<button class="preset-btn px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-1.5 active:scale-95 transition-all" data-text="Chạy bộ 3km &amp; giãn cơ phục hồi" data-type="selfcare">
+<span class="text-primary font-bold">6</span>
+<span>🌱 Chăm sóc bản thân</span>
+</button>
+</div>
+<!-- Freeform Smart Input with AI Hint -->
+<div class="relative flex items-center mt-1">
+<input class="w-full py-3.5 pl-4 pr-32 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md placeholder:text-outline focus:outline-none focus:bg-surface-container-high shadow-inner transition-all" id="quicklog-input" placeholder="Vừa học gì? Gõ tự do: ví dụ 'Đọc spec Kafka broker 45 phút'..." type="text" value="Ôn 25 từ vựng HSK 4 tiếng Trung chuyên đề Công sở &amp; Họp hành"/>
+<div class="absolute right-2.5 flex items-center gap-1.5">
+<button class="p-1 text-outline hover:text-on-surface transition-colors" id="clear-input-btn" title="Xóa">
+<span class="material-symbols-outlined text-[18px]">backspace</span>
+</button>
+<button class="p-1.5 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface transition-colors" id="voice-btn" title="Ghi âm giọng nói 5s">
+<span class="material-symbols-outlined text-[16px] text-tertiary">mic</span>
+</button>
+</div>
+</div>
+<!-- Instant Fast Submit Action -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-secondary">psychology</span>
+<span>Local AI Haiku 4.5 tự parsing: Domain, Skill node, Evidence</span>
+</div>
+<button class="px-5 py-2.5 rounded-lg bg-primary-container text-on-primary font-code-md text-label-md font-semibold flex items-center gap-2 hover:brightness-105 active:scale-[0.98] transition-all shadow-md" id="instant-commit-btn">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>⚡ Ghi nhanh ngay (Enter)</span>
+</button>
+</div>
+</div>
+<!-- STEP 2: AI AUTOFILL PREVIEW (TÙY CHỌN CHI TIẾT) -->
+<div class="flex flex-col gap-space-md bg-surface-container p-space-md rounded-xl">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm uppercase tracking-wider text-secondary">
+<span class="material-symbols-outlined text-[15px]">auto_awesome</span>
+<span>BƯỚC 2: AI Tự Phân Tích &amp; Gợi Ý Cây Kỹ Năng</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-container/40 text-secondary font-code-md text-label-sm">Confidence: 98.4%</span>
+</div>
+<!-- Smart Auto-Filled Properties Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<!-- Domain Assignment -->
+<div class="flex flex-col gap-1 p-space-sm rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-outline">Lĩnh vực (Domain)</span>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-label-md text-on-surface font-semibold">Ngoại ngữ (Language)</span>
+</div>
+<button class="text-outline hover:text-on-surface font-label-sm text-label-sm">Sửa</button>
+</div>
+</div>
+<!-- Skill Node Target -->
+<div class="flex flex-col gap-1 p-space-sm rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-outline">Kỹ năng gắn kèm (Skill Node)</span>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">account_tree</span>
+<span class="font-headline-sm text-label-md text-primary font-semibold">Tiếng Trung (HSK4 Foundation)</span>
+</div>
+<span class="px-1.5 py-0.2 rounded bg-primary/10 text-primary font-code-md text-label-sm">+45 XP</span>
+</div>
+</div>
+<!-- Duration Selector (Chips) -->
+<div class="flex flex-col gap-1.5 p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Thời lượng thực tế</span>
+<span class="font-code-md text-label-sm text-tertiary font-bold" id="duration-display">25 phút</span>
+</div>
+<div class="flex items-center gap-1.5" id="duration-chips">
+<button class="dur-chip flex-1 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-md text-label-sm transition-colors" data-min="15">15'</button>
+<button class="dur-chip active flex-1 py-1 rounded bg-tertiary text-on-tertiary font-code-md text-label-sm font-semibold transition-colors" data-min="25">25'</button>
+<button class="dur-chip flex-1 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-md text-label-sm transition-colors" data-min="45">45'</button>
+<button class="dur-chip flex-1 py-1 rounded bg-surface-container-high hover:bg-surface-bright text-on-surface font-code-md text-label-sm transition-colors" data-min="60">60'</button>
+</div>
+</div>
+<!-- Effort / Difficulty Rating -->
+<div class="flex flex-col gap-1.5 p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Nỗ lực / Độ sâu tư duy</span>
+<span class="font-code-md text-label-sm text-primary">Mức 3/4 (Trung bình sâu)</span>
+</div>
+<div class="flex items-center gap-2 pt-0.5">
+<button class="effort-star text-tertiary"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span></button>
+<button class="effort-star text-tertiary"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span></button>
+<button class="effort-star text-tertiary"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span></button>
+<button class="effort-star text-outline-variant hover:text-tertiary"><span class="material-symbols-outlined text-[20px]">star</span></button>
+</div>
+</div>
+</div>
+<!-- Evidence Generator Checkbox Toggle -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-lowest">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded text-primary accent-primary bg-surface-container-high" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-md text-body-sm font-semibold text-on-surface">Tự động tạo 1 Evidence bằng chứng vào Cây kỹ năng</span>
+<span class="font-label-sm text-label-sm text-outline">Đính kèm vào node: HSK4 Vocab Mastery (Level 2)</span>
+</div>
+</label>
+<div class="flex items-center gap-1 text-primary font-code-md text-label-sm bg-primary/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+<span>Auto-Verified</span>
+</div>
+</div>
+<!-- Footer Action Controls -->
+<div class="flex items-center justify-between pt-space-xs">
+<button class="px-4 py-2 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-colors" id="cancel-detail-btn">
+                Bỏ qua &amp; Đóng
+              </button>
+<div class="flex items-center gap-space-sm">
+<button class="px-3.5 py-2 rounded-lg bg-secondary-container/40 hover:bg-secondary-container text-secondary font-label-md text-label-md flex items-center gap-1.5 transition-colors" id="enrich-ai-btn">
+<span class="material-symbols-outlined text-[16px]">psychology_alt</span>
+<span>AI Tóm tắt &amp; Rút kinh nghiệm</span>
+</button>
+<button class="px-6 py-2 rounded-lg bg-primary-container text-on-primary font-code-md text-label-md font-semibold hover:brightness-105 active:scale-95 transition-all shadow-md" id="save-detail-btn">
+                  Lưu chi tiết &amp; Đóng (⌘Enter)
+                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- System Architecture Insight Card -->
+<div class="bg-surface-container-low rounded-xl p-gutter flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline text-[22px]">offline_pin</span>
+<div class="flex flex-col">
+<span class="font-body-md text-body-sm font-semibold text-on-surface">Zero Cloud Latency Guarantee</span>
+<span class="font-label-sm text-label-sm text-outline">Dữ liệu ghi lập tức vào SQLite Vector cục bộ. Đồng bộ ngầm khi có mạng.</span>
+</div>
+</div>
+<span class="font-code-md text-label-sm text-primary bg-primary/10 px-2 py-1 rounded">0ms delay</span>
+</div>
+</section>
+<!-- RIGHT: ACTIVITY LOG HISTORY PANEL (/log/history) -->
+<section class="xl:col-span-5 flex flex-col gap-space-md">
+<div class="bg-surface-container-low rounded-xl shadow-md p-gutter-lg flex flex-col gap-space-md">
+<!-- History Section Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-primary">history</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Lịch sử hoạt động hôm nay</h2>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="font-code-md text-label-sm text-outline">/log/history</span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+</div>
+<!-- Filter Pill Tabs -->
+<div class="flex items-center gap-1 overflow-x-auto pb-1">
+<button class="px-2.5 py-1 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm font-semibold">Tất cả (7)</button>
+<button class="px-2.5 py-1 rounded-md text-outline hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm">Chuyên môn</button>
+<button class="px-2.5 py-1 rounded-md text-outline hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm">Ngoại ngữ</button>
+<button class="px-2.5 py-1 rounded-md text-outline hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm">Giao tiếp</button>
+<button class="px-2.5 py-1 rounded-md text-outline hover:text-on-surface hover:bg-surface-container font-label-sm text-label-sm">Cá nhân</button>
+</div>
+<!-- ACTIVITY FEED LIST (Chronological) -->
+<div class="flex flex-col gap-space-sm" id="history-feed">
+<!-- Item 1 (Just Now / Recent) -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-all flex flex-col gap-2 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-md text-label-sm font-semibold text-tertiary">14:20</span>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-tertiary/10 text-tertiary font-semibold">
+                    Ngoại ngữ
+                  </span>
+<span class="font-code-md text-label-sm text-outline">25m</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="flex items-center text-primary font-label-sm text-label-sm gap-0.5 bg-primary/10 px-1.5 py-0.5 rounded" title="Đã tạo Evidence">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+<span>Evidence</span>
+</span>
+<span class="flex items-center text-outline font-label-sm text-label-sm" title="Local DB Synced">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_done</span>
+</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface">
+                Ôn 25 từ vựng HSK 4 tiếng Trung chuyên đề Công sở &amp; Họp hành qua SRS Flashcards.
+              </p>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-1">
+<div class="flex items-center gap-1 text-on-surface-variant font-code-md">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Node: Tiếng Trung HSK4</span>
+</div>
+<span class="text-tertiary">Độ khó: 3/4 ★</span>
+</div>
+</div>
+<!-- Item 2 (Chuyên môn / Technical) -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-all flex flex-col gap-2 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-md text-label-sm font-semibold text-primary">11:05</span>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary/10 text-primary font-semibold">
+                    Chuyên môn
+                  </span>
+<span class="font-code-md text-label-sm text-outline">45m</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="flex items-center text-primary font-label-sm text-label-sm gap-0.5 bg-primary/10 px-1.5 py-0.5 rounded" title="Đã tạo Evidence">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+<span>Evidence</span>
+</span>
+<span class="flex items-center text-outline font-label-sm text-label-sm" title="Local DB Synced">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_done</span>
+</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface">
+                Nghiên cứu kiến trúc Distributed Consensus (Raft algorithm) trong etcd và thiết kế failover.
+              </p>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-1">
+<div class="flex items-center gap-1 text-on-surface-variant font-code-md">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Node: Distributed Systems</span>
+</div>
+<span class="text-primary">Độ khó: 4/4 ★</span>
+</div>
+</div>
+<!-- Item 3 (Giao tiếp / Communication) -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-all flex flex-col gap-2 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-md text-label-sm font-semibold text-secondary">09:40</span>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-secondary-container/30 text-secondary font-semibold">
+                    Giao tiếp
+                  </span>
+<span class="font-code-md text-label-sm text-outline">20m</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="flex items-center text-secondary font-label-sm text-label-sm gap-0.5 bg-secondary/10 px-1.5 py-0.5 rounded" title="Đã tạo Evidence">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+<span>Evidence</span>
+</span>
+<span class="flex items-center text-outline font-label-sm text-label-sm" title="Local DB Synced">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_done</span>
+</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface">
+                Thực hành Mock Interview vòng Behavioral STAR về xử lý bất đồng ý kiến trong nhóm kỹ thuật.
+              </p>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-1">
+<div class="flex items-center gap-1 text-on-surface-variant font-code-md">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Node: Leadership &amp; Comms</span>
+</div>
+<span class="text-secondary">Độ khó: 2/4 ★</span>
+</div>
+</div>
+<!-- Item 4 (Cá nhân / Self-Care) -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-all flex flex-col gap-2 shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2">
+<span class="font-code-md text-label-sm font-semibold text-outline">08:15</span>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant font-semibold">
+                    Cá nhân
+                  </span>
+<span class="font-code-md text-label-sm text-outline">30m</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="flex items-center text-outline font-label-sm text-label-sm" title="Local DB Synced">
+<span class="material-symbols-outlined text-[15px] text-primary">cloud_done</span>
+</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface">
+                Thiền định buổi sáng 15 phút và lập kế hoạch 3 việc trọng tâm trong ngày theo khung EisenHower.
+              </p>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-1">
+<div class="flex items-center gap-1 text-on-surface-variant font-code-md">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>Node: Mental Clarity</span>
+</div>
+<span class="text-outline">Độ khó: 1/4 ★</span>
+</div>
+</div>
+</div>
+<!-- Bottom History Action -->
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline font-code-md">SQLite: 1,429 logs cached</span>
+<a class="font-label-md text-label-md text-primary hover:underline flex items-center gap-1" href="#">
+<span>Xem toàn bộ dòng thời gian</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Weekly Energy & Effort Distribution Sparkline mini-card -->
+<div class="bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Phân bổ nỗ lực trong ngày</span>
+<span class="font-code-md text-label-sm text-primary font-bold">120 phút tổng</span>
+</div>
+<!-- Visual Bar Representation -->
+<div class="w-full h-3 rounded-full bg-surface-container flex overflow-hidden">
+<div class="h-full bg-primary" style="width: 38%;" title="Chuyên môn (45m)"></div>
+<div class="h-full bg-tertiary" style="width: 21%;" title="Ngoại ngữ (25m)"></div>
+<div class="h-full bg-secondary" style="width: 17%;" title="Giao tiếp (20m)"></div>
+<div class="h-full bg-surface-bright" style="width: 24%;" title="Cá nhân (30m)"></div>
+</div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant pt-1">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary inline-block"></span> 45m Chuyên môn</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary inline-block"></span> 25m Ngoại ngữ</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-secondary inline-block"></span> 20m Giao tiếp</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-outline inline-block"></span> 30m Cá nhân</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- FLOATING QUICK TOAST NOTIFICATION (Appears on Fast Submit) -->
+<div class="fixed bottom-6 right-8 z-50 transform translate-y-24 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-space-sm px-gutter py-3 rounded-xl bg-surface-container-highest border border-primary/30 shadow-2xl" id="quicklog-toast">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-label-md font-semibold text-on-surface">Đã ghi thành công vào Local DB!</span>
+<span class="font-label-sm text-label-sm text-primary font-code-md">+45 XP Skill Node • Ghi nhận trong 3.2s</span>
+</div>
+</div>
+<!-- Embedded Client-Side Script for P2 Interaction & Micro-behaviors -->
+<script>
+    (function() {
+      const input = document.getElementById('quicklog-input');
+      const instantBtn = document.getElementById('instant-commit-btn');
+      const saveDetailBtn = document.getElementById('save-detail-btn');
+      const cancelDetailBtn = document.getElementById('cancel-detail-btn');
+      const presetButtons = document.querySelectorAll('.preset-btn');
+      const durChips = document.querySelectorAll('.dur-chip');
+      const durDisplay = document.getElementById('duration-display');
+      const historyFeed = document.getElementById('history-feed');
+      const toast = document.getElementById('quicklog-toast');
+      const speedBadge = document.getElementById('speed-badge');
+      const clearBtn = document.getElementById('clear-input-btn');
+      const toggleSheetBtn = document.getElementById('toggle-sheet-btn');
+      const closeSheetTrigger = document.getElementById('close-sheet-trigger');
+      const sheet = document.getElementById('quicklog-sheet');
+
+      // 10s Timer simulation for P2 speed test
+      let startTime = Date.now();
+      let timerInterval = setInterval(updateTimer, 100);
+
+      function updateTimer() {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        if (speedBadge) {
+          if (elapsed <= 10.0) {
+            speedBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> <span>00:${elapsed.padStart(4, '0')}s</span>`;
+            speedBadge.className = 'px-2.5 py-1 rounded-full bg-primary/10 text-primary font-code-md text-label-sm flex items-center gap-1';
+          } else {
+            speedBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> <span>+${elapsed}s</span>`;
+            speedBadge.className = 'px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary font-code-md text-label-sm flex items-center gap-1';
+          }
+        }
+      }
+
+      // 2-Tap Preset chip selection
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const text = btn.getAttribute('data-text');
+          input.value = text;
+          input.focus();
+          
+          // Visual reaction
+          presetButtons.forEach(b => b.classList.remove('bg-primary-container', 'text-on-primary'));
+          btn.classList.add('bg-primary-container', 'text-on-primary');
+          setTimeout(() => {
+            btn.classList.remove('bg-primary-container', 'text-on-primary');
+          }, 400);
+        });
+      });
+
+      // Clear input
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          input.value = '';
+          input.focus();
+        });
+      }
+
+      // Duration selector
+      durChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          durChips.forEach(c => {
+            c.classList.remove('bg-tertiary', 'text-on-tertiary', 'font-semibold');
+            c.classList.add('bg-surface-container-high', 'text-on-surface');
+          });
+          chip.classList.remove('bg-surface-container-high', 'text-on-surface');
+          chip.classList.add('bg-tertiary', 'text-on-tertiary', 'font-semibold');
+          const min = chip.getAttribute('data-min');
+          durDisplay.textContent = min + ' phút';
+        });
+      });
+
+      // Show Toast Notification
+      function triggerSuccessToast() {
+        if (!toast) return;
+        toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        setTimeout(() => {
+          toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+          toast.classList.remove('translate-y-0', 'opacity-100');
+        }, 3200);
+      }
+
+      // Prepend Log to History
+      function recordActivity() {
+        const val = input.value.trim() || 'Hoạt động học tập định kỳ';
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+        const newLogHtml = `
+          <div class="p-space-md rounded-lg bg-surface-container-high hover:bg-surface-bright transition-all flex flex-col gap-2 shadow-md animate-pulse">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-code-md text-label-sm font-semibold text-primary">${timeStr}</span>
+                <span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-primary/10 text-primary font-semibold">
+                  Mới ghi
+                </span>
+                <span class="font-code-md text-label-sm text-outline">${durDisplay ? durDisplay.textContent : "25m"}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="flex items-center text-primary font-label-sm text-label-sm gap-0.5 bg-primary/10 px-1.5 py-0.5 rounded">
+                  <span class="material-symbols-outlined text-[13px]">verified</span>
+                  <span>Evidence</span>
+                </span>
+                <span class="flex items-center text-outline font-label-sm text-label-sm">
+                  <span class="material-symbols-outlined text-[15px] text-primary">cloud_done</span>
+                </span>
+              </div>
+            </div>
+            <p class="font-body-md text-body-md text-on-surface font-medium">${val}</p>
+            <div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-1">
+              <div class="flex items-center gap-1 text-on-surface-variant font-code-md">
+                <span class="material-symbols-outlined text-[14px]">account_tree</span>
+                <span>Node: Auto-Classified (Local AI)</span>
+              </div>
+              <span class="text-tertiary font-code-md">+45 XP Sync</span>
+            </div>
+          </div>
+        `;
+
+        if (historyFeed) {
+          historyFeed.insertAdjacentHTML('afterbegin', newLogHtml);
+        }
+
+        triggerSuccessToast();
+
+        // Reset speed timer
+        startTime = Date.now();
+        input.value = '';
+      }
+
+      // Instant Enter or Button Click
+      if (instantBtn) instantBtn.addEventListener('click', recordActivity);
+      if (saveDetailBtn) saveDetailBtn.addEventListener('click', recordActivity);
+      if (cancelDetailBtn) cancelDetailBtn.addEventListener('click', () => {
+        input.value = '';
+      });
+
+      // Keyboard Listeners (Enter / 1-6 shortcuts / Escape)
+      window.addEventListener('keydown', (e) => {
+        // Enter to submit
+        if (e.key === 'Enter' && !e.shiftKey) {
+          if (document.activeElement === input || e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            recordActivity();
+          }
+        }
+        // Numbers 1-6 when input is not focused
+        if (document.activeElement !== input && ['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+          const idx = parseInt(e.key, 10) - 1;
+          if (presetButtons[idx]) {
+            presetButtons[idx].click();
+          }
+        }
+        // Cmd/Ctrl + K toggle sheet
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          if (input) input.focus();
+        }
+      });
+
+      // Sheet expand/collapse micro-state
+      if (closeSheetTrigger && sheet) {
+        closeSheetTrigger.addEventListener('click', () => {
+          sheet.classList.toggle('opacity-50');
+        });
+      }
+      if (toggleSheetBtn && sheet) {
+        toggleSheetBtn.addEventListener('click', () => {
+          sheet.classList.remove('opacity-50');
+          if (input) input.focus();
+        });
+      }
+
+    })();
+  </script>
+</div></main></div></body></html>
