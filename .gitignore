@@ -36,5 +36,8 @@ coverage/
 playwright-report/
 test-results/
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Hermes local cache (nếu có trong repo)
 .hermes/
