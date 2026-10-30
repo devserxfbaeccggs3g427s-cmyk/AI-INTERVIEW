@@ -11,37 +11,37 @@
 
 ### 1. Nền tảng dự án
 
-- [ ] 1.1 Khởi tạo Next.js 15 App Router + TypeScript strict
+- [x] 1.1 Khởi tạo Next.js 15 App Router + TypeScript strict
   - **File:** `package.json`, `tsconfig.json`, `next.config.ts`
   - **Done:** `npm run dev` chạy được; `tsc --noEmit` không lỗi; `next.config.ts` có `output: 'standalone'`
-- [ ] 1.2 Cài dependencies
+- [x] 1.2 Cài dependencies
   - **File:** `package.json`
   - **Done:** có `next@15`, `react@19`, `prisma@6`, `@prisma/client@6`, `@anthropic-ai/sdk`, `ts-fsrs`, `zod`, `recharts`, `tailwindcss@4`, `vitest`, `@playwright/test`
-- [ ] 1.3 Thiết lập Tailwind v4 + `@theme` token từ `focus_flow/DESIGN.md` (YAML frontmatter) — theo bảng quyết định §3.1 design.md
+- [x] 1.3 Thiết lập Tailwind v4 + `@theme` token từ `focus_flow/DESIGN.md` (YAML frontmatter) — theo bảng quyết định §3.1 design.md
   - **File:** `src/app/globals.css`, `src/styles/tokens.ts`
   - **Done:** palette lấy nguyên văn từ `DESIGN.md` `colors:`; radius theo **giá trị HTML thực tế** (`DEFAULT .125 · lg .25 · xl .5 · full .75` — `full` **KHÔNG** phải 9999px); `headline-sm` = `1.25rem`; class `bg-surface-container-high`, `text-primary`, `font-label-md`, `rounded-xl` sinh ra đúng giá trị §3.1 design.md; **không** có màu hex hardcode ngoài `@theme`
-- [ ] 1.4 Nạp font Be Vietnam Pro · Space Grotesk · JetBrains Mono + Material Symbols (1 `<link>` duy nhất)
+- [x] 1.4 Nạp font Be Vietnam Pro · Space Grotesk · JetBrains Mono + Material Symbols (1 `<link>` duy nhất)
   - **File:** `src/app/layout.tsx`
   - **Done:** không có `<link>` Material Symbols trùng lặp ở page con
-- [ ] 1.5 Thiết lập Prisma + SQLite
+- [x] 1.5 Thiết lập Prisma + SQLite
   - **File:** `prisma/schema.prisma`, `.env`, `.env.example`, `.gitignore`
   - **Done:** `npx prisma migrate dev` chạy; `.gitignore` chứa `.env`, `.env.local`, `prisma/dev.db`
-- [ ] 1.6 Viết 15 model Prisma (khung đã có trong design.md §5)
+- [x] 1.6 Viết 15 model Prisma (khung đã có trong design.md §5)
   - **File:** `prisma/schema.prisma`
   - **Done:** đủ 15 model — Skill, Activity, Evidence, Reflection, PlanItem, Card, Review, DailyState, UserProfile, AiCall, InterviewProfile, InterviewSession, InterviewTurn, TestSession, TestItem — khớp `SPEC.md` §4 và `design.md` §5.1–§5.7; **`AiCall` có thêm `provider` (local|anthropic) + `fallbackFrom` + `latencyMs`** (FR-AI-13, FR-AI-14)
-- [ ] 1.7 Singleton Prisma client + `PRAGMA WAL`
+- [x] 1.7 Singleton Prisma client + `PRAGMA WAL`
   - **File:** `src/lib/db.ts`
   - **Done:** không tạo nhiều instance khi hot-reload; `journal_mode=wal`, `busy_timeout=5000`
-- [ ] 1.8 Script seed: cây kỹ năng 4 domain + 120 thẻ zh/en + UserProfile
+- [x] 1.8 Script seed: cây kỹ năng 4 domain + 120 thẻ zh/en + UserProfile
   - **File:** `prisma/seed.ts`
   - **Done:** `npx prisma db seed` tạo ≥4 domain, ≥20 skill node, 60 thẻ zh + 60 thẻ en, 10 mẫu câu mỗi ngôn ngữ
-- [ ] 1.9 Script seed từ `SPEC.md` Phụ lục B
+- [x] 1.9 Script seed từ `SPEC.md` Phụ lục B
   - **File:** `prisma/seed.ts` (khối `SEED_CARDS_ZH`, `SEED_CARDS_EN`)
   - **Done:** đúng 6 nhóm × 10 từ mỗi ngôn ngữ; `hint` (phiên âm Việt) set cho thẻ en trong 2 tuần đầu
-- [ ] 1.10 Utility ngày giờ (chuẩn hoá local midnight, tuần ISO, nhãn "Thứ Tư 29/10")
+- [x] 1.10 Utility ngày giờ (chuẩn hoá local midnight, tuần ISO, nhãn "Thứ Tư 29/10")
   - **File:** `src/lib/dates.ts`
   - **Done:** `todayKey()`, `startOfWeek()`, `formatVnDate()` test qua
-- [ ] 1.11 Thiết lập Vitest + Playwright
+- [x] 1.11 Thiết lập Vitest + Playwright
   - **File:** `vitest.config.ts`, `playwright.config.ts`, `tests/`
   - **Done:** `npm test` và `npm run test:e2e` chạy được (e2e 1 test mẫu)
 
@@ -49,109 +49,109 @@
 
 > Theo `tech.md` §"AI Router (bắt buộc theo thiết kế)": **mọi** lời gọi AI đi qua `src/lib/ai/router.ts`. Route handler **không** gọi SDK trực tiếp.
 
-- [ ] 2.1 Định nghĩa 4 rubric hằng số (P4) — **tách khỏi `prompts.ts`**
+- [x] 2.1 Định nghĩa 4 rubric hằng số (P4) — **tách khỏi `prompts.ts`**
   - **File:** `src/lib/rubrics.ts`
   - **Done:** `RUBRIC_COMMUNICATION` (5), `RUBRIC_TECHNICAL` (5), `RUBRIC_BEHAVIORAL` (4), `RUBRIC_LANGUAGE_ERRORS` (4) — nội dung đúng design.md §"Rubric cố định"; export `SCREAMING_SNAKE_CASE`; **UI đọc từ đây, không hardcode tên tiêu chí**
-- [ ] 2.2 System prompt cố định (prefix cache) — KHÔNG chứa `Date.now()`/UUID
+- [x] 2.2 System prompt cố định (prefix cache) — KHÔNG chứa `Date.now()`/UUID
   - **File:** `src/lib/prompts.ts`
   - **Done:** `SYSTEM_PROMPT_V1` là hằng module-level; test tĩnh assert không có template literal động; file này **chỉ** chứa system prompt + task prompt, **không** chứa rubric
-- [ ] 2.3 Lớp exception typed
+- [x] 2.3 Lớp exception typed
   - **File:** `src/lib/errors.ts`
   - **Done:** `AiRefusalError`, `AiRateLimitError`, `AiNetworkError`, `AiUnavailableError`, `AiTimeoutError`, `ValidationError`
-- [ ] 2.4 **AI Router** — nguồn duy nhất chọn provider (FR-AI-09)
+- [x] 2.4 **AI Router** — nguồn duy nhất chọn provider (FR-AI-09)
   - **File:** `src/lib/ai/router.ts`
   - **Done:** `route(task)` trả `{provider:"local"|"anthropic", model, effort}` theo bảng design.md §6.1. **Nhóm local (7):** `autofill` · `classify` · `language_correct` · `language_level` · `test_from_content` · `biometric_correlate` · `mock_next_question`. **Không AI (1):** `test_blueprint`. **Còn lại → `anthropic`.**
-- [ ] 2.5 **Fallback chain** `anthropic → local → rule cục bộ` (FR-AI-10)
+- [x] 2.5 **Fallback chain** `anthropic → local → rule cục bộ` (FR-AI-10)
   - **File:** `src/lib/ai/router.ts`
   - **Done:** anthropic lỗi → thử local → thử rule cục bộ; **không** trả lỗi trần cho UI; ghi `AiCall.fallbackFrom` = provider gốc
-- [ ] 2.6 Client Anthropic — model routing, streaming, structured output, ghi `AiCall`
+- [x] 2.6 Client Anthropic — model routing, streaming, structured output, ghi `AiCall`
   - **File:** `src/lib/ai/anthropic.ts`
   - **Done:** chèn `cache_control: {type:'ephemeral'}` vào system; dùng `output_config.format`; ghi đủ 5 trường token + `estimatedCost` + `provider`; thiếu key → `AiUnavailableError`
-- [ ] 2.7 Client Ollama — HTTP client cho provider local (FR-AI-02, FR-AI-13)
+- [x] 2.7 Client Ollama — HTTP client cho provider local (FR-AI-02, FR-AI-13)
   - **File:** `src/lib/ai/ollama.ts`
   - **Done:** `POST http://localhost:11434/api/chat` với `format` = JSON schema; timeout 30s → `AiTimeoutError`; `ECONNREFUSED` → `AiUnavailableError`; ghi `AiCall{provider:"local", estimatedCost:0}`
-- [ ] 2.8 Helper streaming SSE
+- [x] 2.8 Helper streaming SSE
   - **File:** `src/lib/ai/streaming.ts`
   - **Done:** đọc `ReadableStream` → phát event `token` / `done`; chỉ dùng cho provider `anthropic`
-- [ ] 2.9 Bảng giá & hàm tính chi phí
+- [x] 2.9 Bảng giá & hàm tính chi phí
   - **File:** `src/lib/ai/anthropic.ts`
   - **Done:** `estimateCost(model, in, out, cacheRead, cacheWrite)` theo bảng §6.8; provider `local` luôn = 0
-- [ ] 2.10 Phát hiện Ollama + danh sách model local (FR-AI-12)
+- [x] 2.10 Phát hiện Ollama + danh sách model local (FR-AI-12)
   - **File:** `src/app/api/ai/models/route.ts`, `src/lib/ai/ollama.ts`
   - **Done:** `GET /api/tags` timeout 3s; trả danh sách model khả dụng; lỗi → `{available:false}`; S15 hiển thị trạng thái Offline + hướng dẫn cài đặt
-- [ ] 2.11 Test prompt caching (AC-5)
+- [x] 2.11 Test prompt caching (AC-5)
   - **File:** `tests/integration/cache.test.ts`
   - **Done:** 2 call cùng system → call 2 `cache_read_input_tokens > 0` (skip nếu không có key)
-- [ ] 2.12 Test router + fallback (AC-7b)
+- [x] 2.12 Test router + fallback (AC-7b)
   - **File:** `tests/unit/router.test.ts`
   - **Done:** `route("classify")` → `{provider:"local"}`; `route("grading")` → `{provider:"anthropic"}`; anthropic lỗi → fallback sang local → `AiCall{provider:"local", fallbackFrom:"anthropic"}`
 
 ### 3. Shell dùng chung (FR-SH-01..05)
 
-- [ ] 3.1 `AppShell` — layout `pl-72` + `pt-16`
+- [x] 3.1 `AppShell` — layout `pl-72` + `pt-16`
   - **File:** `src/components/shell/AppShell.tsx`, `src/app/layout.tsx`
   - **Done:** mọi route render trong shell
-- [ ] 3.2 `NAV_ITEMS` — nguồn duy nhất cho sidebar (sửa lỗi mockup #3, #4)
+- [x] 3.2 `NAV_ITEMS` — nguồn duy nhất cho sidebar (sửa lỗi mockup #3, #4)
   - **File:** `src/lib/nav.ts`
   - **Done:** đúng **9 mục** với `href` thật + `icon` + `label`; nhãn mục 8 = "Báo cáo tuần & tiến độ"; **không** copy-paste nav giữa 21 màn hình
-- [ ] 3.3 `Sidebar` 288px — logo, tên, badge phiên bản, 9 mục nav, card trạng thái SQLite/Vector
+- [x] 3.3 `Sidebar` 288px — logo, tên, badge phiên bản, 9 mục nav, card trạng thái SQLite/Vector
   - **File:** `src/components/shell/Sidebar.tsx`
   - **Done:** `w-72 bg-surface-container-lowest border-r border-outline-variant/30`; map từ `NAV_ITEMS`; active state `bg-surface-container-high text-primary font-semibold shadow-inner`
-- [ ] 3.4 `Topbar` 64px — chip ngày, streak, năng lượng tuần, chip AI, CTA "+ Ghi nhanh", avatar
+- [x] 3.4 `Topbar` 64px — chip ngày, streak, năng lượng tuần, chip AI, CTA "+ Ghi nhanh", avatar
   - **File:** `src/components/shell/Topbar.tsx`
   - **Done:** `h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30`; CTA mở Quick-log; dữ liệu bind thật từ DB; chip AI hiển thị provider đang hoạt động thật (`AI Offline / Local (Ollama)` ↔ `AI Online / Cloud (Claude Opus 5)`)
-- [ ] 3.5 `NavLink` dùng `usePathname()` để highlight
+- [x] 3.5 `NavLink` dùng `usePathname()` để highlight
   - **File:** `src/components/shell/NavLink.tsx`
   - **Done:** highlight đúng 1 mục trên mọi route (20/21 màn hình mockup thiếu active state → phải sửa); so khớp `pathname` prefix, **không** dùng `data-path` để định tuyến
-- [ ] 3.6 UI primitives: Button, Card, Chip, Badge, Input, Select, Modal, Sheet, Toast, Tabs, Tooltip, Slider
+- [x] 3.6 UI primitives: Button, Card, Chip, Badge, Input, Select, Modal, Sheet, Toast, Tabs, Tooltip, Slider
   - **File:** `src/components/ui/*.tsx`
   - **Done:** dùng token, không có màu hex hardcode
-- [ ] 3.7 `Toaster` + `aria-live`
+- [x] 3.7 `Toaster` + `aria-live`
   - **File:** `src/components/ui/Toaster.tsx`
   - **Done:** toast lỗi AI hiển thị đúng message trong bảng §7.2
-- [ ] 3.8 Drawer sidebar cho <1024px
+- [x] 3.8 Drawer sidebar cho <1024px
   - **File:** `src/components/shell/Sidebar.tsx`
   - **Done:** dưới 1024px sidebar thu gọn, grid 12 cột chuyển 1 cột
-- [ ] 3.9 Test shell đồng nhất (AC-15)
+- [x] 3.9 Test shell đồng nhất (AC-15)
   - **File:** `tests/e2e/shell.spec.ts`
   - **Done:** quét 21 route, mỗi route có 9 nav item + 6 chip header + **1 nav item active**
 
 ### 4. S01 — Daily Loop `/`
 
-- [ ] 4.1 Query kế hoạch hôm nay + trạng thái slot
+- [x] 4.1 Query kế hoạch hôm nay + trạng thái slot
   - **File:** `src/app/page.tsx`, `src/lib/plan.ts`
   - **Done:** tối đa 6 slot, đúng thứ tự `slot` 0..5, `date` = local midnight
-- [ ] 4.2 `FocusNodeCard` — skill trọng tâm, level/target, % tiến trình, số bằng chứng, giờ tích lũy
+- [x] 4.2 `FocusNodeCard` — skill trọng tâm, level/target, % tiến trình, số bằng chứng, giờ tích lũy
   - **File:** `src/components/daily-loop/FocusNodeCard.tsx`
   - **Done:** bind dữ liệu thật từ `Skill` + `Evidence`
-- [ ] 4.3 `WeekStreak` — 7 cột trạng thái + streak
+- [x] 4.3 `WeekStreak` — 7 cột trạng thái + streak
   - **File:** `src/components/daily-loop/WeekStreak.tsx`
   - **Done:** tính từ `PlanItem.done` 7 ngày gần nhất
-- [ ] 4.4 `SlotCard` — nhãn domain, tiêu đề, mô tả, phút, skill, nút Xong / Hoàn thành nhanh
+- [x] 4.4 `SlotCard` — nhãn domain, tiêu đề, mô tả, phút, skill, nút Xong / Hoàn thành nhanh
   - **File:** `src/components/daily-loop/SlotCard.tsx`
   - **Done:** màu chip domain theo domain; slot ưu tiên có rail màu + badge CTA
-- [ ] 4.5 Server action "đánh dấu xong" → Activity + Evidence + PlanItem.done + streak
+- [x] 4.5 Server action "đánh dấu xong" → Activity + Evidence + PlanItem.done + streak
   - **File:** `src/app/api/log/route.ts`, `src/lib/levels.ts`
   - **Done:** tạo `Activity`; tạo `Evidence` nếu slot có `skillId`; set `done=true`; streak +1 nếu là hoạt động đầu tiên trong ngày
-- [ ] 4.6 `recomputeSkillLevel` — chỉ Evidence tăng level
+- [x] 4.6 `recomputeSkillLevel` — chỉ Evidence tăng level
   - **File:** `src/lib/levels.ts`
   - **Done:** `LEVEL_THRESHOLDS = [0,2,5,9,14,20]`; test AC-3
-- [ ] 4.7 `FsrsRetrievabilityCard` — retention %, stability TB, difficulty TB, đường cong 7 ngày
+- [x] 4.7 `FsrsRetrievabilityCard` — retention %, stability TB, difficulty TB, đường cong 7 ngày
   - **File:** `src/components/daily-loop/FsrsRetrievabilityCard.tsx`
   - **Done:** tính từ `Card` bằng `ts-fsrs`
-- [ ] 4.8 `CacheHitCard` — cache hit rate
+- [x] 4.8 `CacheHitCard` — cache hit rate
   - **File:** `src/components/daily-loop/CacheHitCard.tsx`
   - **Done:** `sum(cacheRead) / sum(inputTokens + cacheRead)`
-- [ ] 4.9 Panel "Sinh trắc & Nhịp độ" + hàng đợi FSRS
+- [x] 4.9 Panel "Sinh trắc & Nhịp độ" + hàng đợi FSRS
   - **File:** `src/components/daily-loop/*`
   - **Done:** mood/energy/focus/sleep từ `DailyState`; số thẻ đến hạn từ `Card.due`
-- [ ] 4.10 Empty state + CTA "Lập kế hoạch hôm nay" + fallback offline
+- [x] 4.10 Empty state + CTA "Lập kế hoạch hôm nay" + fallback offline
   - **File:** `src/app/page.tsx`, `src/lib/plan.ts`
   - **Done:** không có key → vẫn sinh 6 slot từ `generateLocalPlan` (AC-7)
-- [ ] 4.11 Modal xem trước "Lập lại kế hoạch hôm nay (AI)"
+- [x] 4.11 Modal xem trước "Lập lại kế hoạch hôm nay (AI)"
   - **File:** `src/components/daily-loop/PlanPreviewModal.tsx`
   - **Done:** giữ slot đã `done`; hiển thị diff trước khi áp dụng
-- [ ] 4.12 Test Daily Loop (AC-1)
+- [x] 4.12 Test Daily Loop (AC-1)
   - **File:** `tests/e2e/daily-loop.spec.ts`
   - **Done:** kế hoạch trống → CTA; bấm Xong → slot gạch ngang + Activity + Evidence trong DB
 
@@ -184,103 +184,103 @@
 
 ### 6. S02 — Sinh kế hoạch AI `/plan`
 
-- [ ] 6.1 Trang 6 slot editable (domain, tiêu đề, mô tả, phút, skill, xoá)
+- [x] 6.1 Trang 6 slot editable (domain, tiêu đề, mô tả, phút, skill, xoá)
   - **File:** `src/app/plan/page.tsx`, `src/components/daily-loop/SlotEditor.tsx`
   - **Done:** cấu trúc 6 slot cố định, chỉ sửa nội dung
-- [ ] 6.2 API AI-01 sinh 6 slot + diff view
+- [x] 6.2 API AI-01 sinh 6 slot + diff view
   - **File:** `src/app/api/plan/generate/route.ts`
   - **Done:** trả 6 slot đúng domain/thời lượng theo bảng §2.1 requirements
-- [ ] 6.3 Panel thông tin AI (model, effort, token, thời gian) + badge "Offline — rule cục bộ"
+- [x] 6.3 Panel thông tin AI (model, effort, token, thời gian) + badge "Offline — rule cục bộ"
   - **File:** `src/app/plan/page.tsx`
   - **Done:** hiển thị `AiCall` gần nhất
-- [ ] 6.4 Apply — ghi đè `PlanItem` hôm nay, giữ slot `done`
+- [x] 6.4 Apply — ghi đè `PlanItem` hôm nay, giữ slot `done`
   - **File:** `src/app/plan/page.tsx`
   - **Done:** toast số slot đã ghi
-- [ ] 6.5 Test áp dụng kế hoạch
+- [x] 6.5 Test áp dụng kế hoạch
   - **File:** `tests/e2e/plan.spec.ts`
   - **Done:** apply xong S01 hiện 6 slot mới, slot đã xong vẫn `done`
 
 ### 7. S03 + S04 — Cây kỹ năng & chi tiết kỹ năng
 
-- [ ] 7.1 `SkillTree` 3 tầng, 4 domain cố định
+- [x] 7.1 `SkillTree` 3 tầng, 4 domain cố định
   - **File:** `src/components/skills/SkillTree.tsx`, `src/app/skills/page.tsx`
   - **Done:** mỗi node có level, số bằng chứng, thanh segment, trạng thái focus
-- [ ] 7.2 Panel node đang chọn + "Đặt làm trọng tâm hôm nay" (chỉ 1 node)
+- [x] 7.2 Panel node đang chọn + "Đặt làm trọng tâm hôm nay" (chỉ 1 node)
   - **File:** `src/components/skills/SkillDetailPanel.tsx`
   - **Done:** đồng bộ sang S01 (trọng tâm duy nhất)
-- [ ] 7.3 Nút "Luyện tập đo lường ngay" → Activity + Evidence
+- [x] 7.3 Nút "Luyện tập đo lường ngay" → Activity + Evidence
   - **File:** `src/app/api/log/route.ts`
   - **Done:** tạo đúng 1 Activity + 1 Evidence gắn node
-- [ ] 7.4 Nút "Tạo mục kỹ năng con"
+- [x] 7.4 Nút "Tạo mục kỹ năng con"
   - **File:** `src/app/skills/page.tsx`
   - **Done:** lưu tên, domain, mục cha, mức mục tiêu
-- [ ] 7.5 Feed "Bằng Chứng Gần Đây" (timeline + rating badge)
+- [x] 7.5 Feed "Bằng Chứng Gần Đây" (timeline + rating badge)
   - **File:** `src/components/skills/EvidenceFeed.tsx`
   - **Done:** sắp xếp theo thời gian giảm dần
-- [ ] 7.6 KPI đầu trang (tổng bằng chứng, trọng tâm, chờ luyện, số domain)
+- [x] 7.6 KPI đầu trang (tổng bằng chứng, trọng tâm, chờ luyện, số domain)
   - **File:** `src/app/skills/page.tsx`
   - **Done:** số liệu thật
-- [ ] 7.7 S04 header + breadcrumb 4 cấp + 4 số liệu
+- [x] 7.7 S04 header + breadcrumb 4 cấp + 4 số liệu
   - **File:** `src/app/skills/[id]/page.tsx`
   - **Done:** cấp độ, target, số bằng chứng, giờ tích lũy, điểm TB
-- [ ] 7.8 `LineChart` tiến trình xác thựnh theo tuần + ngưỡng level
+- [x] 7.8 `LineChart` tiến trình xác thựnh theo tuần + ngưỡng level
   - **File:** `src/components/charts/LineChart.tsx`
   - **Done:** recharts, cùng token màu
-- [ ] 7.9 `BarChart` phân bổ hoạt động theo danh mục
+- [x] 7.9 `BarChart` phân bổ hoạt động theo danh mục
   - **File:** `src/components/charts/BarChart.tsx`
   - **Done:** 6 danh mục
-- [ ] 7.10 `EvidenceTable` — ngày, loại, nội dung, rating, hash SQLite, nút mở
+- [x] 7.10 `EvidenceTable` — ngày, loại, nội dung, rating, hash SQLite, nút mở
   - **File:** `src/components/skills/EvidenceTable.tsx`
   - **Done:** hash hiển thị mono (`font-code-md`), dữ liệu thật
-- [ ] 7.11 `LevelChecklist` tiêu chuẩn thăng cấp
+- [x] 7.11 `LevelChecklist` tiêu chuẩn thăng cấp
   - **File:** `src/components/skills/LevelChecklist.tsx`
   - **Done:** tick đạt/chưa đạt theo ngưỡng `LEVEL_THRESHOLDS`
-- [ ] 7.12 `AiSuggestionCard` — đề xuất bài tập từ lỗ hổng bằng chứng + nút "Tạo slot ngày mai"
+- [x] 7.12 `AiSuggestionCard` — đề xuất bài tập từ lỗ hổng bằng chứng + nút "Tạo slot ngày mai"
   - **File:** `src/components/skills/AiSuggestionCard.tsx`
   - **Done:** tạo `PlanItem` cho ngày mai
-- [ ] 7.13 Test cây kỹ năng
+- [x] 7.13 Test cây kỹ năng
   - **File:** `tests/e2e/skills.spec.ts`
   - **Done:** đặt trọng tâm → S01 đổi trọng tâm; "Luyện tập đo lường" → +1 Evidence
 
 ### 8. S12 — Đánh giá chính `/state`
 
-- [ ] 8.1 Form mood/energy/focus (slider 1–5) + giấc ngủ (giờ, bước 0.5)
+- [x] 8.1 Form mood/energy/focus (slider 1–5) + giấc ngủ (giờ, bước 0.5)
   - **File:** `src/app/state/page.tsx`
   - **Done:** prefill giá trị hôm qua
-- [ ] 8.2 Lưu `DailyState` upsert theo `date`
+- [x] 8.2 Lưu `DailyState` upsert theo `date`
   - **File:** `src/app/state/page.tsx`
   - **Done:** không tạo bản ghi trùng cùng ngày
-- [ ] 8.3 `StateDots` 7 ngày gần nhất, bấm để sửa
+- [x] 8.3 `StateDots` 7 ngày gần nhất, bấm để sửa
   - **File:** `src/components/daily-loop/StateDots.tsx`
   - **Done:** bind `DailyState`
-- [ ] 8.4 `CorrelationChart` overlay mood/energy/sleep + số hành động hoàn thành
+- [x] 8.4 `CorrelationChart` overlay mood/energy/sleep + số hành động hoàn thành
   - **File:** `src/components/charts/CorrelationChart.tsx`
   - **Done:** 2 trục Y
-- [ ] 8.5 Toggle "7 Ngày / 30 Ngày" (mockup chưa có handler)
+- [x] 8.5 Toggle "7 Ngày / 30 Ngày" (mockup chưa có handler)
   - **File:** `src/app/state/page.tsx`
   - **Done:** đổi khoảng thời gian biểu đồ
-- [ ] 8.6 Card "Dữ liệu đã gửi lên" (FR-PS-07)
+- [x] 8.6 Card "Dữ liệu đã gửi lên" (FR-PS-07)
   - **File:** `src/components/daily-loop/DataSentCard.tsx`
   - **Done:** liệt kê nội dung đã đi lên API; mặc định `DailyState` **không** gửi
 
 ### 9. S15 — Cài đặt `/settings` (Phase 0: tab 1 + tab 2 cơ bản)
 
-- [ ] 9.1 Layout 4 tab
+- [x] 9.1 Layout 4 tab
   - **File:** `src/app/settings/page.tsx`, `src/components/settings/SettingsTabs.tsx`
   - **Done:** chuyển tab hoạt động
-- [ ] 9.2 Tab 1 — Hồ sơ & Mục tiêu (`UserProfile`)
+- [x] 9.2 Tab 1 — Hồ sơ & Mục tiêu (`UserProfile`)
   - **File:** `src/components/settings/ProfileTab.tsx`
   - **Done:** lưu name, goals, aiTone, learningLangs, zhLevel, enLevel
-- [ ] 9.3 Tab 2 — API key: ghi `.env.local` server-side, không commit, không hiển thị đầy đủ
+- [x] 9.3 Tab 2 — API key: ghi `.env.local` server-side, không commit, không hiển thị đầy đủ
   - **File:** `src/app/api/settings/key/route.ts`, `src/components/settings/ApiKeyTab.tsx`
   - **Done:** response không trả key đầy đủ; UI hiện `sk-ant-••••••••`
-- [ ] 9.4 Nút "Chạy kiểm tra Ping Anthropic Endpoint"
+- [x] 9.4 Nút "Chạy kiểm tra Ping Anthropic Endpoint"
   - **File:** `src/app/api/settings/key/route.ts` (action `ping`)
   - **Done:** 1 request tối thiểu, hiện kết quả + độ trễ ms
-- [ ] 9.5 Card "NGUYÊN TẮC BẢO MẬT P6 STRICT"
+- [x] 9.5 Card "NGUYÊN TẮC BẢO MẬT P6 STRICT"
   - **File:** `src/components/settings/ApiKeyTab.tsx`
   - **Done:** liệt kê 4 điều khoá
-- [ ] 9.6 Test bảo mật key
+- [x] 9.6 Test bảo mật key
   - **File:** `tests/e2e/settings-key.spec.ts`
   - **Done:** `.env.local` có key sau khi lưu; `.gitignore` chứa `.env.local`; response không chứa key đầy đủ
 
