@@ -25,6 +25,12 @@ const RequestBody = z.object({
   lang: z.enum(["zh", "en"]),
   /** Số thẻ tối đa (mặc định 20). */
   limit: z.number().int().min(1).max(50).default(20),
+  /**
+   * Thẻ cụ thể để ôn (task 14.16 — nút "Ôn ngay" trên S21).
+   * Nếu có → trả về **đúng** các thẻ này (theo thứ tự), bỏ qua luồng
+   * due/new. Client truyền từ param URL `reviewCard`.
+   */
+  cardIds: z.array(z.string()).optional(),
 });
 
 type CardOutput = {
@@ -50,7 +56,44 @@ type CardOutput = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { lang, limit } = RequestBody.parse(body);
+    const { lang, limit, cardIds } = RequestBody.parse(body);
+
+    // Nếu được yêu cầu ôn một batch thẻ cụ thể (task 14.16), trả về đúng chúng.
+    // Bỏ qua luồng due/new để S10 hiện đúng thẻ vừa sai.
+    if (cardIds && cardIds.length > 0) {
+      const cards = await prisma.card.findMany({
+        where: { id: { in: cardIds } },
+        orderBy: { due: "asc" },
+        take: limit,
+      });
+
+      // Map theo đúng thứ tự `cardIds` để client hiển thị đúng thứ tự.
+      const byId = new Map(cards.map((c) => [c.id, c]));
+      const ordered = cardIds.map((id) => byId.get(id)).filter(Boolean) as typeof cards;
+
+      const data: CardOutput[] = ordered.map((c) => ({
+        id: c.id,
+        lang: c.lang,
+        front: c.front,
+        frontAlt: c.frontAlt,
+        back: c.back,
+        note: c.note,
+        example: c.example,
+        examplePinyin: c.examplePinyin,
+        hint: c.hint,
+        group: c.group,
+        mode: c.mode,
+        due: c.due.toISOString(),
+        stability: c.stability,
+        difficulty: c.difficulty,
+        reps: c.reps,
+        lapses: c.lapses,
+        createdAt: c.createdAt.toISOString(),
+      }));
+
+      return NextResponse.json({ ok: true, data });
+    }
+
     const now = new Date();
 
     // 1. Lấy thẻ đến hạn (due <= now) — ưu tiên theo due cũ nhất

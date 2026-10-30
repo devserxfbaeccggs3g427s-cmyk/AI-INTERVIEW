@@ -47,6 +47,7 @@ import {
 } from "@/lib/test-gen";
 import { ITEM_TYPES } from "@/lib/test-types";
 import { POST as gradeOpen } from "@/app/api/test/grade-open/route";
+import { POST as srsNext } from "@/app/api/srs/next/route";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fixtures
@@ -434,5 +435,110 @@ describe("§14 — PRNG tất định + điểm yếu thẻ", () => {
         expect(types.has(t)).toBe(true);
       }
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC-11 (phần 2) — nút "Ôn ngay" mở bài đúng thẻ (task 14.16)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * `POST /api/srs/next` với `cardIds` phải trả về **đúng** số thẻ yêu cầu,
+ * bỏ qua luồng due/new. Đây là backbone của nút "Ôn ngay" trên S21.
+ */
+describe("§14 — AC-11 (phần 2): nút 'Ôn ngay' mở đúng thẻ (task 14.16)", () => {
+  const REVIEW_CARDS = ["test-review-14-0", "test-review-14-1", "test-review-14-2"];
+
+  /** Xoá riêng 3 thẻ review — cleanup ngoài scope chỉ biết card id trong TEST_IDS. */
+  async function cleanupReview(): Promise<void> {
+    await prisma.card.deleteMany({ where: { id: { in: REVIEW_CARDS } } });
+  }
+
+  beforeEach(async () => {
+    await cleanupReview();
+    // Seed 3 thẻ với due cách đây 30 ngày (không đến hạn) để chứng minh
+    // API trả về cardIds bất kể due — KHÔNG phải luồng due/new.
+    const oldDue = new Date(Date.now() - 30 * 86_400_000);
+    for (const [i, id] of REVIEW_CARDS.entries()) {
+      await prisma.card.create({
+        data: {
+          id,
+          lang: "zh",
+          front: `review ${i}`,
+          back: `nghĩa ${i}`,
+          mode: "recall",
+          cardState: { s: 1, d: 5, due: oldDue.getTime() },
+          due: oldDue,
+          stability: 1,
+          difficulty: 5,
+          reps: 0,
+          lapses: i,
+        },
+      });
+    }
+  });
+
+  afterEach(cleanupReview);
+  afterAll(cleanupReview);
+
+  it("cardIds → trả về đúng thẻ theo thứ tự yêu cầu", async () => {
+    const req = new Request("http://localhost/api/srs/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: "zh", limit: 20, cardIds: REVIEW_CARDS }),
+    });
+    const res = await srsNext(req);
+    expect(res.status).toBe(200);
+
+    const payload = (await res.json()) as { ok: boolean; data: Array<{ id: string; front: string }> };
+    expect(payload.ok).toBe(true);
+    // Trả về đúng 3 thẻ.
+    expect(payload.data).toHaveLength(3);
+    // Thứ tự giữ nguyên theo thứ tự truyền vào.
+    expect(payload.data.map((c) => c.id)).toEqual(REVIEW_CARDS);
+  });
+
+  it("reviewCard đơn → trả về 1 thẻ", async () => {
+    const req = new Request("http://localhost/api/srs/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: "zh", limit: 20, cardIds: [REVIEW_CARDS[0]!] }),
+    });
+    const res = await srsNext(req);
+    expect(res.status).toBe(200);
+
+    const payload = (await res.json()) as { ok: boolean; data: Array<{ id: string }> };
+    expect(payload.ok).toBe(true);
+    expect(payload.data).toHaveLength(1);
+    expect(payload.data[0]!.id).toBe(REVIEW_CARDS[0]);
+  });
+
+  it("cardIds rỗng → về luồng due/new (trả về thẻ đến hạn, không lỗi)", async () => {
+    const req = new Request("http://localhost/api/srs/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: "zh", limit: 5 }),
+    });
+    const res = await srsNext(req);
+    expect(res.status).toBe(200);
+    const payload = (await res.json()) as { ok: boolean; data: Array<{ id: string }> };
+    expect(payload.ok).toBe(true);
+    // Luồng do/new trả về thẻ đến hạn (limit <= 5). Các thẻ review (due 30 ngày trước)
+    // là "đến hạn" nên có thể nằm trong kết quả — không kiểm chứng số lượng cụ thể.
+    expect(Array.isArray(payload.data)).toBe(true);
+  });
+
+  it("cardIds có thẻ không tồn tại → trả về các thẻ còn lại", async () => {
+    const req = new Request("http://localhost/api/srs/next", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: "zh", limit: 20, cardIds: [...REVIEW_CARDS, "test-review-missing"] }),
+    });
+    const res = await srsNext(req);
+    expect(res.status).toBe(200);
+
+    const payload = (await res.json()) as { ok: boolean; data: Array<{ id: string }> };
+    expect(payload.ok).toBe(true);
+    expect(payload.data.map((c) => c.id)).toEqual(REVIEW_CARDS);
   });
 });

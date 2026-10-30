@@ -1,19 +1,28 @@
 /**
- * S19 — placeholder tối giản (tasks.md nhóm 3, task 3.9).
+ * S19 — trang chọn loại bài kiểm tra ngoại ngữ (task 14.1, 14.2, 14.3, 14.20).
  *
- * Phase 0 chỉ cần nội dung thật cho `/`, `/plan`, `/skills`, `/skills/[id]`,
- * `/log`, `/log/history`, `/state`, `/settings`. Các route còn lại tạm là
- * placeholder 1 trang để:
- *   1. `next build` prerender được (Server Component, không state).
- *   2. Test E2E AC-15 quét 21 route mà không bị 404.
+ * Server Component — fetch UserProfile (level) + lịch sử benchmark để hiển thị.
+ * Truyền dữ liệu qua props cho Client Component con (TestTypeCard, BenchmarkChart).
  *
- * **Server Component** — không có directive, không dùng hook.
+ * Tầng dữ liệu nằm ở `@/lib/test-page-data` — page file chỉ được export các
+ * field đặc biệt của Next.js (`default`, `dynamic`, `metadata`…), nên không
+ * thể export `getS19Data` từ đây.
  *
- * Xem design.md §2.1 (cấu trúc route) · §4.19 · tasks.md 3.9.
+ * Xem tasks.md 14.1 / 14.2 / 14.3 / 14.20 · design.md §4.19 / S19.
  */
-import { PageHeader } from "@/components/shell/PageHeader";
 
-export default function TestPage() {
+import { PageHeader } from "@/components/shell/PageHeader";
+import { BenchmarkChart } from "@/components/test/BenchmarkChart";
+import { TestTypeSection } from "@/components/test/TestTypeSection";
+import { FromContentModal } from "@/components/test/FromContentModal";
+import { Card } from "@/components/ui/Card";
+import { getS19Data } from "@/lib/test-page-data";
+
+export const dynamic = "force-dynamic";
+
+export default async function TestPage() {
+  const data = await getS19Data();
+
   return (
     <div className="space-y-gutter-lg">
       <PageHeader
@@ -21,7 +30,29 @@ export default function TestPage() {
         title="Bài kiểm tra ngoại ngữ"
         description="4 kiểu đề: định vị, theo chủ đề, chuẩn và tự sinh từ nội dung văn bản."
       />
-      <p className="text-body-md text-on-surface-variant">Sẽ dựng ở Phase 1.</p>
+
+      {/* Language switcher + TestTypeCard */}
+      <Card className="p-gutter">
+        <TestTypeSection
+          configs={data.testTypeConfigs}
+          zhLevel={data.profile?.zhLevel ?? "zero"}
+          enLevel={data.profile?.enLevel ?? "zero"}
+        />
+      </Card>
+
+      {/* BenchmarkChart */}
+      <BenchmarkChart
+        periods={data.benchmarkPeriods}
+        itemTypeAccuracies={data.itemTypeAccuracies}
+        wrongWords={data.wrongWords}
+      />
+
+      {/* From-content modal trigger */}
+      <Card className="p-gutter">
+        <FromContentModal
+          lang={data.profile?.learningLangs.includes("zh") ? "zh" : "en"}
+        />
+      </Card>
     </div>
   );
 }

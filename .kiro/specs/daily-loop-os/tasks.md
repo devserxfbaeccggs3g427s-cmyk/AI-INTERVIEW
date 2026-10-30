@@ -451,67 +451,67 @@
 
 ### 14. S19–S21 — Bài kiểm tra ngoại ngữ (S19 danh sách · S20 làm bài · S21 kết quả)
 
-- [ ] 14.1 4 `TestTypeCard` — placement / topic / benchmark / from_content
+- [x] 14.1 4 `TestTypeCard` — placement / topic / benchmark / from_content
   - **File:** `src/app/test/page.tsx`, `src/components/test/TestTypeCard.tsx`
   - **Done:** mỗi card có số câu + có/không timer
-- [ ] 14.2 Đổi ngôn ngữ → hiện level ước lượng (HSK / CEFR)
+- [x] 14.2 Đổi ngôn ngữ → hiện level ước lượng (HSK / CEFR)
   - **File:** `src/app/test/page.tsx`
   - **Done:** đọc `UserProfile.zhLevel`/`enLevel`
-- [ ] 14.3 `BenchmarkChart` tiến bộ nhiều kỳ + 6 dạng câu + 5 từ sai nhiều nhất
+- [x] 14.3 `BenchmarkChart` tiến bộ nhiều kỳ + 6 dạng câu + 5 từ sai nhiều nhất
   - **File:** `src/components/test/BenchmarkChart.tsx`
   - **Done:** bind `TestSession.score`
-- [ ] 14.4 API AI-14 blueprint bài kiểm tra — **chọn lọc tất định, KHÔNG gọi AI** (FR-AI-17)
+- [x] 14.4 API AI-14 blueprint bài kiểm tra — **chọn lọc tất định, KHÔNG gọi AI** (FR-AI-17)
   - **File:** `src/app/api/test/blueprint/route.ts`
   - **Done:** nhận `{lang, level, topic, itemTypes[], count}` → trả đúng số câu, đúng phân bố dạng; **không** ghi `AiCall`
-- [ ] 14.5 Sinh item từ thẻ yếu + seed (AI không sinh từ vựng mới)
+- [x] 14.5 Sinh item từ thẻ yếu + seed (AI không sinh từ vựng mới)
   - **File:** `src/lib/test-gen.ts`
   - **Done:** ưu tiên `lapses` cao, `difficulty` cao
-- [ ] 14.6 `ItemRenderer` cho 6 dạng câu
+- [x] 14.6 `ItemRenderer` cho 6 dạng câu
   - **File:** `src/components/test/ItemRenderer.tsx`
   - **Done:** mc (radio 4), cloze (input), listening (nút nghe TTS `audioText`), writing/translation (textarea)
-- [ ] 14.7 `QuestionMatrix` 40 ô trạng thái + phím tắt
+- [x] 14.7 `QuestionMatrix` 40 ô trạng thái + phím tắt
   - **File:** `src/components/test/QuestionMatrix.tsx`
   - **Done:** 1-4 chọn đáp án, Space tiếp, Enter xác nhận
-- [ ] 14.8 Timer đếm ngược cho benchmark/from_content + lưu thời gian từng câu
+- [x] 14.8 Timer đếm ngược cho benchmark/from_content + lưu thời gian từng câu
   - **File:** `src/app/test/session/page.tsx`
   - **Done:** bind thật, `durationSec` + `TestItem.seconds`
-- [ ] 14.9 Lưu từng câu ngay khi trả lời (không mất khi đóng tab) + quay lại câu đã trả lời
+- [x] 14.9 Lưu từng câu ngay khi trả lời (không mất khi đóng tab) + quay lại câu đã trả lời
   - **File:** `src/app/test/session/page.tsx`
   - **Done:** mỗi lần chọn đáp án → ghi DB
-- [ ] 14.10 Chấm tự động mc/cloze/listening
+- [x] 14.10 Chấm tự động mc/cloze/listening
   - **File:** `src/lib/test-gen.ts` hoặc `src/app/api/test/grade-open/route.ts`
   - **Done:** so khớp chuỗi, chấm `isCorrect`
-- [ ] 14.11 API AI-15 chấm writing/translation theo `RUBRIC_LANGUAGE_ERRORS` (4 nhóm)
+- [x] 14.11 API AI-15 chấm writing/translation theo `RUBRIC_LANGUAGE_ERRORS` (4 nhóm)
   - **File:** `src/app/api/test/grade-open/route.ts`
   - **Done:** lỗi chỉ thuộc 1 trong 4 nhóm
-- [ ] 14.12 Đẩy thẻ về ôn khi sai (due=hôm nay, lapses+1)
+- [x] 14.12 Đẩy thẻ về ôn khi sai (due=hôm nay, lapses+1)
   - **File:** `src/app/api/test/grade-open/route.ts`
   - **Done:** chỉ thẻ có `cardId`; hiện "N thẻ bị đẩy về ôn"
-- [ ] 14.13 API AI-16 ước lượng level — **provider local** (`qwen2.5-coder:7b-instruct`)
+- [x] 14.13 API AI-16 ước lượng level — **provider local** (`qwen2.5-coder:7b-instruct`)
   - **File:** `src/app/api/test/level/route.ts`
   - **Done:** kèm ghi chú giới hạn; `AiCall{provider:"local", estimatedCost:0}`
-- [ ] 14.14 Placement → set `UserProfile.zhLevel`/`enLevel` + gợi ý nhóm từ
+- [x] 14.14 Placement → set `UserProfile.zhLevel`/`enLevel` + gợi ý nhóm từ
   - **File:** `src/app/api/test/level/route.ts`
   - **Done:** cập nhật profile
-- [ ] 14.15 S21 — tổng điểm, `RadarChart` 6 trục, phân tách theo dạng, câu sai + giải thích
+- [x] 14.15 S21 — tổng điểm, `RadarChart` 6 trục, phân tách theo dạng, câu sai + giải thích
   - **File:** `src/app/test/[id]/page.tsx`, `src/components/test/ResultRadar.tsx`
   - **Done:** radar ngũ giác/6 trục; tổng đúng (vd 15+10+8+7=40)
-- [ ] 14.16 `LapseCards` — 3 thẻ bị đẩy về ôn + nút "Ôn ngay" → S10 đúng các thẻ đó
+- [x] 14.16 `LapseCards` — 3 thẻ bị đẩy về ôn + nút "Ôn ngay" → S10 đúng các thẻ đó
   - **File:** `src/components/test/LapseCards.tsx`
   - **Done:** truyền danh sách `cardId` sang S10
-- [ ] 14.17 Nút "Làm bài tương tự" — sinh đề song song về độ khó (FR-LT-12)
+- [x] 14.17 Nút "Làm bài tương tự" — sinh đề song song về độ khó (FR-LT-12)
   - **File:** `src/app/test/[id]/page.tsx`, `src/lib/test-gen.ts`
   - **Done:** 2 lần thi cùng topic → độ khó ngang nhau
-- [ ] 14.18 Chấm writing 4 mục out of 10
+- [x] 14.18 Chấm writing 4 mục out of 10
   - **File:** `src/components/test/WritingEval.tsx`
   - **Done:** hiển thị 4 mục + điểm
-- [ ] 14.19 Tạo Activity + Evidence khi bài kết thúc
+- [x] 14.19 Tạo Activity + Evidence khi bài kết thúc
   - **File:** `src/app/api/test/blueprint/route.ts` hoặc action riêng
   - **Done:** `domain='language'`, `type='test'`
-- [ ] 14.20 API AI-17 sinh đề từ nguồn văn bản (`from_content`) — **provider local** (`qwen2.5:7b`)
+- [x] 14.20 API AI-17 sinh đề từ nguồn văn bản (`from_content`) — **provider local** (`qwen2.5:7b`)
   - **File:** `src/app/api/test/from-content/route.ts`
   - **Done:** nhận text UTF-8 không giới hạn → trả blueprint item; `AiCall{provider:"local", estimatedCost:0}`; nhãn S19 `CẤU TRÚC ĐỀ TỰ TẠO: Ollama Qwen-2.5 7B` khớp
-- [ ] 14.21 Test bài kiểm tra (AC-11, AC-12)
+- [x] 14.21 Test bài kiểm tra (AC-11, AC-12)
   - **File:** `tests/e2e/test.spec.ts`
   - **Done:** 5 câu sai → 5 thẻ `due=hôm nay`; 0 câu sai → "0 thẻ bị đẩy về ôn", không crash
 
@@ -804,7 +804,7 @@
 - [ ] AC-14 Quick-log không mất dữ liệu: draft giữ lại
 - [ ] AC-15 Shell đồng nhất: 21 màn hình cùng 9 nav + chip header + **1 nav active**
 - [x] AC-16 Bảo mật key (P6 STRICT): không còn literal `sk-ant-...` trong code/HTML; key đọc từ `.env.local`; UI chỉ hiện key đã mask; `.env.local` không được commit
-  - **Verify:** `tests/unit/api-key-security.test.ts` (21 test) — quét `src/` + `stitch_daily_loop_os/` không còn chuỗi dạng `sk-ant-<20+ ký tự>`; `.gitignore` chặn `.env.local` và git không track file nào tên `.env.local`; `maskApiKey()` luôn trả `sk-ant-••••••••` (không phụ thuộc độ dài key thật); `validateApiKey()` chặn key sai định dạng; key ghi vào `.env.local` có **hiệu lực lúc runtime** (cache theo `mtimeMs`) nên không cần restart app.
+  - **Verify:** `tests/unit/api-key-security.test.ts` (22 test) — quét `src/` + `stitch_daily_loop_os/` không còn chuỗi dạng `sk-ant-<20+ ký tự>`; `.gitignore` chặn `.env.local` và git không track file nào tên `.env.local`; `maskApiKey()` luôn trả `sk-ant-••••••••` (không phụ thuộc độ dài key thật); `validateApiKey()` chặn key sai định dạng; key ghi vào `.env.local` có **hiệu lực lúc runtime** (cache theo `mtimeMs`) nên không cần restart app.
   - **Sửa thêm (2026-10-30):** `src/lib/ai/router.ts` + `src/lib/ai/anthropic.ts` + `src/lib/shell.ts` + `src/lib/daily-loop-data.ts` giờ đọc key từ `.env.local` **lúc runtime** (`readEnvLocalKeyCached()`), fallback `process.env`. Trước đó Next.js chỉ nạp `.env.local` lúc boot → key người dùng lưu từ UI không có hiệu lực tới khi restart app.
   - Đã xoá literal placeholder trong `stitch_daily_loop_os/s15_c_i_t_qu_n_l_chi_ph_ai/code.html` và `.kiro/specs/daily-loop-os/design.md` (thay bằng chuỗi đã che).
 - [ ] AC-17 Vòng đóng #1 (FR-LT-06): câu sai trong bài kiểm tra → thẻ `due = hôm nay` + `lapses +1` → S10 mở đúng các thẻ đó

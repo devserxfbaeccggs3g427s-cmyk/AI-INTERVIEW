@@ -1,27 +1,32 @@
 /**
- * S20 — placeholder tối giản (tasks.md nhóm 3, task 3.9).
+ * S20 — trang làm bài kiểm tra (task 14.6, 14.7, 14.8, 14.9, 14.10).
  *
- * Phase 0 chỉ cần nội dung thật cho `/`, `/plan`, `/skills`, `/skills/[id]`,
- * `/log`, `/log/history`, `/state`, `/settings`. Các route còn lại tạm là
- * placeholder 1 trang để:
- *   1. `next build` prerender được (Server Component, không state).
- *   2. Test E2E AC-15 quét 21 route mà không bị 404.
+ * Server Component — bọc `TestSessionClient` trong `<Suspense>` vì client
+ * dùng `useSearchParams()` (bắt buộc có Suspense boundary khi prerender).
  *
- * **Server Component** — không có directive, không dùng hook.
- *
- * Xem design.md §2.1 (cấu trúc route) · §4.20 · tasks.md 3.9.
+ * Xem tasks.md 14.6 / 14.7 / 14.8 / 14.9 · design.md §4.19 / S20.
  */
-import { PageHeader } from "@/components/shell/PageHeader";
+
+import { Suspense } from "react";
+
+import { TestSessionClient } from "./_components/TestSessionClient";
+
+export const dynamic = "force-dynamic";
+
+/** Skeleton khi đang tải bài kiểm tra. */
+function SessionSkeleton() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <span className="material-symbols animate-spin">autorenew</span>
+      <span className="ml-2">Đang tải bài kiểm tra...</span>
+    </div>
+  );
+}
 
 export default function TestSessionPage() {
   return (
-    <div className="space-y-gutter-lg">
-      <PageHeader
-        eyebrow="Bài kiểm tra · AI-15"
-        title="Làm bài kiểm tra"
-        description="Timer đếm ngược, ma trận câu hỏi và chấm điểm ngay từng câu."
-      />
-      <p className="text-body-md text-on-surface-variant">Sẽ dựng ở Phase 1.</p>
-    </div>
+    <Suspense fallback={<SessionSkeleton />}>
+      <TestSessionClient />
+    </Suspense>
   );
 }
