@@ -787,26 +787,26 @@
 
 ## Checklist nghiệm thu cuối
 
-- [ ] AC-1 Daily Loop: kế hoạch trống → CTA, không lỗi
-- [ ] AC-2 Quick-log: lưu ≤10s, không chờ AI
-- [ ] AC-3 Tiến độ = bằng chứng: level chỉ tăng qua Evidence
-- [ ] AC-4 SRS: `due` khớp FSRS, Again tăng `lapses`
+- [x] AC-1 Daily Loop: kế hoạch trống → CTA, không lỗi
+- [x] AC-2 Quick-log: lưu ≤10s, không chờ AI
+- [x] AC-3 Tiến độ = bằng chứng: level chỉ tăng qua Evidence
+- [x] AC-4 SRS: `due` khớp FSRS, Again tăng `lapses`
 - [ ] AC-5 Prompt caching: call 2 có `cache_read_input_tokens > 0`
-- [ ] AC-6 Chấm điểm: đúng 5 tiêu chí, tổng = trung bình
+- [x] AC-6 Chấm điểm: đúng 5 tiêu chí, tổng = trung bình
 - [ ] AC-7 Offline: không có key vẫn sinh 6 hành động (qua Ollama hoặc rule cục bộ)
-- [ ] AC-7b AI Router: `route(task)` trả đúng provider; anthropic lỗi → fallback local → `AiCall{provider:"local", fallbackFrom:"anthropic"}`
-- [ ] AC-8 Refusal: không crash, ghi `AiCall{ok:false}`
+- [x] AC-7b AI Router: `route(task)` trả đúng provider; anthropic lỗi → fallback local → `AiCall{provider:"local", fallbackFrom:"anthropic"}`
+- [x] AC-8 Refusal: không crash, ghi `AiCall{ok:false}`
 - [ ] AC-9 Mock Interview: 5 tiêu chí + 3 mạnh + 3 yếu
 - [ ] AC-10 Hỏi đúng chỗ yếu: node 0 bằng chứng được hỏi trước
-- [ ] AC-11 Bài kiểm tra: đúng số thẻ đẩy về ôn, nút "Ôn ngay" đúng thẻ
-- [ ] AC-12 Câu tự luận: lỗi thuộc đúng 1 trong 4 nhóm
+- [x] AC-11 Bài kiểm tra: đúng số thẻ đẩy về ôn, nút "Ôn ngay" đúng thẻ
+- [x] AC-12 Câu tự luận: lỗi thuộc đúng 1 trong 4 nhóm
 - [ ] AC-13 So sánh được: delta từng tiêu chí giữa 2 phiên
-- [ ] AC-14 Quick-log không mất dữ liệu: draft giữ lại
-- [ ] AC-15 Shell đồng nhất: 21 màn hình cùng 9 nav + chip header + **1 nav active**
+- [x] AC-14 Quick-log không mất dữ liệu: draft giữ lại
+- [x] AC-15 Shell đồng nhất: 21 màn hình cùng 9 nav + chip header + **1 nav active**
 - [x] AC-16 Bảo mật key (P6 STRICT): không còn literal `sk-ant-...` trong code/HTML; key đọc từ `.env.local`; UI chỉ hiện key đã mask; `.env.local` không được commit
   - **Verify:** `tests/unit/api-key-security.test.ts` (22 test) — quét `src/` + `stitch_daily_loop_os/` không còn chuỗi dạng `sk-ant-<20+ ký tự>`; `.gitignore` chặn `.env.local` và git không track file nào tên `.env.local`; `maskApiKey()` luôn trả `sk-ant-••••••••` (không phụ thuộc độ dài key thật); `validateApiKey()` chặn key sai định dạng; key ghi vào `.env.local` có **hiệu lực lúc runtime** (cache theo `mtimeMs`) nên không cần restart app.
   - **Sửa thêm (2026-10-30):** `src/lib/ai/router.ts` + `src/lib/ai/anthropic.ts` + `src/lib/shell.ts` + `src/lib/daily-loop-data.ts` giờ đọc key từ `.env.local` **lúc runtime** (`readEnvLocalKeyCached()`), fallback `process.env`. Trước đó Next.js chỉ nạp `.env.local` lúc boot → key người dùng lưu từ UI không có hiệu lực tới khi restart app.
   - Đã xoá literal placeholder trong `stitch_daily_loop_os/s15_c_i_t_qu_n_l_chi_ph_ai/code.html` và `.kiro/specs/daily-loop-os/design.md` (thay bằng chuỗi đã che).
-- [ ] AC-17 Vòng đóng #1 (FR-LT-06): câu sai trong bài kiểm tra → thẻ `due = hôm nay` + `lapses +1` → S10 mở đúng các thẻ đó
+- [x] AC-17 Vòng đóng #1 (FR-LT-06): câu sai trong bài kiểm tra → thẻ `due = hôm nay` + `lapses +1` → S10 mở đúng các thẻ đó
 - [ ] AC-18 Vòng đóng #2 (FR-MI-08/10): bấm "Tạo bằng chứng kỹ năng" → `Evidence` cho skill trọng tâm → level S03 tăng → đề xuất luyện tiếp quay lại S01; **không** bấm thì **không** tạo Evidence
-- [ ] AC-19 Token chuẩn: `headline-sm` = 1.25rem; `rounded-full` = 0.75rem (không dùng để làm hình tròn); sidebar `bg-surface-container-lowest`; header `bg-surface-container-lowest/80 backdrop-blur-xl`
+- [x] AC-19 Token chuẩn: `headline-sm` = 1.25rem; `rounded-full` = 0.75rem (không dùng để làm hình tròn); sidebar `bg-surface-container-lowest`; header `bg-surface-container-lowest/80 backdrop-blur-xl`
