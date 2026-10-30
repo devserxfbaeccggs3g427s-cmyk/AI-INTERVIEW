@@ -109,7 +109,7 @@ Cá nhân                                       [personal]
 ├── Nhật ký & Phản tư · Thể chất & Tinh thần · Quản lý năng lượng
 ```
 
-**Tổng: 7 node tầng 1 · 16 node tầng 2 · 26 node tầng 3.**
+**Tổng: 4 node domain · 16 node tầng 2 · 33 node tầng 3.**
 
 **Ràng buộc:**
 - Node `Phân tích yêu cầu & use case` và `Lựa chọn giải pháp & đánh đổi` là 2 mục **trọng tâm**
@@ -159,7 +159,7 @@ Feature dùng lại model có sẵn trong `system-design/SPEC.md` §4 — **khô
 |---|---|---|---|
 | `@@index([parentId])` | `Skill` | Truy vấn cây 3 tầng theo cha; không có index thì mỗi node là 1 full scan | Không đổi API công khai |
 | `@@index([domain])` | `Skill` | Lọc 4 domain ở S03/S04 | Không đổi API công khai |
-| `focusSkillId String?` + quan hệ `focusSkill` | `UserProfile` | Trọng tâm hôm nay (FR-SK-08) là **một** giá trị toàn cục, không cần lịch sử theo ngày ở Phase 0 → thêm 1 trường thay vì thêm 1 model (giữ đúng 19 model của SPEC §4) | `onDelete: SetNull` → xoá skill trọng tâm không làm hỏng hồ sơ |
+| `focusSkillId String?` + quan hệ `focusSkill` | `UserProfile` | Trọng tâm hôm nay (FR-SK-08) là **một** giá trị toàn cục, không cần lịch sử theo ngày ở Phase 0 → thêm 1 trường thay vì thêm 1 model (giữ đúng 15 model của SPEC §4) | `onDelete: SetNull` → xoá skill trọng tâm không làm hỏng hồ sơ |
 
 ### 5.3 Quan hệ & ràng buộc
 

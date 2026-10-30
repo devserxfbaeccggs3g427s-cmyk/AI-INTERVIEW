@@ -1680,7 +1680,7 @@ export function buildPreview(text: string, max = 280): string {
 | 8 | **Export JSON quá lớn → tràn RAM** | Crash tiến trình | Stream bằng `ReadableStream`; cảnh báo kích thước dự kiến > 50MB |
 | 9 | **Xoá dữ liệu sai thứ tự → vi phạm FK** | Transaction rollback, xoá không được | Thứ tự con trước cha sau; test tích hợp với đầy đủ quan hệ |
 | 10 | **`UserProfile` singleton bị xoá mất → app lỗi** | `/settings` 500 | Reset về mặc định thay vì xoá; `getProfile` tự `create` nếu thiếu |
-| 11 | **Thêm 2 field vào `AiCall` làm lệch SPEC §4 (19 model)** | Lệch nguồn chân lý | Ghi rõ deviation ở `spec.md` §5.2 + cập nhật `SPEC.md` §4 ở feature sau (không sửa file trong feature này) |
+| 11 | **Thêm 2 field vào `AiCall` làm lệch SPEC §4 (15 model)** | Lệch nguồn chân lý | Ghi rõ deviation ở `spec.md` §5.2 + cập nhật `SPEC.md` §4 ở feature sau (không sửa file trong feature này) |
 | 12 | **Ping tạo rác `AiCall`** (mỗi lần bấm 1 dòng) | Bảng log nhiễu | `feature = "key_test"` lọc riêng được; tooltip khuyến nghị ≤ 1 test/ngày |
 | 13 | **Ping dùng model đắt** | Tốn tiền vô ích | Cố định `claude-haiku-4-5`, `max_tokens: 1` |
 | 14 | **`dataPreview` lộ nội dung nhạy cảm vào log** | Rủi ro riêng tư | Cắt 280 ký tự, cắt giữa câu, không lưu full text; người dùng xoá được toàn bộ ngay |

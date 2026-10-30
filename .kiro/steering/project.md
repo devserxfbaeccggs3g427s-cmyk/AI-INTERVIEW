@@ -50,11 +50,11 @@ postcss.config.mjs        # Tailwind v4: @tailwindcss/postcss
 eslint.config.mjs
 .env.example
 prisma/
-  schema.prisma           # đúng 19 model của SPEC §4
-  seed.ts                 # cây kỹ năng Java 52 node + 120 thẻ + user profile
+  schema.prisma           # đúng 15 model của SPEC §4
+  seed.ts                 # cây kỹ năng Java 53 node + 140 thẻ + user profile
   seed-data/
     skills.ts             # cây Java — id cố định theo slug
-    cards.ts              # 60 zh + 60 en — id cố định
+    cards.ts              # 70 zh + 70 en — id cố định
 src/
   app/
     globals.css           # @theme Tailwind v4: 40+ màu, 11 typography, spacing, radius
@@ -187,7 +187,7 @@ src/
 
 ## 7. Ràng buộc seed
 
-- **120 thẻ** (60 zh + 60 en) biên tập tay, 6 nhóm × 10 từ mỗi ngôn ngữ.
+- **140 thẻ** (70 zh + 70 en) biên tập tay, 6 nhóm × 10 từ mỗi ngôn ngữ.
 - **10 mẫu câu** mỗi ngôn ngữ.
 - Cây kỹ năng seed theo **hồ sơ người dùng** — Java Backend Developer. Xem
   `.kiro/steering/user-profile-decisions.md` §2 (8 nhánh chuyên môn) + §3 (ngôn ngữ) + §4 (trình độ seed).

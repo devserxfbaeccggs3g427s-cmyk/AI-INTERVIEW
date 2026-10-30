@@ -255,12 +255,12 @@
 
 ## 27. Cây kỹ năng seed — Java Backend Developer (Q1)
 
-- [ ] 27.1 Tạo file `prisma/seed/skills.ts` với 7 node tầng 1 · 16 node tầng 2 · 26 node tầng 3 theo đúng cây tại `.kiro/steering/user-profile-decisions.md` §2
-- [ ] 27.2 Gắn `domain` đúng cho từng node: `professional` (8 nhánh Java) · `communication` (3) · `language` (3) · `personal` (3)
-- [ ] 27.3 Đặt `parentId` đúng 3 tầng; node tầng 3 trỏ về node tầng 2 tương ứng
+- [ ] 27.1 Tạo file `prisma/seed/skills.ts` với 4 node domain · 16 node tầng 2 · 33 node tầng 3 theo đúng cây tại `.kiro/steering/user-profile-decisions.md` §2
+- [ ] 27.2 Gắn `domain` đúng cho từng node: `professional` (29 node: 1 domain + 7 nhánh + 21 mục con) · `communication` (6) · `language` (9) · `personal` (9) — **tất cả 4 domain đều có node domain-root**
+- [ ] 27.3 Đặt `parentId` đúng 3 tầng; node domain-root có `parentId = null`; node tầng 3 trỏ về node tầng 2 tương ứng
 - [ ] 27.4 Gắn `targetLevel` mặc định: node tầng 2 = 3, node tầng 3 = 4, node tầng 1 = 3
 - [ ] 27.5 Tạo node `Tiếng Việt (giao tiếp công sở)` trong domain `language` — **không** có SRS deck (Q2)
 - [ ] 27.6 Đánh dấu 2 node trọng tâm: `Phân tích yêu cầu & use case` · `Lựa chọn giải pháp & đánh đổi`
 - [ ] 27.7 Seed `level = 0` cho mọi node (level chỉ tăng qua Evidence, không seed sẵn)
-- [ ] 27.8 Test: `prisma db seed` xong → cây có đúng 52 node, đúng 4 domain, mọi node tầng 3 có `parentId` hợp lệ
+- [ ] 27.8 Test: `prisma db seed` xong → cây có đúng 53 node, đúng 4 domain, mọi node tầng 3 có `parentId` hợp lệ
 - [ ] 27.9 Test: truy vấn `Skill.groupBy(domain)` → `professional` nhiều nhất, không có domain ngoài 4 (P5)

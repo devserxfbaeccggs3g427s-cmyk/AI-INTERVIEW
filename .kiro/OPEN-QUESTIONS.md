@@ -9,7 +9,7 @@
 
 ---
 
-## Q1 — Seed 120 thẻ: bảng Phụ lục B không khớp 10 ô/nhóm
+## Q1 — Seed 140 thẻ: bảng Phụ lục B không khớp 10 ô/nhóm
 
 **Vấn đề.** SPEC.md Phụ lục B yêu cầu "6 nhóm × 10 từ" mỗi ngôn ngữ (= 60 từ), nhưng bảng thực tế lệch:
 
@@ -21,7 +21,7 @@
 
 Ngoài ra §2.3.1 yêu cầu `numbers 1–20` (20 số) + `colors` — **không có trong bảng seed**; nhóm Numbers chỉ có `one–ten`.
 
-**→ Quyết định (mặc định đã chọn):** giữ **đúng 60 thẻ/ngôn ngữ** theo nhóm, lấy 10 từ đầu mỗi nhóm; phần dư (`eight`…`twenty`, `colors`, `big`/`small`/`new`) chuyển sang **deck Level 1** (`Card.group = "level1"`), dùng khi bài kiểm tra `placement` ước lượng ≥ A1.
+**→ Quyết định (mặc định đã chọn):** giữ **đúng 70 thẻ/ngôn ngữ** (6 nhóm × 10 từ + 10 mẫu câu), lấy 10 từ đầu mỗi nhóm; phần dư (`eight`…`twenty`, `colors`, `big`/`small`/`new`) chuyển sang **deck Level 1** (`Card.group = "level1"`), dùng khi bài kiểm tra `placement` ước lượng ≥ A1.
 **Cần người biết ngôn ngữ duyệt** trước khi seed (rủi ro R6: AI không được sinh từ vựng nền).
 
 **→ Quyết định của bạn:** ______________________
@@ -44,7 +44,7 @@ Task đã có ở `ai-foundation/tasks.md` (§2.x, §17.3) và AC-5.
 
 ---
 
-## Q3 — Model mới: 9 model đề xuất (ngoài 19 model của SPEC §4)
+## Q3 — Model mới: 9 model đề xuất (ngoài 15 model của SPEC §4)
 
 **Vấn đề.** Các feature cần model mà SPEC §4 không có. Đã gom đủ trong
 [`steering/data-model-registry.md`](steering/data-model-registry.md) §3:

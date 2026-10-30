@@ -13,7 +13,7 @@
 | `SPEC.md` §3.1 (bảng tổng quan) | S09, S10 → **Phase 0** |
 | `SPEC.md` §3.2 (S09, S10) | mô tả màn hình, không nhắc Phase |
 | `.kiro/steering/project.md` §3 (danh mục 21 màn hình) | S09, S10 → **Phase 0** |
-| `SPEC.md` §7 (lộ trình) | "SRS zh/en (S09, S10) + seed 120 thẻ" nằm trong **Phase 1 — Luyện tập cốt lõi** |
+| `SPEC.md` §7 (lộ trình) | "SRS zh/en (S09, S10) + seed 140 thẻ" nằm trong **Phase 1 — Luyện tập cốt lõi** |
 
 **Mâu thuẫn:** cùng một SPEC vừa xếp S09/S10 ở Phase 0, vừa đặt chúng ở Phase 1.
 
@@ -27,9 +27,9 @@
 
 | Hạng mục | Phase | Lý do |
 |---|---|---|
-| Schema `Card` / `Review` (+ `SrsSession`) | **0** | Nền tảng dữ liệu, `project.md` §7 yêu cầu seed 120 thẻ ngay từ Phase 0 |
+| Schema `Card` / `Review` (+ `SrsSession`) | **0** | Nền tảng dữ liệu, `project.md` §7 yêu cầu seed 140 thẻ ngay từ Phase 0 |
 | `src/lib/fsrs.ts` (wrapper thuật toán) | **0** | Thư viện thuần, không phụ thuộc UI |
-| Seed 120 thẻ + 20 mẫu câu | **0** | Tĩnh, biên tập tay (R6) — không gọi AI |
+| Seed 140 thẻ + 20 mẫu câu | **0** | Tĩnh, biên tập tay (R6) — không gọi AI |
 | API `/api/srs/*`, `/api/language*` | **1** | Cần `Card`/`Review` có dữ liệu thật |
 | UI S09 (`/language`), S10 (`/language/session`) | **1** | Theo `SPEC.md` §7 |
 
@@ -66,7 +66,7 @@ Nguyên tắc áp dụng:
 - **Chấm kiểu "Đúng/Sai" không đủ.** Cần 4 mức (Again / Hard / Good / Easy) để thuật toán phân biệt "quên hẳn" với "nhớ nhưng khó" — đây là thông tin mà thuật toán FSRS dùng để ước lượng độ bền bộ nhớ.
 - **Hai ngôn ngữ dùng chung một "deck" là sai.** Người Việt học Trung và Anh theo hai đường khác nhau (pinyin vs phonics; hanzi vs Latin). Trộn lẫn sẽ phá hỏng cả hai đường. → **S09 có 2 deck riêng, streak riêng, tiến độ riêng.**
 - **TTS là điểm chí mạng.** Không có giọng `zh-CN` trên một số thiết bị → nếu để trống, người học mất hoàn toàn khả năng nghe. → Cần fallback hiển thị pinyin + hanzi (R5).
-- **Nội dung level 0 không được để AI sinh.** Từ vựng nền tảng sai 1 từ = sai cả nhóm từ sau đó. → Seed **120 thẻ biên tập tay**, AI không được sinh từ vựng nền (R6).
+- **Nội dung level 0 không được để AI sinh.** Từ vựng nền tảng sai 1 từ = sai cả nhóm từ sau đó. → Seed **140 thẻ biên tập tay**, AI không được sinh từ vựng nền (R6).
 
 ---
 
@@ -85,7 +85,7 @@ Nguyên tắc áp dụng:
 | FR-LG-07 | Thẻ sai (rating 1) → tự sinh lại thẻ biến thể (ví dụ câu khác / điền vào chỗ trống) | P2 (**ngoài phạm vi**) | FR-LG-07 |
 | FR-LG-08 | Từ khóa trong bài viết → nút "Thêm vào ôn" | P2 (**ngoài phạm vi**, Phase 2) | FR-LG-08 |
 | FR-LG-09 | Tiến độ **mỗi ngôn ngữ**: số thẻ đã học / đang học / đã thuộc + **chuỗi ngày ôn riêng từng ngôn ngữ** | P0 | FR-LG-09 |
-| FR-LG-10 | Seed **60 thẻ zh + 60 thẻ en + 10 mẫu câu mỗi ngôn ngữ** — **biên tập tay, KHÔNG AI sinh** (R6) | P0 | FR-LG-10 |
+| FR-LG-10 | Seed **70 thẻ zh + 70 thẻ en (mỗi ngôn ngữ: 6 nhóm × 10 từ + 10 mẫu câu)** — **biên tập tay, KHÔNG AI sinh** (R6) | P0 | FR-LG-10 |
 
 ### 3.2 Trung tâm ôn tập — S09 (`/language`)
 
@@ -185,7 +185,7 @@ Feature dùng 3 model: `Card`, `Review` (đã có trong SPEC §4) + **1 model b�
 | | `examplePinyin` | String? | zh: pinyin của ví dụ câu (`Nǐ hǎo, hěn gāoxìng rènshi nǐ`) |
 | | `hint` | String? | zh: gợi ý ngữ cảnh ngắn · en: **phiên âm kiểu Việt** (tắt sau 14 ngày) |
 | | `group` | String? | nhóm chủ đề — **phải khớp** `LANG_GROUPS[lang][i].id` |
-| | `mode` | String | `recognize` \| `recall` \| `produce`; seed Phase 1 dùng `recognize` cho 120 thẻ |
+| | `mode` | String | `recognize` \| `recall` \| `produce`; seed Phase 1 dùng `recognize` cho 140 thẻ |
 | | `cardState` | **Json** | **state FSRS** theo schema `FsrsCardState` (§5.3) |
 | | `due` | DateTime | ngày hạn ôn (denormalized từ `cardState.due`) — phục vụ truy vấn |
 | | `stability` | Float | S (denormalized) |
@@ -213,7 +213,7 @@ Feature dùng 3 model: `Card`, `Review` (đã có trong SPEC §4) + **1 model b�
 | | `status` | String | `active` \| `done` \| `abandoned` |
 | | `startedAt` / `endedAt` | DateTime | timer phiên |
 
-> **Vì sao cần `SrsSession`:** SPEC §4 đóng băng 19 model và không có bảng session cho SRS. Nhưng 3 yêu cầu bắt buộc không thể đạt được nếu không có: (1) **queue ổn định** trong phiên (thẻ đã lấy không bị đổi giữa chừng), (2) **khôi phục phiên dang dở** khi đóng tab (FR-LG-S10-10), (3) **đếm `3/12 thẻ`** khớp với những gì đã ôn. `SrsSession` là model **bổ sung, không sửa** 19 model hiện có. Được ghi vào SPEC §4 ở lần cập nhật tiếp theo.
+> **Vì sao cần `SrsSession`:** SPEC §4 đóng băng 15 model và không có bảng session cho SRS. Nhưng 3 yêu cầu bắt buộc không thể đạt được nếu không có: (1) **queue ổn định** trong phiên (thẻ đã lấy không bị đổi giữa chừng), (2) **khôi phục phiên dang dở** khi đóng tab (FR-LG-S10-10), (3) **đếm `3/12 thẻ`** khớp với những gì đã ôn. `SrsSession` là model **bổ sung, không sửa** 15 model hiện có. Được ghi vào SPEC §4 ở lần cập nhật tiếp theo.
 
 ### 5.3 Schema JSON của state FSRS (`Card.cardState`)
 
@@ -299,7 +299,7 @@ LIMIT :pageSize OFFSET :offset;
 | `lang` | ∈ {`zh`, `en`} — validate Zod ở mọi route |
 | `mode` | ∈ {`recognize`, `recall`, `produce`} |
 | `group` | ∈ `LANG_GROUPS[lang].map(g => g.id)` (6 nhóm/ngôn ngữ) |
-| Tổng thẻ seed | 60 zh + 60 en = **120** (FR-LG-10) |
+| Tổng thẻ seed | 70 zh + 70 en = **120** (FR-LG-10) |
 | Tổng mẫu câu seed | 10 zh + 10 en = **20** |
 | Số thẻ tối đa/phiên | **20** (`SRS_SESSION_MAX_CARDS`, `src/lib/config.ts`) |
 | Ngưỡng "đã thuộc" | `stability >= 21` ngày (chuẩn FSRS mature) |
@@ -470,7 +470,7 @@ LIMIT :pageSize OFFSET :offset;
 
 | Trạng thái | Điều kiện | Hiển thị |
 |---|---|---|
-| Chưa seed | `Card` = 0 | Banner "Chưa có thẻ nào — chạy seed 120 thẻ" + hướng dẫn `npx prisma db seed` |
+| Chưa seed | `Card` = 0 | Banner "Chưa có thẻ nào — chạy seed 140 thẻ" + hướng dẫn `npx prisma db seed` |
 | Deck rỗng 1 ngôn ngữ | `lang=zh` = 0 thẻ | Deck card zh hiện 0/0/0 + nhãn "Chưa bật"; bấm → CTA "Bật ngôn ngữ này" (toggle `UserProfile.learningLangs`) |
 | Không có thẻ đến hạn | `due count = 0` cả 2 ngôn ngữ | Hero CTA đổi thành "Hôm nay không có thẻ đến hạn" + nút phụ "Ôn sớm 5 thẻ" (lấy thẻ gần hạn nhất) |
 | Lọc không kết quả | filter + query không khớp | "Không có thẻ nào khớp bộ lọc" + nút "Xoá bộ lọc" |
@@ -537,8 +537,8 @@ LIMIT :pageSize OFFSET :offset;
 
 | Ngôn ngữ | Mức khởi đầu | Mức seed | Deck SRS | Ghi chú |
 |---|---|---|---|---|
-| **Tiếng Anh** | `zero` | **`A1`** | ✅ 60 thẻ A1 (rút gọn) + 60 thẻ A2 | Biết "vài từ cơ bản" — deck A1 nên bắt đầu từ pronouns, numbers 1–10, days, greetings, `I am / My name is / I like / I want` |
-| **Tiếng Trung** | `zero` | **`zero`** | ✅ 60 thẻ zero + 60 thẻ A1 | Chưa biết gì → pinyin luôn, hanzi bật/tắt, 4 thanh điệu từ đầu |
+| **Tiếng Anh** | `zero` | **`A1`** | ✅ 60 thẻ A1 (rút gọn) + 60 thẻ A2 (level mở rộng) | Biết "vài từ cơ bản" — deck A1 nên bắt đầu từ pronouns, numbers 1–10, days, greetings, `I am / My name is / I like / I want` |
+| **Tiếng Trung** | `zero` | **`zero`** | ✅ 60 thẻ zero + 60 thẻ A1 (level mở rộng) | Chưa biết gì → pinyin luôn, hanzi bật/tắt, 4 thanh điệu từ đầu |
 | **Tiếng Việt** | — | **`B2`** (bản ngữ) | ❌ **không có deck** | Chỉ dùng ở module giao tiếp (S07/S08/S11) — luyện nói/ghi chép, không học thuộc |
 
 **Hệ level thống nhất:** `zero · A1 · A2 · B1 · B2 · C1 · C2` (CEFR đầy đủ + cột HSK tương ứng cho tiếng Trung).
@@ -553,7 +553,7 @@ Bỏ khái niệm "thang 5 mức nội bộ".
 
 > Nguồn: `SPEC.md` Phụ lục B. Phụ lục B ghi rõ: *"Danh sách trên là bản khởi đầu để review, chưa phải bản cuối"*. Bảng dưới đây là **bản chốt của feature này** — mọi sai lệch so với Phụ lục B đều được ghi ở §7.5 và **cần người biết ngôn ngữ duyệt** trước khi seed (R6).
 
-### 7.1 Tiếng Trung — 6 nhóm × 10 từ (60 thẻ)
+### 7.1 Tiếng Trung — 6 nhóm × 10 từ + 10 mẫu câu (70 thẻ)
 
 #### Nhóm 1 — Chào hỏi & Xã giao (`greeting`)
 
@@ -645,7 +645,7 @@ Bỏ khái niệm "thang 5 mức nội bộ".
 | 9 | 来 | lái | Tới | thanh 2 |
 | 10 | 很 | hěn | Rất | thanh 3 · đứng trước tính từ |
 
-### 7.2 Tiếng Anh — 6 nhóm × 10 từ (60 thẻ)
+### 7.2 Tiếng Anh — 6 nhóm × 10 từ + 10 mẫu câu (70 thẻ)
 
 #### Nhóm 1 — Pronouns & cơ bản (`pronoun`)
 
@@ -773,9 +773,9 @@ Bỏ khái niệm "thang 5 mức nội bộ".
 
 | # | Sai lệch | Lý do | Đề xuất |
 |---|---|---|---|
-| D1 | Phụ lục B "Tiếng Anh · Numbers & family" liệt kê **18 mục** (`one–ten` + 7 từ gia đình) nhưng chỉ được 10 ô/nhóm | 6 nhóm × 10 từ = 60 thẻ/ngôn ngữ là ràng buộc cứng của FR-LG-10 | Giữ **7 từ gia đình** (đối xứng nhóm "Người & Thân xã" của zh) + **3 số** (one/two/three). Số 4–10 hoãn sang deck mở rộng level 1 |
+| D1 | Phụ lục B "Tiếng Anh · Numbers & family" liệt kê **18 mục** (`one–ten` + 7 từ gia đình) nhưng chỉ được 10 ô/nhóm | 6 nhóm × 10 từ = 70 thẻ/ngôn ngữ là ràng buộc cứng của FR-LG-10 | Giữ **7 từ gia đình** (đối xứng nhóm "Người & Thân xã" của zh) + **3 số** (one/two/three). Số 4–10 hoãn sang deck mở rộng level 1 |
 | D2 | Phụ lục B "Tiếng Anh · Verbs & adjectives" liệt kê **15 mục** | Vượt 10 ô | Giữ **10 động từ cốt lõi** (be/have/go/do/like/want/eat/drink/read/write). 5 tính từ (good/big/small/new/happy) hoãn sang level 1 |
-| D3 | SPEC §2.3.1 nhắc `numbers 1–20` và `colors`, nhưng Phụ lục B không có nhóm màu | Xung đột giữa mô tả §2.3.1 và bảng seed | Bổ sung `colors` (red/blue/green/yellow/black/white) + `numbers 4–10` + 5 tính từ vào **deck mở rộng level 1** (không thuộc 120 thẻ level 0) |
+| D3 | SPEC §2.3.1 nhắc `numbers 1–20` và `colors`, nhưng Phụ lục B không có nhóm màu | Xung đột giữa mô tả §2.3.1 và bảng seed | Bổ sung `colors` (red/blue/green/yellow/black/white) + `numbers 4–10` + 5 tính từ vào **deck mở rộng level 1** (không thuộc 140 thẻ level 0) |
 | D4 | Tên nhóm trong prototype khác Phụ lục B | Prototype là mức ưu tiên thấp nhất | Dùng **id chuẩn** theo Phụ lục B; nhãn hiển thị lấy theo prototype (`Chào hỏi & Xã giao`, `Người & Thân xã`, `Đồ ăn & Đồ uống`, `Địa điểm & Phương hướng`, `Thời gian & Lịch trình`, `Động từ & Phó từ cốt lõi`) |
 | D5 | SPEC §2.3.1 liệt kê 10 mẫu câu zh khác Phụ lục B ở mục `你好 / 我是…` | Hai danh sách trong cùng SPEC | Dùng **Phụ lục B** (10 mẫu, nằm trong bảng seed) |
 | D6 | Prototype ghi "FSRS v4.5", "19-params", "Decay 0.5" | Bản prototype là minh hoạ, không phải bản cài đặt | Panel hiển thị **tham số runtime thật** từ `src/lib/fsrs.ts` |
@@ -831,8 +831,8 @@ Quy ước chung (steering `tech.md` §5): mọi route trả `{ ok: true, data }
 - *Given* `zh` có 24 thẻ đang học · 18 đã thuộc · 12 đến hạn và `en` có 31 · 22 · 9, *When* mở `/language`, *Then* deck zh hiện đúng 24/18/12 và deck en hiện đúng 31/22/9 — **không** lẫn số của hai ngôn ngữ.
 - *Given* người dùng ôn `zh` 3 ngày liên tiếp và `en` 1 ngày, *When* mở `/language`, *Then* streak zh = **3**, streak en = **1** (tính theo ngày local có `Review` của đúng ngôn ngữ đó).
 
-**AC-LG-7 — Seed 120 thẻ, biên tập tay (FR-LG-10, R6)**
-- *Given* database rỗng, *When* chạy `npx prisma db seed`, *Then* có đúng **60 thẻ `zh` + 60 thẻ `en` = 120 thẻ**, mỗi ngôn ngữ **6 nhóm × 10 thẻ**, và **20 mẫu câu** (10 zh + 10 en); mọi thẻ có `mode = "recognize"`, `cardState.state = 0`, `due` = ngày seed.
+**AC-LG-7 — Seed 140 thẻ, biên tập tay (FR-LG-10, R6)**
+- *Given* database rỗng, *When* chạy `npx prisma db seed`, *Then* có đúng **70 thẻ `zh` + 70 thẻ `en` = 140 thẻ**, mỗi ngôn ngữ **6 nhóm × 10 thẻ**, và **20 mẫu câu** (10 zh + 10 en); mọi thẻ có `mode = "recognize"`, `cardState.state = 0`, `due` = ngày seed.
 - *Given* file seed, *When* kiểm tra mã nguồn, *Then* **không** có lời gọi Anthropic SDK / không có lời gọi mạng nào trong `prisma/seed.ts` và file seed tĩnh.
 
 **AC-LG-8 — TTS fallback khi thiếu `zh-CN` (R5)**
@@ -849,7 +849,7 @@ Quy ước chung (steering `tech.md` §5): mọi route trả `{ ok: true, data }
 - *Given* nhập `group="not-a-group"` cho `lang=zh`, *When* bấm lưu, *Then* API trả `400` với thông báo tiếng Việt nêu rõ nhóm hợp lệ và **không** ghi gì vào DB.
 
 **AC-LG-12 — Xuất/nhập deck JSON (NFR-08)**
-- *Given* 120 thẻ + lịch sử review, *When* bấm "Xuất Deck JSON", *Then* file tải xuống chứa đủ 120 thẻ **kèm `cardState`** và mọi `Review`; file import lại vào database trống phải cho lại **cùng số thẻ, cùng `due`, cùng `stability`**.
+- *Given* 140 thẻ + lịch sử review, *When* bấm "Xuất Deck JSON", *Then* file tải xuống chứa đủ 140 thẻ **kèm `cardState`** và mọi `Review`; file import lại vào database trống phải cho lại **cùng số thẻ, cùng `due`, cùng `stability`**.
 
 **AC-LG-13 — Offline (NFR-03)**
 - *Given* thiết bị **không có mạng** và **không** có `ANTHROPIC_API_KEY`, *When* mở `/language`, ôn 5 thẻ và bấm "Thêm thẻ thủ công", *Then* **mọi** thao tác thành công, dữ liệu ghi vào SQLite, và **không** có lời gọi mạng nào được thực hiện.
@@ -864,7 +864,7 @@ Quy ước chung (steering `tech.md` §5): mọi route trả `{ ok: true, data }
 | # | Rủi ro | Xác suất | Tác động | Giảm thiểu |
 |---|---|---|---|---|
 | R5 | TTS/STT Web Speech API **không hỗ trợ `zh-CN`** trên một số thiết bị | Trung bình | Trung bình | Dùng `speechSynthesis` với fallback danh sách giọng; nếu không có → chỉ dùng **pinyin + hán tự** (bật hanzi cưỡng chế) — xem AC-LG-8 |
-| R6 | AI sinh nội dung level 0 sai chuẩn | Trung bình | Cao | Seed **120 thẻ biên tập tay**, file tĩnh, **không** gọi AI. AI chỉ sinh bài luyện (S11/Phase 2), không sinh từ vựng nền. Cần người biết ngôn ngữ ký duyệt D1–D3 (§7.5) |
+| R6 | AI sinh nội dung level 0 sai chuẩn | Trung bình | Cao | Seed **140 thẻ biên tập tay**, file tĩnh, **không** gọi AI. AI chỉ sinh bài luyện (S11/Phase 2), không sinh từ vựng nền. Cần người biết ngôn ngữ ký duyệt D1–D3 (§7.5) |
 | R7 | Dữ liệu học rò rỉ ra ngoài máy | Thấp | Cao | Local-first (P6): toàn bộ tính năng không gọi API ngoài; export JSON là hành động chủ động của người dùng |
 | R11 | **Đổi tham số FSRS giữa chừng** làm sai lệch toàn bộ lịch đã lưu | Trung bình | Cao | Tham số **đóng băng** trong `src/lib/fsrs.ts` (`FSRS_CONFIG`), không cho UI sửa. `cardState.version` cho phép migrate khi nâng phiên bản `ts-fsrs` |
 | R12 | Học thuộc bằng cách đoán từ đầu tiên (guess) → FSRS tăng S oan | Trung bình | Trung bình | Mặt trước chỉ hiện **đích**, không hiện nghĩa trước khi lật; nút "Gợi ý ngữ cảnh" **không** chứa đáp án; đếm `lapses` khi rating `Again` để phát hiện lệch |

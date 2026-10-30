@@ -102,11 +102,18 @@ for feat in FEATURES:
             if not has_heading(t, "kiểm thử", re.I | re.M):
                 errs.append(f"[{feat}/design.md] thiếu heading 'kiểm thử'")
         elif fn == "tasks.md":
-            n = len(re.findall(r"^- \[ \] ", t, re.M))
-            if n < 15:
-                errs.append(f"[{feat}/tasks.md] chỉ {n} task (cần >= 15)")
+            # Đếm CẢ task đã tick (- [x]) và chưa tick (- [ ]).
+            # Feature đã implement xong thì task đều là - [x] — nếu chỉ đếm
+            # - [ ] thì validator sẽ báo "chỉ 0 task" cho feature hoàn thành.
+            total = len(re.findall(r"^- \[[ xX]\] ", t, re.M))
+            open_tasks = len(re.findall(r"^- \[ \] ", t, re.M))
+            if total < 15:
+                errs.append(f"[{feat}/tasks.md] chỉ {total} task (cần >= 15)")
             else:
-                oks.append(f"[{feat}/tasks.md] {n} task")
+                oks.append(
+                    f"[{feat}/tasks.md] {total} task"
+                    + (f" ({open_tasks} chưa xong)" if open_tasks else " — đã xong")
+                )
 
 # ── 5–6: coverage so với SPEC.md gốc ────────────────────────────────────────
 if not os.path.exists(SOURCE_SPEC):

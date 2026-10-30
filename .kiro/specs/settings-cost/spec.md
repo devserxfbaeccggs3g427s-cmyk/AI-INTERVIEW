@@ -128,7 +128,7 @@ Người dùng mục tiêu là chủ sở hữu duy nhất, đang làm việc, k
 
 ### 5.2 Mở rộng cần thiết (deviation có chủ đích so với SPEC.md §4)
 
-SPEC.md §4 đóng băng 19 model cho Phase 0. S15 cần **4 field mới** để đáp ứng FR-PS-07, FR-SC-06, FR-SC-22, FR-SC-14 — tất cả đều là field **nullable/có mặc định**, không phá model cũ:
+SPEC.md §4 đóng băng 15 model cho Phase 0. S15 cần **4 field mới** để đáp ứng FR-PS-07, FR-SC-06, FR-SC-22, FR-SC-14 — tất cả đều là field **nullable/có mặc định**, không phá model cũ:
 
 | Model | Field mới | Kiểu | Mặc định | Lý do |
 |---|---|---|---|---|
@@ -146,7 +146,7 @@ SPEC.md §4 đóng băng 19 model cho Phase 0. S15 cần **4 field mới** để
 - `learningLangs` phải parse được thành mảng `["zh","en"]` và **không rỗng** — validate bằng Zod trước khi ghi.
 - `AiCall.createdAt` giữ nguyên `DateTime` UTC của Prisma; **ngày hiển thị** chuẩn hoá theo `src/lib/dates.ts` (00:00 local, so sánh bằng chuỗi `yyyy-MM-dd`).
 - `AiCall` **không** bị xoá khi người dùng xoá một activity/phiên; nó là log vận hành, chỉ bị xoá khi "Xoá trắng dữ liệu".
-- Xoá trắng dữ liệu xoá **mọi** bảng nghiệp vụ **kể cả** 120 thẻ seed; hộp thoại cảnh báo phải nói rõ điều này và đưa lệnh `npm run db:seed` để nạp lại.
+- Xoá trắng dữ liệu xoá **mọi** bảng nghiệp vụ **kể cả** 140 thẻ seed; hộp thoại cảnh báo phải nói rõ điều này và đưa lệnh `npm run db:seed` để nạp lại.
 
 ## 6. Giao diện & hành vi
 
@@ -334,7 +334,7 @@ SPEC.md §4 đóng băng 19 model cho Phase 0. S15 cần **4 field mới** để
 | **Cần restart server** | Vừa lưu key mới vào `.env.local` | Hộp nhắc `bg-tertiary/10` trong tab Khóa API: "Đã ghi .env.local — khởi động lại `npm run dev` để có hiệu lực" + nút "Tôi đã khởi động lại — kiểm tra lại". |
 | **Chưa có dữ liệu chi phí** | `AiCall` rỗng | Bento tổng = `0` / `$0.00`; bảng trống có CTA "Kế hoạch ngày sẽ ghi lần gọi đầu tiên" + link tới S01; bar phân bổ hiện track rỗng kèm nhãn "Chưa có lượt gọi nào". |
 | **Có lỗi API** | `AiCall.ok = false` | Dòng log hiện chip lỗi + tooltip `error`; tổng "lượt thất bại" đếm riêng, không tính vào tỷ lệ thành công. |
-| **Xoá dữ liệu — bước 1** | Bấm "Xóa trắng dữ liệu" | Hộp thoại `bg-surface-container backdrop-blur-md`, liệt kê đúng các bảng sẽ bị xoá + nhắc 120 thẻ seed + lệnh `npm run db:seed`. |
+| **Xoá dữ liệu — bước 1** | Bấm "Xóa trắng dữ liệu" | Hộp thoại `bg-surface-container backdrop-blur-md`, liệt kê đúng các bảng sẽ bị xoá + nhắc 140 thẻ seed + lệnh `npm run db:seed`. |
 | **Xoá dữ liệu — bước 2** | Trong hộp thoại, gõ `XOA` | Nút "Xóa vĩnh viễn" (`bg-error-container text-on-error-container`) chỉ enable khi khớp `XOA`; gõ sai → viền `border-error` + hint "Phải gõ đúng: XOA". |
 | **Cảnh báo ngân sách** | ≥ 80% ngân sách tháng | Fill thanh đổi `bg-tertiary`, chip cảnh báo "Đã dùng 82% ngân sách tháng". ≥ 100% → fill `bg-error` + "Vượt ngân sách". |
 | **Cache nghi vấn hỏng** | `cacheRead = 0` ở mọi call của ≥ 2 feature khác nhau trong 24h | Chip cảnh báo `text-tertiary`: "Cache hit rate 0% — kiểm tra lại system prompt cố định (FR-AI-01)". |
@@ -358,7 +358,7 @@ SPEC.md §4 đóng băng 19 model cho Phase 0. S15 cần **4 field mới** để
 | **Bấm Ping liên tục** | Nút disabled trong lúc chạy; tối đa 1 test/ngày được khuyến nghị trong tooltip để tránh tạo rác `AiCall`. |
 | **Mất focus khi mở hộp thoại** | Focus trap trong hộp thoại, focus trả về nút mở khi đóng, `Esc` huỷ bước 1. |
 | **Người dùng muốn xoá hồ sơ nhưng giữ dữ liệu** | Không hỗ trợ trong Phase 0 (nút xoá là "xóa trắng"); ghi rõ trong hộp thoại. |
-| **Thẻ seed bị xoá** | Hộp thoại xoá liệt kê rõ "120 thẻ mẫu cũng bị xoá" + lệnh `npm run db:seed` để nạp lại. |
+| **Thẻ seed bị xoá** | Hộp thoại xoá liệt kê rõ "140 thẻ mẫu cũng bị xoá" + lệnh `npm run db:seed` để nạp lại. |
 
 ### 6.5 Công thức & bảng giá ước tính chi phí
 

@@ -37,8 +37,8 @@ Phase -1 **chỉ** hoàn thành khi tất cả mục sau đúng:
 |---|---|---|
 | D1 | `npm install && npm run dev` → mở `http://localhost:3000` thấy trang chủ render | Lệnh chạy thật |
 | D2 | `npm run build` → **0 lỗi** TypeScript (strict) | Lệnh chạy thật |
-| D3 | `npx prisma migrate dev` → tạo `prisma/dev.db` với **19 model** của SPEC §4 | Lệnh chạy thật |
-| D4 | `npm run db:seed` → seed cây kỹ năng + 120 thẻ + user profile, **không gọi AI** | Lệnh chạy thật |
+| D3 | `npx prisma migrate dev` → tạo `prisma/dev.db` với **15 model** của SPEC §4 | Lệnh chạy thật |
+| D4 | `npm run db:seed` → seed cây kỹ năng + 140 thẻ + user profile, **không gọi AI** | Lệnh chạy thật |
 | D5 | Trang chủ hiển thị đúng design token: màu `surface`/`primary`/`secondary`/`tertiary`, font Space Grotesk / Be Vietnam Pro / JetBrains Mono | Kiểm tra bằng mắt + computed style |
 | D6 | Bottom nav 4 nút (Hôm nay · Kỹ năng · Ôn tập · Nhật ký) + menu góc phải 5 mục, đúng SPEC §3.1 | Kiểm tra bằng mắt |
 | D7 | Layout đúng ở **390px** (mobile-first) và ≥1280px (12 cột) | Playwright screenshot |
@@ -59,7 +59,7 @@ Phase -1 **chỉ** hoàn thành khi tất cả mục sau đúng:
 | P3 | `globals.css` chưa khai báo font & biến CSS | Tiếng Việt hiển thị sai dấu (thiếu Be Vietnam Pro + line-height rộng) |
 | P4 | `layout.tsx` chưa có shell + bottom nav + menu góc phải | Mỗi feature tự viết layout → nhân bản, không nhất quán |
 | P5 | `prisma/schema.prisma` chưa có | Mọi feature chỉ có mô tả, không có nơi để viết query |
-| P6 | Chưa có script seed | Cây kỹ năng + 120 thẻ phải nhập tay mỗi lần dev |
+| P6 | Chưa có script seed | Cây kỹ năng + 140 thẻ phải nhập tay mỗi lần dev |
 | P7 | Chưa có `.env.local` mẫu / kiểm tra key | App crash khi thiếu `ANTHROPIC_API_KEY` thay vì chạy offline (FR-AI-06) |
 | P8 | Chưa có `src/lib/dates.ts` chuẩn hoá ngày | So sánh ngày lệch 1 ngày do timezone (rủi ro T8 của `weekly-progress-report`) |
 | P9 | Chưa có test harness | "Definition of Done" không kiểm chứng được → task tự tick |
@@ -105,12 +105,12 @@ Phase -1 **chỉ** hoàn thành khi tất cả mục sau đúng:
 
 | ID | Yêu cầu | Ưu tiên | Nguồn |
 |---|---|---|---|
-| FR-AF-18 | `prisma/schema.prisma` — **19 model** của SPEC §4, **không thiếu, không thừa** (chưa áp dụng C1–C34 của registry — feature khác thêm sau bằng migration riêng) | P0 | SPEC §4 |
+| FR-AF-18 | `prisma/schema.prisma` — **15 model** của SPEC §4, **không thiếu, không thừa** (chưa áp dụng C1–C34 của registry — feature khác thêm sau bằng migration riêng) | P0 | SPEC §4 |
 | FR-AF-19 | `src/lib/db.ts` — Prisma client **singleton** (tránh tạo nhiều connection khi hot-reload) + `globalThis` cache trong dev | P0 | steering/tech §5 |
 | FR-AF-20 | `src/lib/dates.ts` — chuẩn hoá ngày 00:00 **local**, so sánh ngày bằng chuỗi `yyyy-MM-dd`, **không** dùng `toISOString()` (chuyển UTC) | P0 | steering/tech §5 |
 | FR-AF-21 | `src/lib/types.ts` — type chung: `DomainKey`, `Level` (CEFR), `ActivityType`, `CardMode`, `AiTone`… kéo từ registry | P0 | steering |
 | FR-AF-22 | `src/lib/config.ts` — hằng số: `SLOT_COUNT=6`, `SKILL_LEVEL_MAX=5`, `EVIDENCE_THRESHOLD=3`, `QUICK_LOG_MAX_SECONDS=10`, `SRS_SESSION_MAX_CARDS=20`, `TEST_COUNTS`… | P0 | steering/project §5 |
-| FR-AF-23 | `prisma/seed.ts` — chạy được bằng `npm run db:seed`: user profile mặc định + cây kỹ năng **Java** (52 node, từ `user-profile-decisions.md` §2) + 120 thẻ zh/en. **Không gọi AI** (R6). | P0 | user-profile-decisions §2, §4 |
+| FR-AF-23 | `prisma/seed.ts` — chạy được bằng `npm run db:seed`: user profile mặc định + cây kỹ năng **Java** (53 node, từ `user-profile-decisions.md` §2) + 140 thẻ zh/en. **Không gọi AI** (R6). | P0 | user-profile-decisions §2, §4 |
 
 ### 3.5 Môi trường & an toàn (FR-AF-24..27)
 
@@ -150,7 +150,7 @@ Phase -1 **chỉ** hoàn thành khi tất cả mục sau đúng:
 
 ## 5. Mô hình dữ liệu
 
-Feature này **không thêm model nào** — chỉ khởi tạo đúng 19 model của SPEC §4.
+Feature này **không thêm model nào** — chỉ khởi tạo đúng 15 model của SPEC §4.
 
 | Model | Ghi chú khởi tạo |
 |---|---|
@@ -170,7 +170,7 @@ Feature này **không thêm model nào** — chỉ khởi tạo đúng 19 model 
 | `TestSession` | `testType` ∈ 4 loại, `blueprint` Json |
 | `TestItem` | `itemType` ∈ 6 dạng câu, `options`/`errorGroups` Json |
 
-**Quy tắc:** schema ở Phase -1 đúng 19 model. Mọi field bổ sung (C1–C34) và model mới (M1–M11)
+**Quy tắc:** schema ở Phase -1 đúng 15 model. Mọi field bổ sung (C1–C34) và model mới (M1–M11)
 do feature tương ứng thêm bằng **migration riêng**, theo `.kiro/steering/data-model-registry.md`.
 
 **Enum cần định nghĩa sớm** (dùng bởi nhiều feature):
@@ -272,7 +272,7 @@ Feature này **không tạo route nghiệp vụ**. Chỉ có 1 route kỹ thuậ
 ## 8. Tiêu chí nghiệm thu (Acceptance Criteria)
 
 **AC-AF-1 — Lệnh cơ bản hoạt động**
-- *Given* máy sạch chỉ có repo, *When* chạy `npm install && npm run db:migrate && npm run db:seed && npm run dev`, *Then* trang chủ mở ở `localhost:3000` không lỗi console, và `prisma/dev.db` tồn tại với đủ 19 bảng.
+- *Given* máy sạch chỉ có repo, *When* chạy `npm install && npm run db:migrate && npm run db:seed && npm run dev`, *Then* trang chủ mở ở `localhost:3000` không lỗi console, và `prisma/dev.db` tồn tại với đủ 15 bảng.
 
 **AC-AF-2 — Build sạch**
 - *Given* mã nguồn hiện tại, *When* chạy `npm run build`, *Then* exit code 0, không có lỗi TypeScript; `npm run typecheck` cũng exit 0 với `strict: true`.
@@ -290,7 +290,7 @@ Feature này **không tạo route nghiệp vụ**. Chỉ có 1 route kỹ thuậ
 - *Given* không có `ANTHROPIC_API_KEY`, *When* mở app, *Then* vẫn render đầy đủ, hiện banner "Đang chạy offline mode", **không** có lỗi 500, và không có request nào tới Anthropic.
 
 **AC-AF-7 — Seed tĩnh**
-- *Given* `npm run db:reset`, *When* kiểm tra DB, *Then* có 52 node kỹ năng (7 tầng 1 · 16 tầng 2 · 26 tầng 3 — đúng cây Java), 120 thẻ (60 zh + 60 en), 1 `UserProfile`; chạy lại `db:seed` cho kết quả **giống hệt** (idempotent, không `Date.now()`).
+- *Given* `npm run db:reset`, *When* kiểm tra DB, *Then* có 53 node kỹ năng (4 domain · 16 tầng 2 · 33 tầng 3 — đúng cây Java), 140 thẻ (70 zh + 70 en), 1 `UserProfile`; chạy lại `db:seed` cho kết quả **giống hệt** (idempotent, không `Date.now()`).
 
 **AC-AF-8 — A11y nền**
 - *Given* trang chủ, *When* chạy axe, *Then* **0** lỗi vi phạm (`critical`/`serious`); mọi icon-only button có `aria-label`; `<html lang="vi">`.

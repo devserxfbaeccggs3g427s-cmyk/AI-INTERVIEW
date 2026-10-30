@@ -8,7 +8,7 @@ inclusion: always
 > khai báo ở đây trước, rồi tham chiếu bằng tên registry trong `spec.md`/`design.md` của feature đó.
 > Nếu feature nào tự đặt field mà không có trong registry → **xung đột schema**.
 
-Base: `system-design/SPEC.md` §4 (19 model). Mọi thay đổi dưới đây giữ nguyên 19 model, chỉ thêm
+Base: `system-design/SPEC.md` §4 (15 model). Mọi thay đổi dưới đây giữ nguyên 15 model, chỉ thêm
 field/cột nullable — **không thêm model mới** trừ khi ghi rõ ở §3.
 
 ---
@@ -75,7 +75,7 @@ migration an toàn trên DB có dữ liệu.
 
 ---
 
-## 3. Model bổ sung (ngoài 19 model của SPEC §4)
+## 3. Model bổ sung (ngoài 15 model của SPEC §4)
 
 | # | Model | Feature | Lý do | Trạng thái |
 |---|---|---|---|---|
@@ -91,7 +91,7 @@ migration an toàn trên DB có dữ liệu.
 | M10 | `InterviewSuggestion` | mock-interview | Gợi ý phiên cụ thể do AI sinh: `title`, `whyNow`, `focusSkillIds[]`, `questionKinds[]`, `plannedCount`, `estMinutes`, `generatedAt`. Nhánh dự phòng: tính từ `Evidence` cục bộ. | **Đề xuất — chờ duyệt** |
 | M11 | `UpcomingGoal` | settings-cost | Mục tiêu sắp tới: `kind` (`exam\|cert\|role\|skill`), `title`, `lang?`, `standard?`, `targetLevel?`, `targetDate?`, `status`, `priority`, `notes?`. Nhánh dự phòng: lưu JSON trong `UserProfile.goals`. | **Đề xuất — chờ duyệt** |
 
-> **Tổng: 11 model đề xuất** (M1–M11) — mở rộng từ 19 model gốc của SPEC §4 lên **30 model**.
+> **Tổng: 11 model đề xuất** (M1–M11) — mở rộng từ 15 model gốc của SPEC §4 lên **30 model**.
 > Toàn bộ đều **chưa được duyệt**; mặc định mọi feature implement theo **nhánh dự phòng** để build được ngay.
 
 | Mã | Model | Nhánh dự phòng khi chưa duyệt |

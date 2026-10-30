@@ -71,7 +71,7 @@ giao tiếp. Học **Tiếng Anh** (vài từ cơ bản, mục tiêu chính) và
 |---|---|---|
 | R2 | Friction ghi nhập → bỏ app tuần 2 | Quick-log 2 chạm, AI điền sẵn form, offline-first. Đo: tỷ lệ ngày không ghi > 30% → ưu tiên giảm friction, **không** thêm tính năng. |
 | R3 | AI chấm không đáng tin | Rubric cố định trong prompt, structured output, chỉ chấm theo tiêu chí có sẵn. |
-| R6 | AI sinh nội dung level 0 sai chuẩn | Seed 120 thẻ biên tập tay. AI **không** sinh từ vựng nền — chỉ sinh cách hỏi. |
+| R6 | AI sinh nội dung level 0 sai chuẩn | Seed 140 thẻ biên tập tay. AI **không** sinh từ vựng nền — chỉ sinh cách hỏi. |
 | R7 | Dữ liệu cá nhân rò rỉ | Local-first; danh sách "đã gửi lên" ở S15; không gửi khi người dùng không nhờ. |
 | R8 | Câu hỏi mock interview chung chung | Bắt buộc truyền `focusSkills` + `jobTitle` + `seniority` vào prompt. |
 | R9 | Điểm mock interview không ổn định | `temperature` mặc định không cao, rubric chi tiết, lưu điểm từng tiêu chí kèm lý do. Chấp nhận sai số ±0.3. |

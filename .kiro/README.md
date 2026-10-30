@@ -50,7 +50,7 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 
 ## 2. Specs theo feature
 
-12 feature · 21 màn hình · 9 nhóm yêu cầu chức năng · 19 model dữ liệu · 16 hàm AI · 13 tiêu chí nghiệm thu.
+12 feature · 21 màn hình · 9 nhóm yêu cầu chức năng · 15 model dữ liệu · 16 hàm AI · 13 tiêu chí nghiệm thu.
 
 | Feature | Màn hình | Route | Phase | Spec |
 |---|---|---|---|---|
@@ -71,9 +71,9 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 
 | Phase | Nội dung | Feature | Điều kiện hoàn thành |
 |---|---|---|---|
-| **-1 — Khung dự án** | Khởi tạo Next.js 15 + TS strict + Tailwind v4 token + `next/font` · Prisma 19 model + seed Java 52 node + 120 thẻ · layout shell + bottom nav 4 + menu 5 · script dev/test/CI | **`app-foundation`** | `npm install && npm run db:migrate && npm run db:seed && npm run dev` → trang chủ chạy · build + typecheck + lint + test đều exit 0 · `validate:specs` PASS |
+| **-1 — Khung dự án** | Khởi tạo Next.js 15 + TS strict + Tailwind v4 token + `next/font` · Prisma 15 model + seed Java 53 node + 140 thẻ · layout shell + bottom nav 4 + menu 5 · script dev/test/CI | **`app-foundation`** | `npm install && npm run db:migrate && npm run db:seed && npm run dev` → trang chủ chạy · build + typecheck + lint + test đều exit 0 · `validate:specs` PASS |
 | **0 — Hạt nhân** | Schema + seed · Daily Loop · Quick-log · Cây kỹ năng · Đánh giá chính · AI-01 sinh kế hoạch · offline mode · Cài đặt | `ai-foundation`, `daily-loop-core`, `skill-tree-evidence`, `quick-log`, `personal-state-journal`, `settings-cost` | Mở app thấy 6 hành động; đánh dấu xong tạo bằng chứng; cây kỹ năng cập nhật tiến độ; chạy được không API key |
-| **1 — Luyện tập cốt lõi** | SRS zh/en + seed 120 thẻ · chấm giao tiếp viết · nhật ký + AI · **Mock Interview** · **Bài kiểm tra ngoại ngữ** · báo cáo tuần · báo cáo tiến bộ | `srs-language-review`, `communication-training` (S07/S08), `mock-interview`, `language-test`, `weekly-progress-report` | Ôn được 2 ngôn ngữ; viết bài nhận điểm rubric có delta; mock interview trả 3 mạnh/3 yếu; bài kiểm tra đẩy thẻ sai về ôn |
+| **1 — Luyện tập cốt lõi** | SRS zh/en + seed 140 thẻ · chấm giao tiếp viết · nhật ký + AI · **Mock Interview** · **Bài kiểm tra ngoại ngữ** · báo cáo tuần · báo cáo tiến bộ | `srs-language-review`, `communication-training` (S07/S08), `mock-interview`, `language-test`, `weekly-progress-report` | Ôn được 2 ngôn ngữ; viết bài nhận điểm rubric có delta; mock interview trả 3 mạnh/3 yếu; bài kiểm tra đẩy thẻ sai về ôn |
 | **2 — Luyện chủ động** | Role-play AI · sửa lỗi 4 nhóm · sinh flashcard từ bài viết · phân tích tương quan chỉ số · AI-07 tự giảm tải · bài kiểm tra `from_content` | `communication-training` (S11) + mở rộng | Hội thoại AI có mục tiêu ẩn; bài viết sai được sửa đúng nhóm lỗi; app báo "khi ngủ <6h thì…" |
 | **3 — Bổ sung** | PWA offline · chế độ `produce` với STT · xuất dữ liệu · nhiều ngôn ngữ · mock interview bằng giọng nói | — | Cài lên màn hình chính; đi bộ offline vẫn ghi được |
 

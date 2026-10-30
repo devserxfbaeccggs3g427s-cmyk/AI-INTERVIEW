@@ -110,7 +110,7 @@
 
 ---
 
-## 4. Seed 120 thẻ + 20 mẫu câu (FR-LG-10, R6)
+## 4. Seed 140 thẻ + 20 mẫu câu (FR-LG-10, R6)
 
 - [ ] 9. Tạo `prisma/seed-data/groups.ts`
   - [ ] 9.1 Khai báo `LANG_GROUPS.zh` gồm 6 nhóm: `greeting`, `people`, `food`, `place`, `time`, `verb` (kèm `label` tiếng Việt theo prototype)
@@ -118,7 +118,7 @@
   - [ ] 9.3 Khai báo `LANG_GROUP_LABELS` map `lang` → nhãn hiển thị (`"Tiếng Trung (zh-CN)"`, `"Tiếng Anh (en-US)"`)
 
 - [ ] 10. Tạo `prisma/seed-data/zh.ts` — **biên tập tay**
-  - [ ] 10.1 Copy nguyên văn 60 thẻ từ `spec.md` §7.1 (6 nhóm × 10 từ: hanzi, pinyin, nghĩa, gợi ý)
+  - [ ] 10.1 Copy nguyên văn 60 thẻ từ `spec.md` §7.1 + 10 mẫu câu (6 nhóm × 10 từ: hanzi, pinyin, nghĩa, gợi ý)
   - [ ] 10.2 Bổ sung cho mỗi thẻ: `note` (ghi chú ngữ cảnh tiếng Việt), `hint` (gợi ý ngữ cảnh ngắn + thanh điệu)
   - [ ] 10.3 Bổ sung `example` + `examplePinyin` cho mỗi thẻ, theo 1 trong 10 mẫu câu
   - [ ] 10.4 Gán `patternId` (1–10) cho mỗi thẻ
@@ -126,7 +126,7 @@
   - [ ] 10.6 **Không** dùng AI sinh nội dung này (R6) — nếu cần tra cứu, dùng nguồn từ điển có thẩm quyền và ghi nguồn vào comment
 
 - [ ] 11. Tạo `prisma/seed-data/en.ts` — **biên tập tay**
-  - [ ] 11.1 Copy nguyên văn 60 thẻ từ `spec.md` §7.2 (6 nhóm × 10 từ: từ, nghĩa, phiên âm kiểu Việt)
+  - [ ] 11.1 Copy nguyên văn 60 thẻ từ `spec.md` §7.2 + 10 mẫu câu (6 nhóm × 10 từ: từ, nghĩa, phiên âm kiểu Việt)
   - [ ] 11.2 Bổ sung `note` tiếng Việt + `hint` = phiên âm kiểu Việt cho mỗi thẻ
   - [ ] 11.3 Bổ sung `example` cho mỗi thẻ theo 1 trong 10 mẫu câu, gán `patternId`
   - [ ] 11.4 Viết `EN_SENTENCE_PATTERNS` — đúng 10 mẫu câu theo `spec.md` §7.4
@@ -135,12 +135,12 @@
 - [ ] 12. Tạo `prisma/seed.ts`
   - [ ] 12.1 Implement `assertSeedShape()` — fail-fast nếu zh ≠ 60, en ≠ 60, mẫu câu ≠ 10/ngôn ngữ, mỗi nhóm ≠ 10 thẻ, `group` không thuộc nhóm của `lang`
   - [ ] 12.2 Xoá `review`, `srsSession`, `card`, `languagePattern` cũ (giữ `Skill`/`Activity`/`UserProfile`)
-  - [ ] 12.3 Nạp 120 thẻ với `cardState = createNewCardState(now)`, `mode = 'recognize'`, `due = now`
+  - [ ] 12.3 Nạp 140 thẻ với `cardState = createNewCardState(now)`, `mode = 'recognize'`, `due = now`
   - [ ] 12.4 Ghi đồng bộ cả `cardState` JSON và các cột denormalized khi tạo
   - [ ] 12.5 Nạp 20 `LanguagePattern` (10 zh + 10 en) bằng `createMany`
   - [ ] 12.6 Tạo cây `Skill` trung tính nếu chưa có (theo `project.md` §7)
   - [ ] 12.7 Tạo `UserProfile` với `learningLangs = 'zh,en'`, `zhLevel = 'zero'`, `enLevel = 'zero'` nếu chưa có
-  - [ ] 12.8 In tổng kết: `✔ 120 thẻ (60 zh + 60 en) · 20 mẫu câu`
+  - [ ] 12.8 In tổng kết: `✔ 140 thẻ (70 zh + 70 en) · 20 mẫu câu`
   - [ ] 12.9 **Xác nhận file seed không import `@anthropic-ai/sdk` và không có fetch/network call** (grep + test tự động)
   - [ ] 12.10 Ghi chú trên đầu file: cần người biết tiếng Trung & tiếng Anh ký duyệt các sai lệch D1–D3 trong `spec.md` §7.5
 
@@ -231,7 +231,7 @@
   - [ ] 22.1 Wrapper `p-margin-lg space-y-gutter-lg max-w-[1600px] mx-auto w-full`
   - [ ] 22.2 Gọi `getLanguageStats()` và truyền xuống component
   - [ ] 22.3 Render thứ tự: header → 2 deck card + session CTA → group grid → bảng thẻ (8 cols) + panel chỉ số (4 cols)
-  - [ ] 22.4 Không có dữ liệu → render empty state "Chưa có thẻ nào — chạy seed 120 thẻ" + lệnh `npx prisma db seed`
+  - [ ] 22.4 Không có dữ liệu → render empty state "Chưa có thẻ nào — chạy seed 140 thẻ" + lệnh `npx prisma db seed`
   - [ ] 22.5 Bọc phần cần `useSearchParams` vào `<Suspense>` để không lỗi build static
 
 - [ ] 23. Tạo `src/components/language/language-hub-header.tsx`
@@ -407,7 +407,7 @@
 - [ ] 40. Integration test API
   - [ ] 40.1 `GET /api/language` — số khớp DB
   - [ ] 40.2 `GET /api/language/cards` — filter `status` × `group` × `q` × phân trang
-  - [ ] 40.3 `GET /api/language/cards?format=json` — file JSON hợp lệ, đủ 120 thẻ
+  - [ ] 40.3 `GET /api/language/cards?format=json` — file JSON hợp lệ, đủ 140 thẻ
   - [ ] 40.4 `POST /api/language/cards` — hợp lệ / sai `group` / trùng
   - [ ] 40.5 `POST /api/srs/session` — ≤ 20 thẻ; `due` trước `new`; resume
   - [ ] 40.6 `GET /api/srs/next` — `preview` đủ 4 mức; `showHanzi`/`showHint` đúng
@@ -421,12 +421,12 @@
   - [ ] 41.4 **AC-LG-4** — hết thẻ đến hạn → lấy thẻ mới nhóm chưa học; hết cả hai → "Đã ôn xong hôm nay"
   - [ ] 41.5 **AC-LG-5** — thẻ zh: pinyin + nút nghe; hanzi chỉ hiện khi bật toggle; lật thẻ → hanzi + nghĩa + ví dụ + nút nghe
   - [ ] 41.6 **AC-LG-6** — deck zh hiện 24/18/12, deck en hiện 31/22/9; streak zh = 3, en = 1
-  - [ ] 41.7 **AC-LG-7** — `prisma db seed` → 60 + 60 thẻ, 6 nhóm × 10, 20 mẫu câu; grep xác nhận seed không import Anthropic SDK
+  - [ ] 41.7 **AC-LG-7** — `prisma db seed` → 70 + 70 thẻ, 6 nhóm × 10 từ + 10 mẫu câu mỗi ngôn ngữ; grep xác nhận seed không import Anthropic SDK
   - [ ] 41.8 **AC-LG-8** — mock `speechSynthesis` không có voice `zh-CN` → badge fallback, hanzi bật cưỡng chế, 4 nút vẫn chấm được
   - [ ] 41.9 **AC-LG-9** — ôn 3 lượt → reload → cùng `sessionId`, `index = 3`
   - [ ] 41.10 **AC-LG-10** — đổi `lang` → phiên mới không chứa id thẻ cũ; dữ liệu đã ôn còn nguyên
   - [ ] 41.11 **AC-LG-11** — thêm thẻ thủ công thành công; `group` sai → thông báo tiếng Việt, DB không đổi
-  - [ ] 41.12 **AC-LG-12** — export JSON có 120 thẻ + `cardState` + reviews; import vào DB trống → cùng `due`/`stability`
+  - [ ] 41.12 **AC-LG-12** — export JSON có 140 thẻ + `cardState` + reviews; import vào DB trống → cùng `due`/`stability`
   - [ ] 41.13 **AC-LG-13** — `setOffline(true)` → mở S09, ôn 5 thẻ, thêm thẻ → tất cả thành công, không request ra ngoài
   - [ ] 41.14 **AC-LG-14** — 390px: 4 nút 2×2; icon có `aria-label`; `aria-keyshortcuts` đúng; focus ở ô tìm kiếm thì phím tắt không kích hoạt
   - [ ] 41.15 Phím tắt: `Space` lật thẻ, `R` phát âm (mock), `H` gợi ý, `1`–`4` chấm

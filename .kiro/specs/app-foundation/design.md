@@ -583,7 +583,7 @@ export function toResponse<T>(result: ApiResult<T>): Response {
 
 ### 3.10 `prisma/schema.prisma`
 
-> Đầy đủ 19 model — xem `system-design/SPEC.md` §4 (nguồn chân lý). Feature này chỉ khởi tạo, **không** sửa.
+> Đầy đủ 15 model — xem `system-design/SPEC.md` §4 (nguồn chân lý). Feature này chỉ khởi tạo, **không** sửa.
 
 ```prisma
 generator client { provider = "prisma-client-js" }
@@ -859,9 +859,9 @@ model TestItem {
 
 1. Xoá dữ liệu cũ theo thứ tự con → cha (`evidence` → `activity` → `reflection` → `planItem` → `card` → `review` → `skill`).
 2. Tạo `UserProfile` (mặc định).
-3. Tạo cây kỹ năng Java **52 node** theo thứ tự tầng 1 → 2 → 3, với `id` cố định theo slug
+3. Tạo cây kỹ năng Java **53 node** theo thứ tự tầng 1 → 2 → 3, với `id` cố định theo slug
    (`"skill-java-core"`, `"skill-jvm-gc"`, …) — **không** dùng `cuid()` ⇒ `db:reset` cho kết quả giống hệt.
-4. Tạo 120 thẻ (60 zh + 60 en) với `id` cố định (`"card-zh-greet-01"`…) và `due = ngày cố định`
+4. Tạo 140 thẻ (70 zh + 70 en) với `id` cố định (`"card-zh-greet-01"`…) và `due = ngày cố định`
    — **không** dùng `Date.now()`.
 5. `cardState` khởi tạo bằng `fsrs` với `now = 0` cố định.
 
@@ -899,7 +899,7 @@ async function main() {
     });
   }
 
-  // 4. 120 thẻ — due cố định
+  // 4. 140 thẻ — due cố định
   for (const card of CARDS) {
     await prisma.card.create({
       data: {
@@ -961,10 +961,10 @@ await prisma.card.groupBy({ by: ["lang"], _count: { _all: true } });
 | Tầng | Công cụ | Phạm vi |
 |---|---|---|
 | Unit | Vitest | `normalizeDate` (biên nửa đêm UTC+7) · `toDateKey` · `addDays` · `api-response` status mapping · `env.maskKey` |
-| Unit | Vitest | `skills.ts` cây Java: đúng 52 node, đúng 4 domain, mọi node tầng 3 có `parentId` |
-| Unit | Vitest | `cards.ts`: đúng 60 zh + 60 en, không trùng `id`, `group` đúng band |
+| Unit | Vitest | `skills.ts` cây Java: đúng 53 node, đúng 4 domain, mọi node tầng 3 có `parentId` |
+| Unit | Vitest | `cards.ts`: đúng 70 zh + 70 en, không trùng `id`, `group` đúng band |
 | Integration | Vitest + SQLite test | `db:seed` chạy 2 lần → DB giống hệt (NFR-AF-07) |
-| Integration | Vitest | `prisma migrate reset` tạo đủ 19 bảng |
+| Integration | Vitest | `prisma migrate reset` tạo đủ 15 bảng |
 | E2E | Playwright | Trang chủ render, có bottom nav 4 mục, menu `⋮` có 5 mục |
 | E2E | Playwright | 390px: không scrollbar ngang; 1280px: container 12 cột |
 | E2E | Playwright | Thiếu API key → banner offline, không lỗi console |

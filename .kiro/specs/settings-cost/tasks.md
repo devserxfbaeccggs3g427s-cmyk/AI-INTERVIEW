@@ -226,7 +226,7 @@
   - [ ] 25.2 Hiển thị dung lượng DB (KB/MB) + số bản ghi từng bảng
   - [ ] 25.3 Vùng nguy hiểm `bg-error-container/20`, tiêu đề `text-error font-label-sm uppercase`
   - [ ] 25.4 Nút "Xóa trắng dữ liệu (2-Step Confirm)" (`bg-error-container text-on-error-container`, icon `delete_forever`) → mở hộp thoại, **không** gọi API
-  - [ ] 25.5 Hộp thoại bước 1 liệt kê đúng các bảng sẽ bị xoá + nhắc 120 thẻ seed + lệnh `npm run db:seed`
+  - [ ] 25.5 Hộp thoại bước 1 liệt kê đúng các bảng sẽ bị xoá + nhắc 140 thẻ seed + lệnh `npm run db:seed`
   - [ ] 25.6 Ô nhập xác nhận: chỉ enable nút "Xóa vĩnh viễn" khi gõ đúng `XOA`; gõ sai → viền `border-error` + hint "Phải gõ đúng: XOA"
   - [ ] 25.7 Gọi `DELETE /api/data` với `{confirm:"XOA"}`; thành công → đóng hộp thoại + reload + thông báo có lệnh seed
   - [ ] 25.8 Lỗi xoá → giữ hộp thoại mở, hiện lỗi, dữ liệu nguyên vẹn

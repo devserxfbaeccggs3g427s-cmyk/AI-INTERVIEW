@@ -7,7 +7,7 @@
 - **Ngày:** 2026-10-29
 - **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Prisma + SQLite · Anthropic SDK
 - **Trạng thái:** Đã cài deps, chưa viết code ứng dụng.
-- **Phạm vi:** 21 màn hình · 9 nhóm yêu cầu chức năng · 19 model dữ liệu · 16 hàm vi AI · 13 tiêu chí nghiệm thu
+- **Phạm vi:** 21 màn hình · 9 nhóm yêu cầu chức năng · 15 model dữ liệu · 16 hàm vi AI · 13 tiêu chí nghiệm thu
 
 ---
 
@@ -688,6 +688,8 @@ model Activity {
   createdAt  DateTime @default(now())
   evidences  Evidence[]
   reflection Reflection?
+  interviewSession InterviewSession?   // quan hệ ngược 1-1
+  testSession     TestSession?        // quan hệ ngược 1-1
 }
 
 // ── Bằng chứng (P3: tiến độ = bằng chứng) ───────────────
@@ -859,7 +861,8 @@ model TestSession {
   blueprint   Json?    // {itemTypes:[...], count:n}
   createdAt   DateTime @default(now())
   items       TestItem[]
-  activity    Activity?
+  activityId  String?   @unique
+  activity    Activity? @relation(fields: [activityId], references: [id])
 }
 
 model TestItem {

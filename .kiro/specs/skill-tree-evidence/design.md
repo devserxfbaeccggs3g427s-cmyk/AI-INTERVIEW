@@ -154,7 +154,7 @@ User mở /skills/[id]
 | D6 | Đường nối cây vẽ bằng **CSS pseudo-element `::before`/`::after`** với `border-dashed`, không dùng thư viện hay SVG phức tạp | Cần responsive 390px; SVG phải tính toạ độ theo layout → fragile | Connector đổi `border-primary` solid khi cha đạt `targetLevel` |
 | D7 | `POST /api/skills/[id]/evidence` tạo `Activity` **và** `Evidence` trong 1 transaction | Đảm bảo không có "bằng chứng mồ côi"; `level` luôn khớp dữ liệu | Rollback được nếu `Evidence.create` lỗi (unique activityId+skillId) |
 | D8 | Xoá node: con chuyển lên **ông bà** (`parentId = node.parentId`), không xoá con | Không mất dữ liệu người dùng; `onDelete: Cascade` chỉ áp cho `Evidence` của node bị xoá | Cần `recomputeAncestors` sau khi reparent |
-| D9 | `focusSkillId` đặt trên `UserProfile` thay vì tạo model mới | Giữ đúng 19 model của SPEC §4; trọng tâm là 1 giá trị toàn cục ở Phase 0 | `onDelete: SetNull` khi xoá skill trọng tâm |
+| D9 | `focusSkillId` đặt trên `UserProfile` thay vì tạo model mới | Giữ đúng 15 model của SPEC §4; trọng tâm là 1 giá trị toàn cục ở Phase 0 | `onDelete: SetNull` khi xoá skill trọng tâm |
 | D10 | S03/S04 **không gọi AI**; khối "Đề xuất bài tập" của prototype S04 bị loại bỏ khỏi scope | NFR-SK-01 + P6: app phải chạy đủ offline. AI suy ra "lỗ hổng phân tích được" là việc của feature AI khác | Panel AI của prototype không được implement ở feature này |
 | D11 | Biểu đồ level theo tuần vẽ bằng **SVG tay** (polyline + polygon), không dùng thư viện chart | Design system yêu cầu màu token, không palette mặc định; chart nhỏ, dữ liệu ≤ 52 điểm | < 2 tuần có dữ liệu → hiện list thay vì chart rỗng |
 

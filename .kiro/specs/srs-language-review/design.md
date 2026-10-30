@@ -102,7 +102,7 @@ Ranh giới quan trọng: **thuật toán và dữ liệu luôn ở server**. Cl
 | **Lớp nghiệp vụ** | `src/lib/srs.ts` | Truy vấn Card/Review/SrsSession, thuật toán chọn thẻ, tính streak, serialize state |
 | **Wrapper thuật toán** | `src/lib/fsrs.ts` | Khởi tạo `scheduler` với tham số đóng băng, `repeat`/`next`, chuyển đổi state ↔ JSON |
 | **Truy cập dữ liệu** | `src/lib/db.ts` (Prisma singleton) | Kết nối SQLite |
-| **Seed** | `prisma/seed.ts` + `prisma/seed-data/{zh,en}.ts` | 120 thẻ + 20 mẫu câu, tĩnh, không gọi AI |
+| **Seed** | `prisma/seed.ts` + `prisma/seed-data/{zh,en}.ts` | 140 thẻ + 20 mẫu câu, tĩnh, không gọi AI |
 
 > **Ranh giới quan trọng:** `src/lib/fsrs.ts` **không** import Prisma. Nó là thư viện thuần, test được bằng Vitest không cần DB. Nhờ vậy AC-4 kiểm được trực tiếp: `expect(applyRating(newState, 3)).toEqual(scheduler.next(newState, now, Rating.Good).card)`.
 
@@ -112,7 +112,7 @@ Ranh giới quan trọng: **thuật toán và dữ liệu luôn ở server**. Cl
 |---|---|---|---|
 | D1 | `scheduler.repeat()` chạy **server-side** trong `GET /api/srs/next` | Khoảng cách hiển thị trên 4 nút phải bám state thật (AC-4); client không có `ts-fsrs` trong bundle | Mỗi lượt ôn gửi 1 request đọc thẻ; payload `preview` 4 mức (~200 byte) |
 | D2 | `Card.cardState` (JSON) là **nguồn sự thật**; `due`/`stability`/`difficulty`/`reps`/`lapses` là **denormalized** | SPEC §4 yêu cầu state JSON nhưng index `@@index([lang, due])` cần cột scalar | Phải có test đồng bộ 2 chiều (R14) |
-| D3 | Thêm model `SrsSession` (ngoài 19 model của SPEC §4) | Cần queue ổn định, khôi phục phiên dang dở, đếm `3/12 thẻ` | Cần cập nhật SPEC §4 ở lần cập nhật tiếp theo |
+| D3 | Thêm model `SrsSession` (ngoài 15 model của SPEC §4) | Cần queue ổn định, khôi phục phiên dang dở, đếm `3/12 thẻ` | Cần cập nhật SPEC §4 ở lần cập nhật tiếp theo |
 | D4 | Tham số FSRS **đóng băng** trong `FSRS_CONFIG`, không cho UI sửa | Đổi `request_retention` giữa chừng làm sai lệch toàn bộ lịch đã lưu (R11) | Chỉ đổi được qua migration + `cardState.version` |
 | D5 | `enable_fuzz: false` | Interval phải **tiên đoán được** để test AC-4; fuzz ngẫu nhiên làm test bất định | Interval dài có thể lặp lại giữa 2 thẻ giống nhau — chấp nhận |
 | D6 | `learning_steps: ['1m','10m']`, `relearning_steps: ['10m']` | Khớp nhãn prototype S10: Again = "Lặp lại trong 1 phút", Hard = "Ôn sau 10 phút" | Thẻ mới chấm Good → học bước 1 (10 phút), lần sau Good → Review |
@@ -1116,7 +1116,7 @@ export async function getReviewStreak(lang: Lang, now: Date = new Date()): Promi
 
 > `toLocalDateKey()` đặt trong `src/lib/dates.ts` theo steering `tech.md` §5 (mọi ngày chuẩn hoá, so sánh bằng chuỗi `yyyy-MM-dd`).
 
-### 4.3 Cấu trúc seed — 120 thẻ
+### 4.3 Cấu trúc seed — 140 thẻ
 
 **File:**
 
@@ -1124,7 +1124,7 @@ export async function getReviewStreak(lang: Lang, now: Date = new Date()): Promi
 prisma/
   seed.ts                  # entrypoint: xoá & nạp, gọi AI-10? KHÔNG
   seed-data/
-    zh.ts                  # 60 thẻ + 10 mẫu câu tiếng Trung
+    zh.ts                  # 70 thẻ + 10 mẫu câu tiếng Trung
     en.ts                  # 60 thẻ + 10 mẫu câu tiếng Anh
     groups.ts              # LANG_GROUPS: id + label + thứ tự cho 2 ngôn ngữ
 ```
@@ -1249,7 +1249,7 @@ async function main() {
   await prisma.srsSession.deleteMany();
   await prisma.card.deleteMany();
 
-  // 2. Nạp 120 thẻ — state New, due = hôm nay
+  // 2. Nạp 140 thẻ — state New, due = hôm nay
   const now = new Date();
   const rows = [
     ...ZH_CARDS.map((c) => ({
@@ -1315,8 +1315,8 @@ async function main() {
 
 ```ts
 function assertSeedShape() {
-  if (ZH_CARDS.length !== 60) throw new Error(`zh phải có 60 thẻ, thực tế ${ZH_CARDS.length}`);
-  if (EN_CARDS.length !== 60) throw new Error(`en phải có 60 thẻ, thực tế ${EN_CARDS.length}`);
+  if (ZH_CARDS.length !== 60) throw new Error(`zh phải có 70 thẻ, thực tế ${ZH_CARDS.length}`);
+  if (EN_CARDS.length !== 60) throw new Error(`en phải có 70 thẻ, thực tế ${EN_CARDS.length}`);
   if (ZH_SENTENCE_PATTERNS.length !== 10) throw new Error('zh phải có 10 mẫu câu');
   if (EN_SENTENCE_PATTERNS.length !== 10) throw new Error('en phải có 10 mẫu câu');
 
@@ -1406,7 +1406,7 @@ src/
 | **Unit — thuật toán chọn thẻ** | Vitest | Ma trận: (0 đến hạn, 30 mới) → 20 thẻ mới; (12 đến hạn, 30 mới) → 12 đến hạn + 8 mới; (25 đến hạn) → 20 đến hạn; thẻ đến hạn cũ hơn đứng trước |
 | **Integration — API routes** | Vitest + test DB | `GET /api/language` trả số khớp `COUNT(*)`; `POST /api/language/cards` validate Zod + `409` trùng; `GET /api/srs/next` trả `preview` đủ 4 mức; `POST /api/srs/grade` ghi đủ `Review` + update `Card` + đồng bộ `cardState` ↔ cột; `409` khi chấm trùng; `POST /api/srs/session` không vượt 20 |
 | **Integration — resume & đổi ngôn ngữ** | Vitest + test DB | Đóng phiên giữa chừng → `GET /api/srs/next` trả **cùng `sessionId`** + `index` đúng; đổi `lang` → phiên cũ `abandoned`, phiên mới không chứa id thẻ ngôn ngữ cũ |
-| **E2E — Playwright** | Playwright | AC-LG-1 → AC-LG-14: ôn 1 thẻ zh, chấm Good → nhãn khoảng cách khớp API; `Space` lật thẻ; `R` phát âm (mock `speechSynthesis`); `1`–`4` chấm; lọc chip đến hạn; thêm thẻ thủ công → thẻ xuất hiện trong bảng; export JSON → file tải xuống đúng 120 thẻ |
+| **E2E — Playwright** | Playwright | AC-LG-1 → AC-LG-14: ôn 1 thẻ zh, chấm Good → nhãn khoảng cách khớp API; `Space` lật thẻ; `R` phát âm (mock `speechSynthesis`); `1`–`4` chấm; lọc chip đến hạn; thêm thẻ thủ công → thẻ xuất hiện trong bảng; export JSON → file tải xuống đúng 140 thẻ |
 | **Offline** | Playwright (`context.setOffline(true)`) | Mở `/language`, ôn 5 thẻ, thêm thẻ → tất cả thành công; **không** có request ra ngoài (chặn & assert) |
 | **TTS fallback (R5)** | Vitest + jsdom (mock `speechSynthesis`) | Không có voice `zh-CN` → `shouldForceHanzi === true`, UI hiện hanzi, 4 nút chấm vẫn hoạt động |
 | **A11y & responsive** | Playwright + axe | 390px: 4 nút 2×2, không tràn ngang; mọi icon-only button có `aria-label`; `aria-keyshortcuts` đúng; focus không mất khi lật thẻ; tương phản ≥ AA |
@@ -1426,7 +1426,7 @@ src/
 | T6 | `speechSynthesis` trên Safari/iOS cần **user gesture** trước khi phát âm | Trung bình | Nút nghe là gesture thật; `onerror` → toast + "Thử lại"; không auto-play |
 | T7 | `getVoices()` trả `[]` trước khi `voiceschanged` bắn → false negative "không có voice" | Trung bình | Timeout 1500ms + listener `voiceschanged` (D-R5); đếm timeout từ lúc mount, không phải lúc bấm |
 | T8 | Payload `preview` 4 mức gửi mỗi lượt → traffic thừa trên mobile | Thấp | Payload ~200 byte; server là local Next.js — không phải network internet; có thể gom sau |
-| T9 | `SrsSession` là model **ngoài** 19 model trong SPEC §4 → lệch schema | Trung bình | Ghi rõ trong `spec.md` §5.2; cập nhật SPEC §4 ở lần sau; migration `prisma migrate dev` có ghi chú |
+| T9 | `SrsSession` là model **ngoài** 15 model trong SPEC §4 → lệch schema | Trung bình | Ghi rõ trong `spec.md` §5.2; cập nhật SPEC §4 ở lần sau; migration `prisma migrate dev` có ghi chú |
 | T10 | `languagePattern` (20 mẫu câu) cũng là model mới → thêm bảng | Thấp | Gộp vào cùng migration; hoặc lưu mẫu câu trong file seed và import khi cần (nếu không muốn thêm bảng) |
 | T11 | Component S10 là Client Component lớn → bundle nặng | Thấp | Không import `ts-fsrs` vào client (chỉ `import type`); phần còn lại là Server Component |
 | T12 | Timer phiên chạy khi tab bị ẩn → sai số liệu thời lượng | Thấp | Dùng timestamp `startedAt` để tính lại thay vì đếm tick |
@@ -1449,7 +1449,7 @@ src/
 
 **AI chỉ được phép sinh *cách hỏi* và *bài luyện* (không phải từ vựng nền)** — thuộc feature khác:
 - AI-08 (role-play) · AI-09 (sửa lỗi bài viết) → S07/S08/S11, Phase 2.
-- AI-10 (sinh flashcard **từ bài viết của người dùng**) → `POST /api/language/cards` với `source: 'ai'`; **không** đụng tới 120 thẻ seed. Route `POST /api/language/cards` hiện chỉ nhận thẻ thủ công; AI-10 sẽ dùng route riêng hoặc thêm trường `source` ở feature sau.
+- AI-10 (sinh flashcard **từ bài viết của người dùng**) → `POST /api/language/cards` với `source: 'ai'`; **không** đụng tới 140 thẻ seed. Route `POST /api/language/cards` hiện chỉ nhận thẻ thủ công; AI-10 sẽ dùng route riêng hoặc thêm trường `source` ở feature sau.
 
 ---
 

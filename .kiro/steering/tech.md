@@ -28,7 +28,7 @@ ANTHROPIC_API_KEY=sk-ant-...     # tuỳ chọn — thiếu thì app chạy offl
 
 ## 3. Data model (Prisma) — nguồn chân lý
 
-19 model. Bảng trung tâm là `Activity` — **không tách theo domain** (điều kiện để FR-PS-05 tương quan được bằng 1 truy vấn SQL).
+15 model. Bảng trung tâm là `Activity` — **không tách theo domain** (điều kiện để FR-PS-05 tương quan được bằng 1 truy vấn SQL).
 
 | Nhóm | Model | Ghi chú |
 |---|---|---|
