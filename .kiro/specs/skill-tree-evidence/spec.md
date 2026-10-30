@@ -2,7 +2,7 @@
 
 > **Màn hình:** S03 (`/skills`), S04 (`/skills/[id]`) · **Route:** `/skills`, `/skills/[id]` · **Phase:** 0
 > **Nguồn:** `system-design/SPEC.md` §0.3 (P3), §2.2 (FR-SK-01..06), §3.2 (S03, S04), §4 (`Skill`/`Activity`/`Evidence`), §8 (AC-3) · prototype `system-design/s03_c_y_k_n_ng_b_ng_ch_ng/`, `system-design/s04_chi_ti_t_k_n_ng_b_ng_ch_ng/`
-> **Phụ thuộc:** `daily-loop-core` (tạo `Activity` + `Evidence` khi hoàn thành slot), `ai-foundation` (không bắt buộc — tính năng này chạy đủ offline)
+> **Phụ thuộc:** `app-foundation` (phải xong trước)
 
 ## 1. Tổng quan
 

@@ -3,7 +3,7 @@
 > **Màn hình:** S16 (`/interview/setup`), S17 (`/interview/session`), S18 (`/interview/[id]`) · **Phase:** 1
 > **Nguồn:** `system-design/SPEC.md` §2.8 (FR-MI-01…FR-MI-14), §3.2 (S16–S18), §4 (`InterviewProfile`/`InterviewSession`/`InterviewTurn`), §5.1 (AI-11/12/13), §5.4 (rubric), §8 (AC-9, AC-10, AC-13), §10 (Q6)
 > **Prototype:** `system-design/s16_mock_interview_c_u_h_nh/`, `system-design/s17_mock_interview_phi_n_ph_ng_v_n/`, `system-design/s18_mock_interview_b_o_c_o_k_t_qu/`
-> **Phụ thuộc:** `daily-loop-core`, `skill-tree-evidence`, `ai-foundation`
+> **Phụ thuộc:** `app-foundation`, `ai-foundation`, `skill-tree-evidence` (phải xong trước)
 
 ## 1. Tổng quan
 

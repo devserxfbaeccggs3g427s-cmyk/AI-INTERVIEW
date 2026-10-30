@@ -2,7 +2,7 @@
 
 > **Màn hình:** S01 (`/`), S02 (`/plan`) · **Phase:** 0
 > **Nguồn:** system-design/SPEC.md §0.1–§0.3, §2.1 (FR-DL-01..08), §3.2 (S01, S02), §4 (`PlanItem`/`Activity`/`Evidence`/`Skill`), §5.1 (AI-01), §5.2–§5.6, §8 (AC-1, AC-7) · prototype `system-design/s01_daily_loop_h_m_nay/`, `system-design/s02_sinh_k_ho_ch_ai_k_ho_ch_ng_y/`
-> **Phụ thuộc:** `ai-foundation` (lớp AI: `src/lib/anthropic.ts`, `src/lib/prompts.ts`), `skill-tree-evidence` (cây kỹ năng + `Evidence`), `quick-log` (sheet Quick-log đầy đủ + AI-02 autofill)
+> **Phụ thuộc:** `app-foundation`, `ai-foundation` (phải xong trước)
 > **Ranh giới sở hữu:** feature này **sở hữu** model `PlanItem`, `src/lib/db.ts`, `src/lib/dates.ts`, `src/lib/config.ts`, `src/lib/plan.ts` (bộ sinh offline), `src/lib/daily-loop.ts`, toàn bộ route `/api/plan/**`, và UI S01 + S02. Feature `ai-foundation` **sử dụng** `src/lib/plan.ts` và `src/lib/db.ts` từ đây.
 
 ## 1. Tổng quan

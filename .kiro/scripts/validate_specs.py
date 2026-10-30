@@ -50,7 +50,8 @@ SCREEN_OWNER = {
     "S21": "language-test",
 }
 FEATURES = sorted(set(SCREEN_OWNER.values()) |
-                  {v for vs in FR_OWNER.values() for v in vs})
+                  {v for vs in FR_OWNER.values() for v in vs} |
+                  {"app-foundation"})
 
 errs, oks = [], []
 
@@ -227,6 +228,31 @@ else:
                 errs.append(f"[{feat}/{fn}] còn dùng thang level cũ {sorted(hits)} — "
                             f"phải dùng CEFR `zero·A1·A2·B1·B2·C1·C2` "
                             f"(steering/user-profile-decisions.md §4.1)")
+
+    # ── 10: app-foundation phải tồn tại & phải là Phase -1 ─────────────────
+    # Mọi feature khác giả định "app đã chạy, Prisma đã có, token đã set".
+    # Nếu không có feature khung, các feature đó viết task trên nền không tồn tại.
+    af_dir = os.path.join(SPECS, "app-foundation")
+    if not os.path.isdir(af_dir):
+        errs.append("thiếu feature 'app-foundation' — cần khung dự án (Phase -1) "
+                    "trước khi mọi feature nghiệp vụ")
+    else:
+        af_spec = os.path.join(af_dir, "spec.md")
+        if os.path.exists(af_spec):
+            af = read(af_spec)
+            for token, desc in [
+                ("package.json", "khai báo dependency + script"),
+                ("tailwind", "cấu hình Tailwind v4 + token"),
+                ("next/font", "nạp font qua next/font"),
+                ("prisma", "schema + seed"),
+                ("bottom-nav", "bottom nav 4 mục"),
+                ("layout", "layout shell"),
+            ]:
+                if token.lower() not in af.lower():
+                    errs.append(f"[app-foundation/spec.md] thiếu nội dung '{desc}' ({token})")
+            if "Phase -1" not in af:
+                errs.append("[app-foundation/spec.md] phải ghi rõ Phase -1 "
+                            "(đi trước mọi feature khác)")
 
     print("=" * 72)
     print("KIRO SPEC VALIDATION — Daily Loop OS")

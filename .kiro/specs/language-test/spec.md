@@ -2,7 +2,7 @@
 
 > **Màn hình:** S19 (`/test`), S20 (`/test/session`), S21 (`/test/[id]`) · **Phase:** 1
 > **Nguồn:** `system-design/SPEC.md` §2.9 (FR-LT-01..12), §3.2 (S19, S20, S21), §4 (`TestSession`, `TestItem`), §5.1 (AI-14, AI-15, AI-16), §5.4 (`RUBRIC_LANGUAGE_ERRORS`), §8 (AC-11, AC-12), §10 (Q7, Q8) · prototype `system-design/s19_.../`, `system-design/s20_.../`, `system-design/s21_.../`
-> **Phụ thuộc:** `ai-foundation` (AI layer, `AiCall`), `srs-language-review` (model `Card` + FSRS), `skill-tree-evidence` (`Activity`/`Evidence`/`Skill`), `daily-loop-core`
+> **Phụ thuộc:** `app-foundation`, `ai-foundation`, `srs-language-review` (phải xong trước)
 
 ## 1. Tổng quan
 

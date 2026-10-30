@@ -2,7 +2,7 @@
 
 > **Màn hình:** S13 (`/review`), S14 (`/progress`) · **Phase:** 1
 > **Nguồn:** `system-design/SPEC.md` §2.6, §3.2 (S13, S14), §4 · prototype `system-design/s13_.../`, `system-design/s14_.../`
-> **Phụ thuộc:** `daily-loop-core`, `skill-tree-evidence`, `personal-state-journal`, `srs-language-review`, `ai-foundation`
+> **Phụ thuộc:** `app-foundation`, `daily-loop-core`, `skill-tree-evidence` (phải xong trước)
 
 ## 1. Tổng quan
 

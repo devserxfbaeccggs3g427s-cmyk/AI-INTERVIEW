@@ -2,7 +2,7 @@
 
 > **Màn hình:** S07 (`/speak/write`), S08 (`/speak/talk`), S11 (`/language/practice`) · **Phase:** 1 (S07, S08) + Phase 2 (S11)
 > **Nguồn:** `system-design/SPEC.md` §0.3 (P3, P4), §2.3.2 (FR-LG-08), §2.4 (FR-CM-01..08), §3.2 (S07, S08, S11), §4 (Activity/Evidence), §5.1 (AI-03/04/08/09/10), §5.4 (RUBRIC_COMMUNICATION, RUBRIC_LANGUAGE_ERRORS), §6 (NFR-07) · prototype `system-design/s07_luy_n_giao_ti_p_vi_t/`, `system-design/s08_luy_n_giao_ti_p_n_i/`, `system-design/s11_luy_n_ngo_i_ng_ch_ng/`
-> **Phụ thuộc:** `ai-foundation` (wrapper AI + log `AiCall`), `skill-tree-evidence` (`Skill`/`Evidence`/`Activity`), `srs-language-review` (`Card`/`Review` + FSRS)
+> **Phụ thuộc:** `app-foundation`, `ai-foundation` (phải xong trước)
 
 ## 1. Tổng quan
 

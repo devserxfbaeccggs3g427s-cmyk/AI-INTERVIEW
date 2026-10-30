@@ -2,6 +2,7 @@
 
 > **Màn hình:** không có màn hình riêng (cross-cutting foundation) · **Route:** không có route công khai · **Phase:** 0
 > **Nguồn:** system-design/SPEC.md §2.7 (FR-AI-01..08), §4 (`AiCall`), §5.1–§5.7, §8 (AC-5, AC-7, AC-8) · `.kiro/steering/tech.md` §4
+> **Phụ thuộc:** `app-foundation` (phải xong trước)
 
 ## 1. Tổng quan
 

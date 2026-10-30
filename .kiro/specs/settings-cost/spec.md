@@ -2,7 +2,7 @@
 
 > **Màn hình:** S15 · **Route:** `/settings` · **Phase:** 0
 > **Nguồn:** `system-design/SPEC.md` §3.2 (S15), §2.5 (FR-PS-07), §2.7 (FR-AI-06/07/08), §4, §5.1–5.7, §6 (NFR-04/08/09), §10 (Q1–Q8) · prototype `system-design/s15_c_i_t_qu_n_l_chi_ph_ai/`
-> **Phụ thuộc:** schema Prisma dùng chung (SPEC.md §4) + wrapper `src/lib/anthropic.ts` ghi log `AiCall` (SPEC.md §5.7)
+> **Phụ thuộc:** `app-foundation`, `ai-foundation` (phải xong trước)
 
 ## 1. Tổng quan
 

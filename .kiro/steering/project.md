@@ -15,13 +15,50 @@ inclusion: always
 
 Khi có xung đột: **spec feature > steering > SPEC.md > prototype HTML**.
 
+## 1.5 Thứ tự triển khai
+
+> **Không feature nghiệp vụ nào bắt đầu trước `app-foundation` (Phase -1).**
+
+```
+Phase -1  app-foundation          khung dự án: Next.js + token + Prisma + seed + shell + nav
+              │
+Phase  0   ai-foundation          lớp AI dùng chung (client, prompt, caching, offline)
+              │
+              ├── skill-tree-evidence   cây kỹ năng + bằng chứng
+              │      ├── quick-log
+              │      └── mock-interview
+              ├── daily-loop-core       Daily Loop + sinh kế hoạch
+              ├── personal-state-journal nhật ký + đánh giá chính
+              └── settings-cost         cài đặt + chi phí AI
+              │
+Phase  1   srs-language-review      SRS/FSRS zh+en
+              ├── language-test        bài kiểm tra ngoại ngữ
+              └── communication-training  luyện nói/viết + role-play
+              └── weekly-progress-report  báo cáo tuần + tiến bộ
+```
+
+**Luật:** feature chỉ bắt đầu khi mọi feature trong danh sách phụ thuộc của nó đã **hoàn thành**
+(tất cả task `- [ ]` đã tick + AC đã pass).
+
 ## 2. Cấu trúc thư mục dự kiến
 
 ```
+package.json               # scripts: dev·build·lint·typecheck·db:*·test·validate:specs
+tsconfig.json              # strict: true, paths @/* → src/*
+next.config.ts
+postcss.config.mjs        # Tailwind v4: @tailwindcss/postcss
+eslint.config.mjs
+.env.example
 prisma/
-  schema.prisma
-  seed.ts                 # 120 thẻ zh/en + cây kỹ năng + user profile
+  schema.prisma           # đúng 19 model của SPEC §4
+  seed.ts                 # cây kỹ năng Java 52 node + 120 thẻ + user profile
+  seed-data/
+    skills.ts             # cây Java — id cố định theo slug
+    cards.ts              # 60 zh + 60 en — id cố định
 src/
+  app/
+    globals.css           # @theme Tailwind v4: 40+ màu, 11 typography, spacing, radius
+    api/health/route.ts   # smoke test + CI
   app/
     layout.tsx
     page.tsx                          # S01 Daily Loop
@@ -68,10 +105,16 @@ src/
       srs/grade/route.ts
       settings/key/route.ts
   components/
+    shell/                 # app-shell · bottom-nav · overflow-menu (Phase -1)
     daily-loop/  quick-log/  skills/  journal/  language/  charts/  ui/
     interview/   test/        rubric/  speech/
   lib/
     db.ts             # Prisma client singleton
+    dates.ts          # chuẩn hoá ngày 00:00 LOCAL (không dùng toISOString)
+    env.ts            # đọc env 1 chỗ, mask key, offline mode
+    api-response.ts   # helper {ok,data}/{ok,error} cho mọi route
+    config.ts         # hằng số cấu hình
+    cn.ts             # gộp class
     anthropic.ts      # client + wrapper ghi log AiCall
     prompts.ts        # system prompt + rubric hằng số
     fsrs.ts           # wrapper ts-fsrs

@@ -2,7 +2,7 @@
 
 > **Màn hình:** S05 (`/log` sheet + `/log/history`) · **Phase:** 0
 > **Nguồn:** `system-design/SPEC.md` §0.3 (P2, P3), §2.1 (FR-DL-03, FR-DL-04), §2.2 (FR-SK-03), §2.7 (FR-AI-06), §3.2 (S05), §4 (`Activity`, `Evidence`, `Skill`, `PlanItem`), §5.1 (AI-02), §5.6 (chế độ offline), §8 (AC-2) · prototype `system-design/s05_quick_log_sheet_10s/`
-> **Phụ thuộc:** `ai-foundation` (wrapper AI-02), `daily-loop-core` (mở sheet từ S01, nút "Xong"), `skill-tree-evidence` (tăng `level` khi đủ bằng chứng)
+> **Phụ thuộc:** `app-foundation`, `skill-tree-evidence` (phải xong trước)
 
 ## 1. Tổng quan
 

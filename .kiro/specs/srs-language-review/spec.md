@@ -2,7 +2,7 @@
 
 > **Màn hình:** S09 (`/language`), S10 (`/language/session`) · **Phase:** **1** (mâu thuẫn Phase ghi nhận ở §0.4)
 > **Nguồn:** `system-design/SPEC.md` §2.3.1, §2.3.2, §3.2 (S09, S10), §4, §6, §8 (AC-4), §9 (R5, R6), Phụ lục B · prototype `system-design/s09_n_t_p_ngo_i_ng_srs_hub/`, `system-design/s10_n_t_p_ngo_i_ng_srs_fsrs/`
-> **Phụ thuộc:** `daily-loop-core` (nền schema + `Activity`/`Evidence`), `skill-tree-evidence` (kỹ năng ngôn ngữ), `ai-foundation` (`src/lib/anthropic.ts`, cấu hình chung)
+> **Phụ thuộc:** `app-foundation` (phải xong trước)
 
 ---
 

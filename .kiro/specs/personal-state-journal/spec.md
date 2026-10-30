@@ -2,6 +2,7 @@
 
 > **Màn hình:** S06 (`/journal`) · S12 (`/state`) · **Phase:** 0
 > **Nguồn:** `system-design/SPEC.md` §0.3 (P6), §2.5 (FR-PS-01…FR-PS-07), §3.2 (S06, S12), §4 (model `DailyState`, `Reflection`, `Activity`), §5.1 (AI-05, AI-06), §5.6, §6 (NFR-04) · prototype `system-design/s06_nh_t_k_ai_ph_n_h_i/`, `system-design/s12_nh_gi_sinh_tr_c_nh_p/`
+> **Phụ thuộc:** `app-foundation`, `ai-foundation` (phải xong trước)
 
 ## 1. Tổng quan
 
