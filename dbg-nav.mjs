@@ -1,0 +1,15 @@
+import { chromium } from "@playwright/test";
+const url = process.argv[2] ?? "http://127.0.0.1:3100/";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+p.on("console", (m) => console.log("CONSOLE", m.type(), m.text().slice(0, 500)));
+p.on("pageerror", (e) => console.log("PAGEERROR", String(e).slice(0, 800)));
+const res = await p.goto(url, { waitUntil: "domcontentloaded" });
+console.log("status =", res?.status());
+await p.waitForTimeout(4000);
+console.log("AFTER 4s: aside =", await p.locator("aside").count(), " a =", await p.locator("a").count());
+const html = await p.content();
+console.log("html length =", html.length);
+const i = html.indexOf("<body");
+console.log("BODY:", html.slice(i, i + 2000));
+await b.close();

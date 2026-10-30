@@ -157,28 +157,28 @@
 
 ### 5. S05 — Quick-log `/log`
 
-- [ ] 5.1 `QuickLogSheet` — sheet trượt lên, mở bằng CTA + Cmd/Ctrl+K, Escape đóng
+- [x] 5.1 `QuickLogSheet` — sheet trượt lên, mở bằng CTA + Cmd/Ctrl+K, Escape đóng
   - **File:** `src/components/quick-log/QuickLogSheet.tsx`
   - **Done:** focus vào ô nhập khi mở
-- [ ] 5.2 Bước 1 — 6 preset chip đánh số 1–6 + textarea
+- [x] 5.2 Bước 1 — 6 preset chip đánh số 1–6 + textarea
   - **File:** `src/components/quick-log/PresetChips.tsx`
   - **Done:** nhấn 1–6 điền nội dung mẫu + focus ô nhập
-- [ ] 5.3 Server action ghi nhanh (≤10s, không chờ AI)
+- [x] 5.3 Server action ghi nhanh (≤10s, không chờ AI)
   - **File:** `src/app/api/log/route.ts`
   - **Done:** ghi `Activity` tức thì, trả về nhanh; toast xong
-- [ ] 5.4 Bước 2 — AI tự phân tích (confidence, domain, skill, phút, độ sâu) + nút "Sửa"
+- [x] 5.4 Bước 2 — AI tự phân tích (confidence, domain, skill, phút, độ sâu) + nút "Sửa"
   - **File:** `src/components/quick-log/AiPrefill.tsx`, `src/app/api/log/autofill/route.ts`
   - **Done:** provider **local** (`qwen2.5:7b`, 0 token) qua `lib/ai/router.ts`; lỗi → giữ form, không chặn bước 1
-- [ ] 5.5 Checkbox "Tự động tạo 1 Evidence"
+- [x] 5.5 Checkbox "Tự động tạo 1 Evidence"
   - **File:** `src/app/api/log/route.ts`
   - **Done:** tạo `Evidence` cho skill đã chọn khi tick
-- [ ] 5.6 Lịch sử — filter domain, thanh phân bổ nỗ lực, badge tổng phút, dòng mới ở đầu
+- [x] 5.6 Lịch sử — filter domain, thanh phân bổ nỗ lực, badge tổng phút, dòng mới ở đầu
   - **File:** `src/app/log/history/page.tsx`, `src/components/quick-log/HistoryList.tsx`
   - **Done:** dòng mới chèn đầu sau khi ghi
-- [ ] 5.7 Bản nháp `localStorage` (AC-14)
+- [x] 5.7 Bản nháp `localStorage` (AC-14)
   - **File:** `src/components/quick-log/QuickLogSheet.tsx`
   - **Done:** đóng tab rồi mở lại vẫn còn nội dung
-- [ ] 5.8 Test Quick-log (AC-2, AC-14)
+- [x] 5.8 Test Quick-log (AC-2, AC-14)
   - **File:** `tests/e2e/quick-log.spec.ts`
   - **Done:** ghi ≤10s; dòng mới ở đầu; draft giữ lại
 

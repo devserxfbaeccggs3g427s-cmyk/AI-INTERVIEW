@@ -1,0 +1,13 @@
+import { chromium } from "@playwright/test";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+p.on("console", m => console.log("CONSOLE", m.type(), m.text().slice(0, 300)));
+p.on("pageerror", e => console.log("PAGEERROR", String(e).slice(0, 500)));
+await p.goto("http://127.0.0.1:3100/test/demo-test", { waitUntil: "domcontentloaded" });
+await p.waitForTimeout(3000);
+console.log("header count:", await p.locator("header").count());
+console.log("body length:", (await p.content()).length);
+const html = await p.content();
+const i = html.indexOf("<body");
+console.log("BODY:", html.slice(i, i + 3000));
+await b.close();

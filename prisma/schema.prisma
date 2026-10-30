@@ -1,0 +1,289 @@
+// Daily Loop OS — Prisma schema (15 model)
+// Nguồn sự thật: .kiro/specs/daily-loop-os/design.md §5.1–§5.7
+// provider = "sqlite", DATABASE_URL="file:./dev.db"
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.1 Cây kỹ năng & bằng chứng
+// ─────────────────────────────────────────────────────────────
+
+model Skill {
+  id          String        @id @default(cuid())
+  name        String
+  nameZh      String?
+  domain      String // professional | communication | language | personal
+  parentId    String?
+  parent      Skill?        @relation("SkillTree", fields: [parentId], references: [id])
+  children    Skill[]       @relation("SkillTree")
+  level       Int           @default(0) // 0..5 — CHỈ tăng qua Evidence
+  targetLevel Int           @default(3)
+  position    Int           @default(0)
+  createdAt   DateTime      @default(now())
+  activities  Activity[]
+  evidences   Evidence[]
+  focusDays   FocusTarget[]
+}
+
+model Activity {
+  id         String      @id @default(cuid())
+  skillId    String?
+  skill      Skill?      @relation(fields: [skillId], references: [id])
+  domain     String
+  type       String // study|write|speak|roleplay|srs|journal|health|custom|mock_interview|test
+  minutes    Int         @default(0)
+  title      String
+  content    String?
+  quality    Int? // 1..5 tự đánh giá
+  aiScore    Float? // điểm AI = trung bình rubric
+  createdAt  DateTime    @default(now())
+  evidences  Evidence[]
+  reflection Reflection?
+
+  interviewSession InterviewSession? @relation("InterviewActivity")
+  testSession      TestSession?      @relation("TestActivity")
+}
+
+model Evidence {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  skillId    String
+  skill      Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  rating     Int // 1..4
+  createdAt  DateTime @default(now())
+
+  @@index([skillId])
+  @@index([activityId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.2 Hoạt động, phản hồi, kế hoạch
+// ─────────────────────────────────────────────────────────────
+
+model Reflection {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  prompt     String
+  answer     String
+  aiFeedback String?
+  createdAt  DateTime @default(now())
+}
+
+model PlanItem {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now()) // chuẩn hoá 00:00 local
+  slot      Int // 0..5
+  domain    String
+  action    String
+  detail    String?
+  minutes   Int      @default(15)
+  skillId   String?
+  done      Boolean  @default(false)
+  source    String   @default("ai") // ai | manual | fallback
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([skillId])
+}
+
+/// Trọng tâm hôm nay — duy nhất 1 node/ngày (requirements.md §2.7).
+/// Tách riêng khỏi Skill vì đây là thuộc tính theo NGÀY, không phải của skill.
+model FocusTarget {
+  id        String   @id @default(cuid())
+  date      DateTime @unique // chuẩn hoá 00:00 local
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([skillId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.3 Flashcard & SRS
+// ─────────────────────────────────────────────────────────────
+
+model Card {
+  id            String   @id @default(cuid())
+  lang          String // zh | en
+  front         String // zh: pinyin · en: word
+  frontAlt      String? // zh: hanzi
+  back          String
+  note          String?
+  example       String?
+  examplePinyin String?
+  hint          String? // phiên âm kiểu Việt (2 tuần đầu)
+  group         String?
+  mode          String   @default("recognize") // recognize|recall|produce
+  cardState     Json // state FSRS
+  due           DateTime
+  stability     Float    @default(0)
+  difficulty    Float    @default(0)
+  reps          Int      @default(0)
+  lapses        Int      @default(0)
+  createdAt     DateTime @default(now())
+  reviews       Review[]
+
+  @@index([lang, due])
+}
+
+model Review {
+  id     String   @id @default(cuid())
+  cardId String
+  card   Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rating Int // 1=Again 2=Hard 3=Good 4=Easy
+  state  Json
+  at     DateTime @default(now())
+
+  @@index([cardId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.4 Chỉ số cá nhân & hồ sơ
+// ─────────────────────────────────────────────────────────────
+
+model DailyState {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  mood      Int?
+  energy    Int?
+  sleep     Float?
+  focus     Int?
+  note      String?
+  updatedAt DateTime @updatedAt
+}
+
+model UserProfile {
+  id            String   @id @default(cuid())
+  name          String?
+  goals         String?
+  aiTone        String   @default("direct") // direct|coach|gentle
+  learningLangs String   @default("zh,en")
+  zhLevel       String   @default("zero")
+  enLevel       String   @default("zero")
+  createdAt     DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.5 Nhật ký AI
+// ─────────────────────────────────────────────────────────────
+
+model AiCall {
+  id            String   @id @default(cuid())
+  feature       String // task id của AI Router — xem design.md §6.1
+  provider      String   @default("anthropic") // local|anthropic — provider thực sự đã trả lời
+  model         String
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  cacheRead     Int      @default(0)
+  cacheWrite    Int      @default(0)
+  estimatedCost Float    @default(0) // luôn 0 cho provider "local"
+  latencyMs     Int      @default(0)
+  ok            Boolean  @default(true)
+  error         String?
+  fallbackFrom  String? // provider gốc bị lỗi, ví dụ "anthropic" khi đã fallback sang "local"
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([provider])
+  @@index([feature])
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.6 Mock Interview
+// ─────────────────────────────────────────────────────────────
+
+model InterviewProfile {
+  id            String             @id @default(cuid())
+  label         String // "Backend Engineer"
+  jobTitle      String
+  seniority     String             @default("mid") // junior|mid|senior|lead
+  language      String             @default("en") // en|vi
+  questionKinds String             @default("concept,design") // concept|design|debug|tradeoff|behavioral
+  focusSkills   String             @default("[]") // JSON [skillId]
+  createdAt     DateTime           @default(now())
+  sessions      InterviewSession[]
+}
+
+model InterviewSession {
+  id            String           @id @default(cuid())
+  profileId     String
+  profile       InterviewProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  plannedCount  Int              @default(8)
+  askedCount    Int              @default(0)
+  status        String           @default("active") // active|done|abandoned
+  totalScore    Float?
+  skillsFocused String           @default("[]")
+  startedAt     DateTime         @default(now())
+  endedAt       DateTime?
+  turns         InterviewTurn[]
+  activityId    String?          @unique
+  activity      Activity?        @relation("InterviewActivity", fields: [activityId], references: [id])
+}
+
+model InterviewTurn {
+  id           String           @id @default(cuid())
+  sessionId    String
+  session      InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  index        Int
+  question     String
+  kind         String
+  skillName    String?
+  answer       String?
+  scores       Json? // {clarity:[score,note], depth:[...], ...}
+  total        Float?
+  feedback     String?
+  nextQuestion String?
+  createdAt    DateTime         @default(now())
+
+  @@index([sessionId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// §5.7 Bài kiểm tra ngoại ngữ
+// ─────────────────────────────────────────────────────────────
+
+model TestSession {
+  id          String     @id @default(cuid())
+  lang        String // zh|en
+  testType    String // placement|topic|benchmark|from_content
+  topic       String?
+  level       String?
+  score       Float?
+  maxScore    Float?
+  durationSec Int?
+  blueprint   Json? // {itemTypes:[...], count:n}
+  createdAt   DateTime   @default(now())
+  items       TestItem[]
+  activityId  String?    @unique
+  activity    Activity?  @relation("TestActivity", fields: [activityId], references: [id])
+}
+
+model TestItem {
+  id          String      @id @default(cuid())
+  testId      String
+  test        TestSession @relation(fields: [testId], references: [id], onDelete: Cascade)
+  index       Int
+  itemType    String // mc_vocab|mc_grammar|cloze|listening|writing|translation
+  prompt      String
+  audioText   String? // cho item listening
+  options     Json? // ["a","b","c","d"]
+  answer      String?
+  userAnswer  String?
+  isCorrect   Boolean?
+  cardId      String? // nếu sai → đẩy thẻ về ôn
+  skillName   String?
+  errorGroups Json? // {grammar:[],vocab:[],expression:[],context:[]}
+  notes       String?
+  seconds     Int?
+
+  @@index([testId])
+}

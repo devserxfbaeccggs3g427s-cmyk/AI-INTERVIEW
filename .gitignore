@@ -8,6 +8,7 @@ node_modules/
 out/
 build/
 next-env.d.ts
+*.tsbuildinfo
 
 # Environment — API key KHÔNG BAO GIỜ commit (AC-16)
 .env
