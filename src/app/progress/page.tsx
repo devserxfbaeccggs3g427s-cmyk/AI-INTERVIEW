@@ -1,27 +1,40 @@
-/**
- * S14 — placeholder tối giản (tasks.md nhóm 3, task 3.9).
- *
- * Phase 0 chỉ cần nội dung thật cho `/`, `/plan`, `/skills`, `/skills/[id]`,
- * `/log`, `/log/history`, `/state`, `/settings`. Các route còn lại tạm là
- * placeholder 1 trang để:
- *   1. `next build` prerender được (Server Component, không state).
- *   2. Test E2E AC-15 quét 21 route mà không bị 404.
- *
- * **Server Component** — không có directive, không dùng hook.
- *
- * Xem design.md §2.1 (cấu trúc route) · §4.14 · tasks.md 3.9.
- */
+import { ProgressView } from "@/components/progress/ProgressView";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { getProgressReport, progressDigest } from "@/lib/progress-data";
 
-export default function ProgressPage() {
+/**
+ * S14 — Báo cáo tiến bộ (`/progress`) — tasks.md 16.1 → 16.7.
+ *
+ * **Server Component**: đọc `Skill` / `Evidence` / `Activity` / `Review` trực
+ * tiếp từ Prisma, tính toàn bộ chỉ số rồi đẩy DTO xuống `ProgressView`
+ * (Client Component) để xử lý lọc domain và xuất JSON.
+ *
+ * Không có vanity metric: không hiển thị "tổng giờ học" trần trụi — mọi chỉ số
+ * thời gian đều gắn với sản phẩm (`Evidence`).
+ *
+ * Xem tasks.md 16.1–16.7 · requirements.md §2.12.
+ */
+export const dynamic = "force-dynamic";
+
+export default async function ProgressPage() {
+  const report = await getProgressReport();
+  const digest = progressDigest(report);
+
   return (
     <div className="space-y-gutter-lg">
       <PageHeader
-        eyebrow="Báo cáo & tiến độ"
+        eyebrow={
+          <>
+            <span>Báo cáo &amp; tiến độ</span>
+            <span aria-hidden>·</span>
+            <span>Quỹ đạo 6 tháng · heatmap 90 ngày</span>
+          </>
+        }
         title="Báo cáo tiến bộ"
-        description="KPI, đường tiến bộ theo thời gian, heatmap bằng chứng và so sánh tự với trước."
+        description="Tiến độ đo bằng bằng chứng thật, không phải bằng giờ bấm giờ hay cảm nhận chủ quan."
       />
-      <p className="text-body-md text-on-surface-variant">Sẽ dựng ở Phase 1.</p>
+
+      <ProgressView report={report} digest={digest} />
     </div>
   );
 }

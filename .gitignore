@@ -19,7 +19,13 @@ next-env.d.ts
 # Database
 prisma/dev.db
 prisma/dev.db-journal
+# SQLite ở chế độ WAL tạo 2 file phụ (`-shm`, `-wai`) — KHÔNG được commit.
+# `*.db` không khớp 2 file này vì chúng có hậu tố `-shm` / `-wal`.
+prisma/*.db-shm
+prisma/*.db-wal
 *.db
+*.db-shm
+*.db-wal
 
 # Test / coverage
 coverage/

@@ -127,3 +127,27 @@ export function toRating(value: number): Grade {
       return Rating.Good;
   }
 }
+
+/**
+ * Chấm 1 thẻ → state mới + các trường quan trọng cho DB.
+ *
+ * @param card   state hiện tại của thẻ (`Card.cardState`)
+ * @param rating 1=Again · 2=Hard · 3=Good · 4=Easy
+ * @param now    thời điểm chấm (mặc định now)
+ *
+ * Trả về state FSRS mới + due/stability/difficulty để ghi vào Card.
+ * Được dùng bởi `POST /api/srs/grade` (task 10.3).
+ */
+export function scheduleCard(
+  card: Card,
+  rating: Grade,
+  now: Date = new Date(),
+): { card: Card; due: Date; stability: number; difficulty: number } {
+  const result = f.next(card, now, rating);
+  return {
+    card: result.card,
+    due: result.card.due,
+    stability: result.card.stability,
+    difficulty: result.card.difficulty,
+  };
+}

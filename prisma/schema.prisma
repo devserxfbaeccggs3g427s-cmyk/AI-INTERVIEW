@@ -170,6 +170,46 @@ model UserProfile {
   zhLevel       String   @default("zero")
   enLevel       String   @default("zero")
   createdAt     DateTime @default(now())
+
+  /// Ngân sách chi phí AI tháng (USD) — task 17.1. `null` = chưa đặt.
+  monthlyBudgetUsd Float?
+  /// Chế độ khẩn cấp tiết kiệm — task 17.6. Khi bật, router chỉ dùng
+  /// provider local + model Haiku cho task cloud.
+  emergencyMode     Boolean @default(false)
+}
+
+/// Ghi đè model cho 1 task local — task 17.10.
+///
+/// Vì sao cần bảng riêng:
+///   `ROUTES` trong `router.ts` là hằng số `const` — không sửa được lúc chạy.
+///   Người dùng bấm "Dùng model này" ở panel model local (S15) → ghi đè ở đây;
+///   `resolveRoute()` đọc bảng này (có cache tiến trình) để chọn model.
+///
+/// Chỉ áp dụng cho task `local` — task cloud luôn dùng model Anthropic.
+model RouteOverride {
+  /// Task id của AI Router — xem `src/lib/ai/tasks.ts`.
+  task      String   @id
+  /// Tên model Ollama được chọn, ví dụ `qwen2.5:7b`.
+  model     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Cờ "đã chạy Weekly Review cho tuần này" — task 15.2.
+///
+/// Dùng bảng riêng thay vì cột trong `DailyState` vì tuần ISO ≠ ngày:
+/// cần đảm bảo chạy **đúng 1 lần** cho mỗi tuần.
+model WeeklyReviewRun {
+  /// Khoá theo tuần ISO — dạng `2026-W44`.
+  weekKey   String   @id
+  /// Tuần bắt đầu (00:00 local, thứ Hai).
+  weekStart DateTime
+  /// AI đã tạo đề xuất kế hoạch hay chưa.
+  applied   Boolean  @default(false)
+  /// Số slot đề xuất cuối cùng.
+  slotCount Int      @default(0)
+  /// Ghi chú lý do giảm tải (task 15.6 / FR-WR-05).
+  reliefNote String?
+  createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -284,6 +324,9 @@ model TestItem {
   errorGroups Json? // {grammar:[],vocab:[],expression:[],context:[]}
   notes       String?
   seconds     Int?
+  /// Độ khó của item 1..5 — dùng để cân bằng đề (task 14.17: "đề song
+  /// song về độ khó") và hiển thị trên `QuestionMatrix`.
+  difficulty  Int?
 
   @@index([testId])
 }

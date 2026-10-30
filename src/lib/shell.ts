@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/db";
 import { addDays, startOfDay, startOfWeek } from "@/lib/dates";
+import { readEnvLocalKeyCached } from "@/lib/settings-api-key";
 import { SLOT_COUNT } from "@/lib/types";
 
 export type ShellData = {
@@ -94,7 +95,7 @@ export async function computeAiStatus(): Promise<{ aiChip: string; aiIsLocal: bo
     return { aiChip: "AI Online / Cloud (Claude Opus 5)", aiIsLocal: false };
   }
 
-  if (process.env.ANTHROPIC_API_KEY) {
+  if (readEnvLocalKeyCached() ?? process.env.ANTHROPIC_API_KEY) {
     return { aiChip: "AI Online / Cloud (Claude Opus 5)", aiIsLocal: false };
   }
   return { aiChip: "AI Offline / Local (Ollama)", aiIsLocal: true };

@@ -1,19 +1,53 @@
 /**
- * S06 — placeholder tối giản (tasks.md nhóm 3, task 3.9).
+ * S06 — Nhật ký & phản hồi AI `/journal` (tasks.md 12.1–12.7).
  *
- * Phase 0 chỉ cần nội dung thật cho `/`, `/plan`, `/skills`, `/skills/[id]`,
- * `/log`, `/log/history`, `/state`, `/settings`. Các route còn lại tạm là
- * placeholder 1 trang để:
- *   1. `next build` prerender được (Server Component, không state).
- *   2. Test E2E AC-15 quét 21 route mà không bị 404.
+ * Server Component: đọc lịch sử `Reflection` từ DB rồi truyền xuống
+ * `JournalView` (Client Component) để render phần tương tác.
  *
- * **Server Component** — không có directive, không dùng hook.
+ * Layout: trái 8 (editor + phản hồi AI) / phải 4 (gợi ý + phân loại + lịch sử).
  *
- * Xem design.md §2.1 (cấu trúc route) · §4.6 · tasks.md 3.9.
+ * Xem tasks.md 12.1–12.7 · design.md §4.6.
  */
-import { PageHeader } from "@/components/shell/PageHeader";
 
-export default function JournalPage() {
+import { prisma } from "@/lib/db";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { JournalView } from "@/components/journal/JournalView";
+import type { JournalEntryDTO } from "@/lib/journal";
+
+/** Đọc 20 entry gần nhất từ `Reflection` join `Activity`. */
+async function getInitialEntries(): Promise<JournalEntryDTO[]> {
+  const reflections = await prisma.reflection.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      activity: {
+        select: {
+          id: true,
+          title: true,
+          domain: true,
+          createdAt: true,
+          skill: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  return reflections.map((r) => ({
+    id: r.id,
+    activityId: r.activityId,
+    title: r.activity.title,
+    prompt: r.prompt,
+    answer: r.answer,
+    aiFeedback: r.aiFeedback,
+    domain: r.activity.domain as JournalEntryDTO["domain"],
+    skillName: r.activity.skill?.name ?? null,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export default async function JournalPage() {
+  const initialEntries = await getInitialEntries();
+
   return (
     <div className="space-y-gutter-lg">
       <PageHeader
@@ -21,7 +55,8 @@ export default function JournalPage() {
         title="Nhật ký & phản hồi AI"
         description="Ghi lại suy nghĩ trong ngày và nhận phản hồi từ AI. Nội dung chỉ được gửi đi khi bạn bấm nút Phân tích."
       />
-      <p className="text-body-md text-on-surface-variant">Sẽ dựng ở Phase 1.</p>
+
+      <JournalView initialEntries={initialEntries} />
     </div>
   );
 }

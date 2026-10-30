@@ -11,6 +11,8 @@
  * Xem tasks.md 9.3 / 9.4 / 17.9 · requirements.md AC-16.
  */
 
+import "server-only";
+
 import fs from "node:fs";
 import path from "node:path";
 
@@ -32,8 +34,16 @@ export const MASKED_KEY = "sk-ant-••••••••";
 const MIN_KEY_LENGTH = 20;
 const MAX_KEY_LENGTH = 200;
 
-/** Đường dẫn tuyệt đối tới `.env.local` ở thư mục gốc project. */
+/**
+ * Đường dẫn tuyệt đối tới `.env.local` ở thư mục gốc project.
+ *
+ * Ghi đè được bằng biến `ENV_LOCAL_PATH` — hook cho **unit test**: test phải
+ * trỏ tới file tạm, không được đọc/ghi `.env.local` thật của máy dev (sẽ làm
+ * hỏng key đang cấu hình, và làm test phụ thuộc trạng thái máy).
+ */
 export function envLocalPath(): string {
+  const override = process.env.ENV_LOCAL_PATH?.trim();
+  if (override) return path.resolve(override);
   return path.join(process.cwd(), ENV_LOCAL_FILENAME);
 }
 
@@ -110,6 +120,58 @@ export function resolveApiKey(): string | null {
 }
 
 /**
+ * Cache của key đã đọc từ `.env.local` — dùng cho **đường gọi AI nóng**.
+ *
+ * Vì sao cần cache:
+ *   `callAi()` được gọi ở mọi route AI. Đọc file `.env.local` ở mỗi lượt gọi
+ *   là 1 syscall `stat` + 1 `readFile` trên mỗi request — thừa, vì file này
+ *   gần như không đổi (chỉ đổi khi người dùng bấm "Lưu khóa").
+ *
+ * Vì sao cache theo `mtimeMs` chứ không cache mãi:
+ *   Next.js chỉ nạp `.env.local` **một lần lúc khởi động process**. Người dùng
+ *   bấm "Lưu khóa" giữa phiên làm việc → file đổi nhưng `process.env` không
+ *   đổi → key mới **không** có hiệu lực tới khi restart app. Đọc lại file khi
+ *   `mtimeMs` đổi là cách sửa đúng mà không cần restart.
+ */
+let cachedKey: { value: string | null; mtimeMs: number } | null = null;
+
+/**
+ * Đọc key từ `.env.local` — có cache theo `mtimeMs` của file.
+ *
+ * Khác `readEnvLocalKey()` ở chỗ: hàm này **cache** kết quả, nên chỉ dùng ở
+ * đường nóng (gọi AI). Chỗ cần luôn thấy file mới (route GET/POST) dùng
+ * `readEnvLocalKey()`.
+ */
+export function readEnvLocalKeyCached(): string | null {
+  const filePath = envLocalPath();
+
+  let mtimeMs = -1;
+  try {
+    mtimeMs = fs.statSync(filePath).mtimeMs;
+  } catch {
+    // File không tồn tại → không có key trong file.
+    cachedKey = { value: null, mtimeMs: -1 };
+    return null;
+  }
+
+  if (cachedKey && cachedKey.mtimeMs === mtimeMs) {
+    return cachedKey.value;
+  }
+
+  const value = readEnvLocalKey();
+  cachedKey = { value, mtimeMs };
+  return value;
+}
+
+/**
+ * Xoá cache key — gọi sau khi **ghi** `.env.local` để lượt gọi AI kế tiếp
+ * thấy key mới ngay (không cần restart app).
+ */
+export function invalidateEnvLocalKeyCache(): void {
+  cachedKey = null;
+}
+
+/**
  * Ghi key vào `.env.local` — thay dòng cũ nếu có, nếu không thì thêm vào cuối.
  *
  * Không phá vỡ các biến khác đang có trong file (DATABASE_URL, OLLAMA_* …).
@@ -151,4 +213,7 @@ export function writeEnvLocalKey(apiKey: string): void {
   } catch {
     // Windows / hệ thống file không hỗ trợ → bỏ qua, không làm hỏng luồng chính.
   }
+
+  // Xoá cache → lượt gọi AI kế tiếp dùng key vừa lưu (không cần restart app).
+  invalidateEnvLocalKeyCache();
 }

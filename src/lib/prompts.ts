@@ -65,7 +65,8 @@ export const TASK_PROMPT_JOURNAL_FEEDBACK = [
 export const TASK_PROMPT_WEEKLY_REVIEW = [
   "Bạn là người tổng kết tuần học tập của người dùng.",
   "Đầu ra gồm: 3 điểm mạnh, 3 điểm yếu, xu hướng tiến bộ theo kỹ năng, và kế hoạch tuần sau gồm 6 slot.",
-  "Nếu người dùng trượt >= 2 ngày liên tiếp thì đề xuất giảm tải (giảm thời lượng slot).",
+  "Nếu người dùng trượt >= 2 ngày liên tiếp thì đề xuất giảm tải: chỉ trả về 3 slot (giảm một nửa),",
+  "và nêu rõ lý do giảm tải trong ghi chú: tuần trước trượt N ngày liên tiếp → giảm tải.",
 ].join("\n");
 
 /** Prompt cho AI-08 — roleplay luyện ngoại ngữ (S11). */

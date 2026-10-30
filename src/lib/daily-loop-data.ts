@@ -13,6 +13,7 @@
 
 import { prisma } from "@/lib/db";
 import { addDays, dateKey, lastNWeekdays, startOfDay, weekdayShort } from "@/lib/dates";
+import { readEnvLocalKeyCached } from "@/lib/settings-api-key";
 import { retrievabilityPercent, retentionCurve, type Card as FsrsCard } from "@/lib/fsrs";
 import { getFocusSkill } from "@/lib/focus";
 import { generateLocalPlan, SLOT_TEMPLATE } from "@/lib/plan";
@@ -165,7 +166,7 @@ export async function loadFocus(now: Date = new Date()): Promise<FocusDTO | null
       aiChip = "AI Online / Cloud (Claude Opus 5)";
       aiIsLocal = false;
     }
-  } else if (process.env.ANTHROPIC_API_KEY) {
+  } else if (readEnvLocalKeyCached() ?? process.env.ANTHROPIC_API_KEY) {
     aiChip = "AI Online / Cloud (Claude Opus 5)";
     aiIsLocal = false;
   }

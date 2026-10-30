@@ -642,7 +642,7 @@ Tiêu đề trang: **"Cài Đặt Hệ Thống & Quản Lý Chi Phí AI"**. Bên
 - `VÙNG NGUY HIỂM (DANGER ZONE)` → "Xóa trắng dữ liệu (2-Step Confirm)".
 - Thống kê bảng (số bản ghi mỗi bảng).
 
-> **Bảo mật (AC-16):** mockup chứa literal `sk-ant-api03-abcdef9876543210masterkeyxyzA` trong `<input type="password">`. Đây là **placeholder phải xóa** — không được đưa vào code production. Production đọc key từ `.env.local`, route `GET` chỉ trả masked key (`sk-ant-••••••••••••`), không bao giờ gửi qua server trung gian hay cloud storage.
+> **Bảo mật (AC-16):** mockup chứa literal `sk-ant-<REDACTED>` trong `<input type="password">`. Đây là **placeholder phải xóa** — không được đưa vào code production. Production đọc key từ `.env.local`, route `GET` chỉ trả masked key (`sk-ant-••••••••••••`), không bao giờ gửi qua server trung gian hay cloud storage.
 
 ### 4.16 S16 — Mock Interview — cấu hình `/interview/setup`
 
@@ -1342,7 +1342,7 @@ Phải cài handler hoặc bỏ. Danh sách:
 | 3 | 21/21 | `data-path` không nhất quất giữa 2 họ giá trị | `lib/nav.ts` là nguồn duy nhất; dùng `href` thật + `usePathname()` (§9.2-7) |
 | 4 | 20/21 | Sidebar thiếu trạng thái active (chỉ **S18** có link active) → user không biết đang ở màn nào | **Một** cơ chế `NAV_ITEMS` dùng chung, tự tính active từ `usePathname()` |
 | 5 | S21 | `playAudio(termKey)` dùng **global `event`** ngầm (`const btn = event.currentTarget;`) → `ReferenceError` khi gọi hàm | Truyền `event` qua tham số: `onClick={(e) => playAudio(e, termKey)}` |
-| 6 | S15 | `<input type="password" value="sk-ant-api03-abcdef9876543210masterkeyxyzA">` — **literal API key hardcode** trong HTML | Đọc từ `.env.local` qua `/api/settings/key`; **không** commit key; **không** hiển thị đầy đủ trong UI (chỉ `sk-…xyzA`) |
+| 6 | S15 | `<input type="password" value="sk-ant-<REDACTED>">` — **literal API key hardcode** trong HTML | Đọc từ `.env.local` qua `/api/settings/key`; **không** commit key; **không** hiển thị đầy đủ trong UI (chỉ `sk-…xyzA`) |
 | 7 | S16 | JS `c.querySelector('.role-selected-badge')` tìm class không tồn tại trong markup → badge "Đang chọn" không xoá | React state |
 | 8 | S20 | Quảng bá phím `[P]`, `[F]`, `[Ctrl+Enter]` nhưng `keydown` chỉ xử lý `Space` và `1`–`4` | Hoặc implement đủ 3 phím, hoặc sửa label cho khớp — **phải khớp** |
 | 9 | S17, S20 | `grid-cols-8` cố định → không co được trên mobile | `grid-cols-1 md:grid-cols-4 xl:grid-cols-8` |

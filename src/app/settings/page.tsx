@@ -16,11 +16,11 @@ import { Chip } from "@/components/ui/Chip";
 import { prisma } from "@/lib/db";
 import { readEnvLocalKey } from "@/lib/settings-api-key";
 import { saveProfile } from "@/lib/settings-profile";
+import { getCostData, type TableData, type CostByProvider, type MonthKey } from "@/lib/settings/cost-data";
 import type { ProfileValues } from "@/lib/settings-types";
 
 /**
  * Tổng số bản ghi của các bảng chính — dùng cho chip trạng thái.
- *
  * Đếm thật từ DB, KHÔNG hardcode con số của mockup (design.md §4.15).
  */
 async function countRecords(): Promise<number> {
@@ -35,13 +35,66 @@ async function countRecords(): Promise<number> {
   return counts.reduce((sum, value) => sum + value, 0);
 }
 
+/**
+ * Đếm số bản ghi của từng bảng — dùng cho tab Quản trị dữ liệu (task 17.8).
+ */
+async function countTableRecords(): Promise<Record<string, number>> {
+  const [
+    skill, activity, evidence, reflection, planItem, focusTarget,
+    dailyState, card, review, userProfile, weeklyReviewRun,
+    routeOverride, aiCall, interviewProfile, interviewSession,
+    interviewTurn, testSession, testItem,
+  ] = await Promise.all([
+    prisma.skill.count(),
+    prisma.activity.count(),
+    prisma.evidence.count(),
+    prisma.reflection.count(),
+    prisma.planItem.count(),
+    prisma.focusTarget.count(),
+    prisma.dailyState.count(),
+    prisma.card.count(),
+    prisma.review.count(),
+    prisma.userProfile.count(),
+    prisma.weeklyReviewRun.count(),
+    prisma.routeOverride.count(),
+    prisma.aiCall.count(),
+    prisma.interviewProfile.count(),
+    prisma.interviewSession.count(),
+    prisma.interviewTurn.count(),
+    prisma.testSession.count(),
+    prisma.testItem.count(),
+  ]);
+  return {
+    skill, activity, evidence, reflection, planItem, focusTarget,
+    dailyState, card, review, userProfile, weeklyReviewRun,
+    routeOverride, aiCall, interviewProfile, interviewSession,
+    interviewTurn, testSession, testItem,
+  };
+}
+
+/** Tính monthKey cho tháng hiện tại — dạng `YYYY-MM`. */
+function currentMonthKey(): MonthKey {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  return `${year}-${month}` as MonthKey;
+}
+
 export default async function SettingsPage() {
-  const [profileRow, records] = await Promise.all([
+  const monthKey = currentMonthKey();
+  const dataPromise = getCostData(monthKey);
+  const tableCountsPromise = countTableRecords();
+
+  const [profileRow, records, data, routeOverrides] = await Promise.all([
     prisma.userProfile.findFirst({ orderBy: { createdAt: "asc" } }),
     countRecords(),
+    dataPromise,
+    prisma.routeOverride.findMany({
+      select: { task: true, model: true },
+      orderBy: { task: "asc" },
+    }),
   ]);
 
-  // Chỉ kiểm tra **sự tồn tại** của key — không đưa giá trị key ra UI.
   const hasKey = readEnvLocalKey() !== null;
 
   const profile: ProfileValues = {
@@ -84,6 +137,9 @@ export default async function SettingsPage() {
         keyConfigured={hasKey}
         keyMasked={hasKey ? "sk-ant-••••••••" : null}
         saveProfileAction={saveProfile}
+        dataPromise={dataPromise}
+        tableCountsPromise={tableCountsPromise}
+        routeOverrides={routeOverrides}
       />
     </div>
   );

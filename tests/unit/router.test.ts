@@ -37,9 +37,11 @@ vi.mock("@/lib/ai/ollama", async (importOriginal) => {
 
 import {
   ANTHROPIC_TASKS,
+  EMERGENCY_CLOUD_MODEL,
   LOCAL_TASKS,
   NON_AI_TASKS,
   ROUTES,
+  applyEmergencyMode,
   callAi,
   isAiFreeTask,
   route,
@@ -302,8 +304,7 @@ describe("callAi() — mã lỗi ổn định cho UI (design.md §7.2)", () => {
   });
 });
 
-describe("callAi() — bước 3 fallback rule cục bộ (design.md §6.2)", () => {
-  it("daily_plan: anthropic lỗi + Ollama lỗi → rule cục bộ sinh 6 slot", async () => {
+describe("callAi() — bước 3 fallback rule cục bộ (design.md §6.2)", () => {  it("daily_plan: anthropic lỗi + Ollama lỗi → rule cục bộ sinh 6 slot", async () => {
     mocks.callAnthropicDetailed.mockRejectedValueOnce(new Error("Anthropic down"));
     mocks.callLocal.mockRejectedValueOnce(new Error("Ollama down"));
 
@@ -330,5 +331,28 @@ describe("callAi() — bước 3 fallback rule cục bộ (design.md §6.2)", ()
     const slots = envelope.data as Array<{ slot: number }>;
     expect(slots).toHaveLength(6);
     expect(slots.map((s) => s.slot)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+});
+
+describe("applyEmergencyMode() — chế độ khẩn cấp tiết kiệm (task 17.6)", () => {
+  it("task cloud → đổi model sang claude-haiku-4-5", () => {
+    const r = applyEmergencyMode({ provider: "anthropic", model: "claude-opus-5", effort: "high" });
+    expect(r.provider).toBe("anthropic");
+    expect(r.model).toBe(EMERGENCY_CLOUD_MODEL);
+    expect(EMERGENCY_CLOUD_MODEL).toBe("claude-haiku-4-5");
+    // `effort` giữ nguyên.
+    expect(r.effort).toBe("high");
+  });
+
+  it("task local → giữ nguyên provider + model", () => {
+    const r = applyEmergencyMode({ provider: "local", model: "qwen2.5:7b", effort: "low" });
+    expect(r.provider).toBe("local");
+    expect(r.model).toBe("qwen2.5:7b");
+  });
+
+  it("không mutate route gốc", () => {
+    const original = { provider: "anthropic" as const, model: "claude-opus-5", effort: "medium" as const };
+    applyEmergencyMode(original);
+    expect(original.model).toBe("claude-opus-5");
   });
 });

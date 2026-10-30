@@ -292,160 +292,160 @@
 
 ### 10. S09 + S10 — Ôn ngoại ngữ SRS
 
-- [ ] 10.1 Wrapper FSRS (`ts-fsrs`)
+- [x] 10.1 Wrapper FSRS (`ts-fsrs`)
   - **File:** `src/lib/fsrs.ts`
   - **Done:** `scheduleCard(state, rating, now)` → `{state, due, stability, difficulty}`; state lưu JSON
-- [ ] 10.2 `POST /api/srs/next` — lấy thẻ đến hạn, hết thì lấy thẻ mới, tối đa 20 thẻ
+- [x] 10.2 `POST /api/srs/next` — lấy thẻ đến hạn, hết thì lấy thẻ mới, tối đa 20 thẻ
   - **File:** `src/app/api/srs/next/route.ts`
   - **Done:** `due <= now` trước; group chưa học sau
-- [ ] 10.3 `POST /api/srs/grade` — ghi `Review` + cập nhật `Card`
+- [x] 10.3 `POST /api/srs/grade` — ghi `Review` + cập nhật `Card`
   - **File:** `src/app/api/srs/grade/route.ts`
   - **Done:** `reps`, `lapses`, `stability`, `difficulty`, `due` cập nhật; rating 1 → tăng `lapses`
-- [ ] 10.4 S09 hub — số thẻ đang học/đã thuộc/đến hạn + chuỗi ngày ôn + `VocabProgress`
+- [x] 10.4 S09 hub — số thẻ đang học/đã thuộc/đến hạn + chuỗi ngày ôn + `VocabProgress`
   - **File:** `src/app/language/page.tsx`, `src/components/language/VocabProgress.tsx`
   - **Done:** số liệu thật theo `lang`
-- [ ] 10.5 Nút "Ôn ngay (N thẻ)" → `/language/session`
+- [x] 10.5 Nút "Ôn ngay (N thẻ)" → `/language/session`
   - **File:** `src/app/language/page.tsx`
   - **Done:** đếm đúng số thẻ đến hạn
-- [ ] 10.6 Nút "Xuất Deck JSON" + "Thêm thẻ thủ công" (mockup chưa có handler)
+- [x] 10.6 Nút "Xuất Deck JSON" + "Thêm thẻ thủ công" (mockup chưa có handler)
   - **File:** `src/app/language/page.tsx`
   - **Done:** tải file JSON; form thêm thẻ có đủ field
-- [ ] 10.7 S10 `CardFront` — pinyin + hanzi tuỳ chọn + nút nghe (`zh-CN`)
+- [x] 10.7 S10 `CardFront` — pinyin + hanzi tuỳ chọn + nút nghe (`zh-CN`)
   - **File:** `src/app/language/session/page.tsx`, `src/components/language/CardFront.tsx`
   - **Done:** `speechSynthesis` với `lang='zh-CN'`; bật/tắt hanzi
-- [ ] 10.8 `CardBack` — hanzi + nghĩa + ví dụ + nút nghe
+- [x] 10.8 `CardBack` — hanzi + nghĩa + ví dụ + nút nghe
   - **File:** `src/components/language/CardBack.tsx`
   - **Done:** ví dụ có pinyin nếu có
-- [ ] 10.9 `GradeButtons` — 4 nút + khoảng cách lượt ôn kế tiếp từ FSRS
+- [x] 10.9 `GradeButtons` — 4 nút + khoảng cách lượt ôn kế tiếp từ FSRS
   - **File:** `src/components/language/GradeButtons.tsx`
   - **Done:** nhãn thời gian đọc từ state FSRS thật
-- [ ] 10.10 `SessionProgress` — thanh tiến trình + "Thẻ 3 / 12" (bind thật)
+- [x] 10.10 `SessionProgress` — thanh tiến trình + "Thẻ 3 / 12" (bind thật)
   - **File:** `src/components/language/SessionProgress.tsx`
   - **Done:** không dùng số tĩnh
-- [ ] 10.11 Gợi ý phiên âm kiểu Việt cho thẻ en (2 tuần đầu)
+- [x] 10.11 Gợi ý phiên âm kiểu Việt cho thẻ en (2 tuần đầu)
   - **File:** `src/components/language/CardFront.tsx`
   - **Done:** dùng `Card.hint`; tự ẩn sau 14 ngày tạo
-- [ ] 10.12 Chế độ `produce` (gõ / nói, chấm fuzzy) — Phase 3 nhưng code path có sẵn
+- [x] 10.12 Chế độ `produce` (gõ / nói, chấm fuzzy) — Phase 3 nhưng code path có sẵn
   - **File:** `src/lib/fuzzy.ts`
   - **Done:** hàm so khớp chuỗi, dùng được ngay
-- [ ] 10.13 Test SRS (AC-4)
+- [x] 10.13 Test SRS (AC-4)
   - **File:** `tests/unit/fsrs.test.ts`, `tests/e2e/srs.spec.ts`
   - **Done:** Good → due khớp ts-fsrs; Again → due hôm nay + lapses +1
 
 ### 11. S07 — Luyện giao tiếp Viết
 
-- [ ] 11.1 `PromptCard` — đề bài + badge CEFR + "Đề khác" + "Tạo đề theo chủ đề"
-  - **File:** `src/app/speak/write/page.tsx`, `src/components/speak/PromptCard.tsx`
+- [x] 11.1 `PromptCard` — đề bài + badge CEFR + "Đề khác" + "Tạo đề theo chủ đề"
+  - **File:** `src/app/speak/write/page.tsx`, `src/components/speak/SpeakingPractice.tsx`
   - **Done:** nạp đề từ ngân hàng
-- [ ] 11.2 `WriteEditor` — textarea + bộ đếm từ + nút "Chấm bài"
-  - **File:** `src/components/speak/WriteEditor.tsx`
+- [x] 11.2 `WriteEditor` — textarea + bộ đếm từ + nút "Chấm bài"
+  - **File:** `src/components/speak/SpeakingPractice.tsx`
   - **Done:** disable khi đang chấm
-- [ ] 11.3 API AI-03 chấm theo rubric 5 tiêu chí (structured output)
+- [x] 11.3 API AI-03 chấm theo rubric 5 tiêu chí (structured output)
   - **File:** `src/app/api/grade/route.ts`
   - **Done:** schema đúng 5 tiêu chí, score 0–5, tổng = trung bình
-- [ ] 11.4 `RubricGrid` — 5 tiêu chí: điểm + nhận xét + đề xuất sửa
+- [x] 11.4 `RubricGrid` — 5 tiêu chí: điểm + nhận xét + đề xuất sửa
   - **File:** `src/components/rubric/RubricGrid.tsx`
   - **Done:** dùng chung cho S07/S08
-- [ ] 11.5 `DeltaBadge` so với lần ghi trước
+- [x] 11.5 `DeltaBadge` so với lần ghi trước
   - **File:** `src/components/rubric/DeltaBadge.tsx`
   - **Done:** ↑ primary / ↓ error
-- [ ] 11.6 Lưu bài → Activity (domain `communication`) + Evidence
+- [x] 11.6 Lưu bài → Activity (domain `communication`) + Evidence
   - **File:** `src/app/api/grade/route.ts`
-  - **Done:** 1 Activity + 1 Evidence
-- [ ] 11.7 Kho bài tập (prompt bank)
+  - **Done:** 1 Activity (domain communication, type=write/talk, aiScore=total) + 1 Evidence (rating 1–4 từ total, recomputeSkillLevel)
+- [x] 11.7 Kho bài tập (prompt bank)
   - **File:** `src/components/speak/PromptBank.tsx`
   - **Done:** lưu/nạp prompt
-- [ ] 11.8 Test chấm điểm (AC-6)
+- [x] 11.8 Test chấm điểm (AC-6)
   - **File:** `tests/integration/grading.test.ts`
   - **Done:** đúng 5 tiêu chí, tổng = trung bình, không tiêu chí ngoài rubric
 
 ### 12. S06 — Nhật ký & phản hồi AI
 
-- [ ] 12.1 `JournalEditor` + `CharacterCounter` + bản nháp `localStorage`
+- [x] 12.1 `JournalEditor` + `CharacterCounter` + bản nháp `localStorage`
   - **File:** `src/app/journal/page.tsx`, `src/components/journal/JournalEditor.tsx`
   - **Done:** đếm ký tự; draft giữ lại
-- [ ] 12.2 3 gợi ý câu hỏi mở theo ngữ cảnh (sau buổi học / cuối ngày / cuối tuần) — bấm để chèn
+- [x] 12.2 3 gợi ý câu hỏi mở theo ngữ cảnh (sau buổi học / cuối ngày / cuối tuần) — bấm để chèn
   - **File:** `src/components/journal/PromptSuggestions.tsx`
   - **Done:** chèn vào cuối nội dung
-- [ ] 12.3 API AI-05 — 1 tóm tắt + 1 câu hỏi sắc
+- [x] 12.3 API AI-05 — 1 tóm tắt + 1 câu hỏi sắc
   - **File:** `src/app/api/journal/feedback/route.ts`
   - **Done:** structured output; tuyệt đối không trả lời dài
-- [ ] 12.4 `AiResponseCard` — khung câu hỏi sắc `border-primary` + nút "Chấp nhận → tạo Evidence"
+- [x] 12.4 `AiResponseCard` — khung câu hỏi sắc `border-primary` + nút "Chấp nhận → tạo Evidence"
   - **File:** `src/components/journal/AiResponseCard.tsx`
   - **Done:** nút tạo Evidence cho skill đề xuất
-- [ ] 12.5 API AI-06 phân loại domain/skill + confidence — provider **local** (`qwen2.5:7b`, 0 token)
+- [x] 12.5 API AI-06 phân loại domain/skill + confidence — provider **local** (`qwen2.5:7b`, 0 token)
   - **File:** `src/app/api/journal/classify/route.ts`
   - **Done:** gọi qua `lib/ai/router.ts`; badge hiển thị `Local · qwen2.5:7b`
-- [ ] 12.6 Lịch sử entry + ghi chú AI
+- [x] 12.6 Lịch sử entry + ghi chú AI
   - **File:** `src/components/journal/JournalHistory.tsx`
   - **Done:** bind `Reflection`
-- [ ] 12.7 Privacy — chỉ gửi khi bấm "Gửi AI phản hồi"
+- [x] 12.7 Privacy — chỉ gửi khi bấm "Gửi AI phản hồi"
   - **File:** `src/app/journal/page.tsx`
   - **Done:** không có request nào tự động khi gõ
 
 ### 13. S16–S18 — Mock Interview (S16 cấu hình · S17 phiên · S18 kết quả)
 
-- [ ] 13.1 `InterviewProfile` CRUD — label, jobTitle, seniority, language, questionKinds, focusSkills
+- [x] 13.1 `InterviewProfile` CRUD — label, jobTitle, seniority, language, questionKinds, focusSkills
   - **File:** `src/app/interview/setup/page.tsx`, `src/components/interview/ProfileCard.tsx`
   - **Done:** lưu nhiều hồ sơ; seed 3 hồ sơ mẫu (`backend-sr`, `architect-lead`, `eng-manager`)
-- [ ] 13.2 Quét cây kỹ năng → ghim node yếu nhất
+- [x] 13.2 Quét cây kỹ năng → ghim node yếu nhất
   - **File:** `src/lib/skills.ts`, `src/components/interview/PinnedWeakNodes.tsx`
   - **Done:** ưu tiên node 0 bằng chứng (Score 0.0) trước node 2 bằng chứng (Score 1.2)
-- [ ] 13.3 Chọn 5 dạng câu + số câu (5/8/12) + phương thức trả lời + tuỳ chọn nâng cao
+- [x] 13.3 Chọn 5 dạng câu + số câu (5/8/12) + phương thức trả lời + tuỳ chọn nâng cao
   - **File:** `src/app/interview/setup/page.tsx`
   - **Done:** estimate `~$0.18/phiên` hiển thị
-- [ ] 13.4 `POST /api/interview/start` — tạo `InterviewSession` trước khi hiện câu hỏi
+- [x] 13.4 `POST /api/interview/start` — tạo `InterviewSession` trước khi hiện câu hỏi
   - **File:** `src/app/api/interview/start/route.ts`
   - **Done:** `status='active'`, `plannedCount` theo lựa chọn
-- [ ] 13.5 API AI-11 sinh câu hỏi đầu (kèm kind + skill)
+- [x] 13.5 API AI-11 sinh câu hỏi đầu (kèm kind + skill)
   - **File:** `src/app/api/interview/start/route.ts`
   - **Done:** truyền `focusSkills` + `jobTitle` + `seniority` vào prompt
-- [ ] 13.6 `QuestionCard` — nhãn dạng câu + skill + nút "Câu hỏi này có vấn đề"
+- [x] 13.6 `QuestionCard` — nhãn dạng câu + skill + nút "Câu hỏi này có vấn đề"
   - **File:** `src/components/interview/QuestionCard.tsx`
   - **Done:** nút flag ghi log
-- [ ] 13.7 `ResponsePanel` — textarea + nút Gửi (Enter)
+- [x] 13.7 `ResponsePanel` — textarea + nút Gửi (Enter)
   - **File:** `src/components/interview/ResponsePanel.tsx`
   - **Done:** Enter gửi, Shift+Enter xuống dòng
-- [ ] 13.8 API AI-12 — 1 call chấm + trả lời + sinh câu tiếp theo
+- [x] 13.8 API AI-12 — 1 call chấm + trả lời + sinh câu tiếp theo
   - **File:** `src/app/api/interview/turn/route.ts`
   - **Done:** ghi `InterviewTurn` (scores JSON, total, feedback, nextQuestion)
-- [ ] 13.9 Adaptive — câu hời hợt → follow-up; đã đạt → câu mới
+- [x] 13.9 Adaptive — câu hời hợt → follow-up; đã đạt → câu mới
   - **File:** `src/lib/prompts.ts`, `src/app/api/interview/turn/route.ts`
   - **Done:** prompt yêu cầu rõ tiêu chí follow-up
-- [ ] 13.9a API AI-19 — sinh câu hỏi tiếp theo (adaptive) — **provider local** (`llama3.3`) (FR-AI-19)
+- [x] 13.9a API AI-19 — sinh câu hỏi tiếp theo (adaptive) — **provider local** (`llama3.3`) (FR-AI-19)
   - **File:** `src/app/api/interview/next-question/route.ts`
   - **Done:** `AiCall{provider:"local", estimatedCost:0}`; nhãn S17 `Mô hình đánh giá: Local Llama-3.3 + Opus` khớp; **phần chấm điểm vẫn là cloud** (`claude-opus-5`) — tách 2 provider trong 1 lượt
-- [ ] 13.10 `RubricScore` thu gọn trong phiên (chỉ 5 tiêu chí, không diễn giải)
+- [x] 13.10 `RubricScore` thu gọn trong phiên (chỉ 5 tiêu chí, không diễn giải)
   - **File:** `src/components/rubric/RubricScoreCompact.tsx`
   - **Done:** không hiện comment dài
-- [ ] 13.11 Tiến trình "Câu 3 / 8" + timer thật
+- [x] 13.11 Tiến trình "Câu 3 / 8" + timer thật
   - **File:** `src/components/interview/SessionProgress.tsx`
   - **Done:** không dùng số tĩnh
-- [ ] 13.12 API AI-13 — báo cáo cuối phiên
+- [x] 13.12 API AI-13 — báo cáo cuối phiên
   - **File:** `src/app/api/interview/report/route.ts`
   - **Done:** 3 mạnh (kèm trích dẫn nguyên văn) + 3 yếu (kèm số câu)
-- [ ] 13.13 Tạo `Activity` khi kết thúc phiên (`Evidence` **chỉ** tạo khi người dùng bấm — FR-MI-10d)
+- [x] 13.13 Tạo `Activity` khi kết thúc phiên (`Evidence` **chỉ** tạo khi người dùng bấm — FR-MI-10d)
   - **File:** `src/app/api/interview/report/route.ts`
   - **Done:** `type='mock_interview'`, `aiScore` = tổng; **không** tự tạo `Evidence` — `Evidence` do task 13.16 tạo khi người dùng bấm "Tạo bằng chứng kỹ năng" (P3)
-- [ ] 13.14 S18 scorecard — điểm tổng + delta + ma trận 5 tiêu chí
-  - **File:** `src/app/interview/[id]/page.tsx`, `src/components/interview/ScorecardMatrix.tsx`
+- [x] 13.14 S18 scorecard — điểm tổng + delta + ma trận 5 tiêu chí
+  - **File:** `src/app/interview/demo-session/[sessionId]/page.tsx`, `src/components/interview/ScorecardMatrix.tsx`
   - **Done:** delta so với phiên trước cùng hồ sơ
-- [ ] 13.15 3 điểm mạnh (trích dẫn `border-l-2 border-primary`) + 3 điểm yếu (số câu)
-  - **File:** `src/components/interview/StrengthWeakness.tsx`
+- [x] 13.15 3 điểm mạnh (trích dẫn `border-l-2 border-primary`) + 3 điểm yếu (số câu)
+  - **File:** `src/app/interview/demo-session/[sessionId]/page.tsx`
   - **Done:** trích dẫn là nguyên văn trong `InterviewTurn.answer`
-- [ ] 13.16 `SkillTreeBridge` — đề xuất luyện tiếp + nút "Tạo bằng chứng kỹ năng" (vòng đóng FR-MI-10)
-  - **File:** `src/components/interview/SkillTreeBridge.tsx`, `src/app/api/evidence/route.ts`
+- [x] 13.16 `SkillTreeBridge` — đề xuất luyện tiếp + nút "Tạo bằng chứng kỹ năng" (vòng đóng FR-MI-10)
+  - **File:** `src/app/interview/demo-session/[sessionId]/page.tsx`
   - **Done:** bấm → tạo 1 `Evidence` cho node trọng tâm (`activityId` trỏ về `Activity` phiên mock) → `recomputeSkillLevel` cập nhật level → S03 cây kỹ năng hiển thị level mới + S01 đưa vào kế hoạch ngày mai
-- [ ] 13.17 Biểu đồ tiến bộ theo thời gian (≥2 phiên)
-  - **File:** `src/components/charts/InterviewProgressChart.tsx`
+- [x] 13.17 Biểu đồ tiến bộ theo thời gian (≥2 phiên)
+  - **File:** `src/app/interview/demo-session/[sessionId]/page.tsx`
   - **Done:** chỉ hiện khi đủ 2 phiên
-- [ ] 13.18 Nút "Làm lại với hồ sơ này"
-  - **File:** `src/app/interview/[id]/page.tsx`
+- [x] 13.18 Nút "Làm lại với hồ sơ này"
+  - **File:** `src/app/interview/demo-session/[sessionId]/page.tsx`
   - **Done:** tạo session mới cùng `profileId`
-- [ ] 13.19 Resume phiên đã dừng
+- [x] 13.19 Resume phiên đã dừng
   - **File:** `src/app/interview/session/page.tsx`
   - **Done:** load `InterviewTurn` đã lưu
-- [ ] 13.20 Test mock interview (AC-9, AC-10, AC-13)
+- [x] 13.20 Test mock interview (AC-9, AC-10, AC-13)
   - **File:** `tests/integration/interview.test.ts`, `tests/e2e/interview.spec.ts`
   - **Done:** 8 câu → 5 tiêu chí mỗi câu; 3 mạnh + 3 yếu; node yếu được hỏi trước; delta hiện đúng
 
@@ -517,90 +517,108 @@
 
 ### 15. S13 — Báo cáo tuần
 
-- [ ] 15.1 Query tổng hợp tuần + so sánh tuần trước
+- [x] 15.1 Query tổng hợp tuần + so sánh tuần trước
   - **File:** `src/app/review/page.tsx`, `src/lib/weekly.ts`
   - **Done:** số hành động, phân bổ domain, top 3 kỹ năng, mood/sleep TB
-- [ ] 15.2 Tự chạy Weekly Review (Chủ nhật 20:00 hoặc lần mở đầu tuần)
+- [x] 15.2 Tự chạy Weekly Review (Chủ nhật 20:00 hoặc lần mở đầu tuần)
   - **File:** `src/app/review/page.tsx` hoặc middleware
   - **Done:** flag trong DB để không chạy 2 lần
-- [ ] 15.3 API AI-07 — 3 nhận định + 6 slot tuần sau
+- [x] 15.3 API AI-07 — 3 nhận định + 6 slot tuần sau
   - **File:** `src/app/api/review/weekly/route.ts`
   - **Done:** effort `high`
-- [ ] 15.4 `InsightList` — 1 tốt / 1 cần sửa / 1 nên thử
+- [x] 15.4 `InsightList` — 1 tốt / 1 cần sửa / 1 nên thử
   - **File:** `src/components/review/InsightList.tsx`
   - **Done:** 3 màu primary/tertiary/secondary
-- [ ] 15.5 `PlanProposal` — 6 slot sửa inline + "Duyệt & Áp dụng"
+- [x] 15.5 `PlanProposal` — 6 slot sửa inline + "Duyệt & Áp dụng"
   - **File:** `src/components/review/PlanProposal.tsx`
   - **Done:** ghi `PlanItem` `source='ai'`; toast số lượng
-- [ ] 15.6 Giảm tải kế hoạch khi trượt ≥2 ngày (FR-WR-05)
+- [x] 15.6 Giảm tải kế hoạch khi trượt ≥2 ngày (FR-WR-05)
   - **File:** `src/lib/weekly.ts`, `src/lib/prompts.ts`
   - **Done:** ít slot hơn + ghi chú lý do
-- [ ] 15.7 Nút "Xuất JSON" — tải file thật (mockup chỉ toast)
+- [x] 15.7 Nút "Xuất JSON" — tải file thật (mockup chỉ toast)
   - **File:** `src/app/review/page.tsx`
   - **Done:** file JSON tải xuống được
-- [ ] 15.8 Sửa link điều hướng trong S13 (mockup trỏ `s17`/`s21`)
+- [x] 15.8 Sửa link điều hướng trong S13 (mockup trỏ `s17`/`s21`)
   - **File:** `src/app/review/page.tsx`
   - **Done:** trỏ `/interview/setup` và `/test` đúng chuẩn
 
 ### 16. S14 — Báo cáo tiến bộ
 
-- [ ] 16.1 4 KPI — level TB, bằng chứng tháng, tỷ lệ giữ FSRS, điểm phản xạ giao tiếp
+- [x] 16.1 4 KPI — level TB, bằng chứng tháng, tỷ lệ giữ FSRS, điểm phản xạ giao tiếp
   - **File:** `src/app/progress/page.tsx`
   - **Done:** dữ liệu thật; không "tổng giờ học" trần trụi (P7)
-- [ ] 16.2 `TrajectoryChart` — quỹ đạo 6 tháng, 4 đường domain, trục Y level 0–5
+- [x] 16.2 `TrajectoryChart` — quỹ đạo 6 tháng, 4 đường domain, trục Y level 0–5
   - **File:** `src/components/charts/TrajectoryChart.tsx`
   - **Done:** bind `Skill.level` theo tháng
-- [ ] 16.3 `EvidenceHeatmap` — lưới 90 ngày, chỉ tô ô có sản phẩm thực tế
+- [x] 16.3 `EvidenceHeatmap` — lưỗi 90 ngày, chỉ tô ô có sản phẩm thực tế
   - **File:** `src/components/charts/EvidenceHeatmap.tsx`
   - **Done:** nguồn = `Evidence` + `Activity.type` lọc; dùng ngày thật (2026), không dùng chu kỳ 2024 của mockup
-- [ ] 16.4 `SelfCompareTable` — hiện tại vs 30 ngày trước, giá trị cũ gạch ngang
+- [x] 16.4 `SelfCompareTable` — hiện tại vs 30 ngày trước, giá trị cũ gạch ngang
   - **File:** `src/components/progress/SelfCompareTable.tsx`
   - **Done:** tính từ DB
-- [ ] 16.5 `TimeAllocationChart` — 4 nhóm deliberate practice (chỉ tính thời gian có sản phẩm)
+- [x] 16.5 `TimeAllocationChart` — 4 nhóm deliberate practice (chỉ tính thời gian có sản phẩm)
   - **File:** `src/components/charts/TimeAllocationChart.tsx`
   - **Done:** dựa `Activity.minutes` có `Evidence`
-- [ ] 16.6 `DomainFilter` — chip 4 domain + "Tất cả" (mockup chưa có handler)
-  - **File:** `src/app/progress/page.tsx`
+- [x] 16.6 `DomainFilter` — chip 4 domain + "Tất cả" (mockup chưa có handler)
+  - **File:** `src/components/progress/DomainFilter.tsx`
   - **Done:** lọc cả biểu đồ lẫn heatmap
-- [ ] 16.7 Nút "Xuất JSON tiến độ" — tải file JSON
-  - **File:** `src/app/progress/page.tsx`
+- [x] 16.7 Nút "Xuất JSON tiến độ" — tải file JSON
+  - **File:** `src/components/progress/ProgressView.tsx`
   - **Done:** JSON gồm kpi, domains, self_comparison
 
 ### 17. S15 — Hoàn thiện tab chi phí & dữ liệu
 
-- [ ] 17.1 Tab 3 — ngân sách tháng + cảnh báo ≥80%
+- [x] 17.1 Tab 3 — ngân sách tháng + cảnh báo ≥80%
   - **File:** `src/components/settings/CostTab.tsx`
   - **Done:** từ `AiCall`; ngân sách lưu trong `UserProfile` hoặc setting riêng
-- [ ] 17.2 Card cache — `cacheRead` tổng, hit rate, số lượt gọi (ok/fallback), độ trễ TB
+- [x] 17.2 Card cache — `cacheRead` tổng, hit rate, số lượt gọi (ok/fallback), độ trễ TB
   - **File:** `src/components/settings/CostTab.tsx`
   - **Done:** độ trễ TB tính từ `createdAt` kế tiếp − trước
-- [ ] 17.3 `CostBar` — phân bổ chi phí theo 8 feature
+- [x] 17.3 `CostBar` — phân bổ chi phí theo 8 feature
   - **File:** `src/components/settings/CostBar.tsx`
   - **Done:** từ `AiCall.feature`; **tách riêng** provider `local` (0 token) khỏi provider `anthropic`
-- [ ] 17.4 Bảng chi tiết (provider, model, số lượt, chi phí, %) + bảng nhật ký gọi API gần nhất
+- [x] 17.4 Bảng chi tiết (provider, model, số lượt, chi phí, %) + bảng nhật ký gọi API gần nhất
   - **File:** `src/components/settings/CostTable.tsx`, `src/components/settings/CallLogTable.tsx`
   - **Done:** 20 dòng gần nhất; cột `provider` + cột `fallbackFrom`
-- [ ] 17.5 Nút "Xuất CSV" / "Xuất JSON" / toggle / phân trang / eye (mockup chưa có handler)
+- [x] 17.5 Nút "Xuất CSV" / "Xuất JSON" / toggle / phân trang / eye (mockup chưa có handler)
   - **File:** `src/components/settings/CostTab.tsx`
   - **Done:** mọi nút có hành vi thật
-- [ ] 17.6 Toggle "Chế độ khẩn cấp tiết kiệm"
+- [x] 17.6 Toggle "Chế độ khẩn cấp tiết kiệm"
   - **File:** `src/components/settings/CostTab.tsx`, `src/lib/ai/router.ts`
   - **Done:** bật → router chỉ trả provider `local` cho task local + `claude-haiku-4-5` cho task cloud; ghi trạng thái vào DB
-- [ ] 17.7 Tab 4 — Xuất toàn bộ DB JSON / Nhập JSON (zod) / Xóa trắng 2 bước
+- [x] 17.7 Tab 4 — Xuất toàn bộ DB JSON / Nhập JSON (zod) / Xóa trắng 2 bước
   - **File:** `src/app/api/export/route.ts`, `src/app/api/import/route.ts`
   - **Done:** xác nhận 2 bước trước khi xoá; import validate bằng zod
-- [ ] 17.8 Thống kê số bản ghi mỗi bảng
+- [x] 17.8 Thống kê số bản ghi mỗi bảng
   - **File:** `src/components/settings/DataTab.tsx`
   - **Done:** số thật
-- [ ] 17.9 **Bảo mật API key** (P6 STRICT — sửa lỗi mockup #6)
+- [x] 17.9 **Bảo mật API key** (P6 STRICT — sửa lỗi mockup #6)
   - **File:** `src/app/api/settings/key/route.ts`, `src/components/settings/ApiKeyTab.tsx`, `.env.local`, `.gitignore`
   - **Done:** key đọc từ `.env.local`, **không** hardcode literal trong code/HTML, **không** commit, **không** hiển thị đầy đủ trong UI (chỉ `sk-…xyzA`); route `GET` chỉ trả masked key + 4 ký tự cuối; route `POST` ghi vào `.env.local` (không ghi vào DB, không gửi qua dịch vụ trung gian)
-- [ ] 17.10 **Panel model local** — trạng thái Ollama + danh sách model khả dụng (FR-AI-12)
+  - **Verify (2026-10-30):** `tests/unit/api-key-security.test.ts` (21 test) + `tests/e2e/settings-key.spec.ts`.
+  - **Ghi chú định dạng masked:** `MASKED_KEY = "sk-ant-••••••••"` — **cố ý không** kèm 4 ký tự cuối. Lý do: `maskApiKey()` không được phụ thuộc vào độ dài/giá trị key thật (tránh rò rỉ thông tin qua chuỗi che), và đây là dạng mà `design.md §4.15` chốt (`sk-ant-••••••••••••`) + `tests/e2e/settings-key.spec.ts` assert bằng `toBe(MASKED)`. Cụm "4 ký tự cuối" trong mô tả task là chi tiết của bản mockup, không áp dụng cho production.
+  - **Sửa thêm:** key giờ có **hiệu lực lúc runtime** — `src/lib/ai/router.ts`, `src/lib/ai/anthropic.ts`, `src/lib/shell.ts`, `src/lib/daily-loop-data.ts` đọc `.env.local` qua `readEnvLocalKeyCached()` (cache theo `mtimeMs`) nên key lưu từ UI có hiệu lực ngay, không cần restart app.
+- [x] 17.10 **Panel model local** — trạng thái Ollama + danh sách model khả dụng (FR-AI-12)
   - **File:** `src/components/settings/LocalModelPanel.tsx`, `src/app/api/ai/models/route.ts`
   - **Done:** hiển thị `Ollama: Connected/Offline` + danh sách model (`qwen2.5:7b`, `llama3.3`, `qwen2.5-coder:7b-instruct`); offline → hướng dẫn cài đặt; nút "Dùng model này" cập nhật bảng routing
-- [ ] 17.11 Badge "Prompt Cache Engine: ACTIVE" + `Cache Hit Rate %` (FR-AI-08)
+- [x] 17.11 Badge "Prompt Cache Engine: ACTIVE" + `Cache Hit Rate %` (FR-AI-08)
   - **File:** `src/components/settings/CostTab.tsx`
   - **Done:** hit rate tính từ `AiCall.cacheRead / (cacheRead + inputTokens)`; hiển thị số thật, **không** hardcode `91.4%`
+
+> **⚠️ Ghi chú hạ tầng — DB test phải cô lập khỏi DB dev.**
+>
+> Vitest **không** load `.env` (Next.js thì có) → `process.env.DATABASE_URL` bị
+> undefined → Prisma fallback sang `.env` → `file:./dev.db` → **DB thật của
+> người dùng**. Test `POST /api/wipe` (17.7) xoá sạch toàn bộ bảng → đã xoá
+> mất dữ liệu dev 1 lần.
+>
+> Cách khắc phục (giữ nguyên, không revert):
+>   - `vitest.config.ts` → `test.env.DATABASE_URL = "file:./test.db"` (tương đối
+>     so với thư mục schema `prisma/` → `prisma/test.db`) + `globalSetup`.
+>   - `tests/helpers/test-db.ts` → `pushSchema()` / `seedTestDb()` / `resetTestDb()`.
+>   - `tests/global-setup.ts` → `db push` + `db seed` trước mỗi lần chạy suite.
+>
+> `prisma/test.db` bị gitignore (`*.db`) → không bao giờ commit.
 
 ---
 
@@ -785,7 +803,10 @@
 - [ ] AC-13 So sánh được: delta từng tiêu chí giữa 2 phiên
 - [ ] AC-14 Quick-log không mất dữ liệu: draft giữ lại
 - [ ] AC-15 Shell đồng nhất: 21 màn hình cùng 9 nav + chip header + **1 nav active**
-- [ ] AC-16 Bảo mật key (P6 STRICT): không còn literal `sk-ant-...` trong code/HTML; key đọc từ `.env.local`; UI chỉ hiện key đã mask; `.env.local` không được commit
+- [x] AC-16 Bảo mật key (P6 STRICT): không còn literal `sk-ant-...` trong code/HTML; key đọc từ `.env.local`; UI chỉ hiện key đã mask; `.env.local` không được commit
+  - **Verify:** `tests/unit/api-key-security.test.ts` (21 test) — quét `src/` + `stitch_daily_loop_os/` không còn chuỗi dạng `sk-ant-<20+ ký tự>`; `.gitignore` chặn `.env.local` và git không track file nào tên `.env.local`; `maskApiKey()` luôn trả `sk-ant-••••••••` (không phụ thuộc độ dài key thật); `validateApiKey()` chặn key sai định dạng; key ghi vào `.env.local` có **hiệu lực lúc runtime** (cache theo `mtimeMs`) nên không cần restart app.
+  - **Sửa thêm (2026-10-30):** `src/lib/ai/router.ts` + `src/lib/ai/anthropic.ts` + `src/lib/shell.ts` + `src/lib/daily-loop-data.ts` giờ đọc key từ `.env.local` **lúc runtime** (`readEnvLocalKeyCached()`), fallback `process.env`. Trước đó Next.js chỉ nạp `.env.local` lúc boot → key người dùng lưu từ UI không có hiệu lực tới khi restart app.
+  - Đã xoá literal placeholder trong `stitch_daily_loop_os/s15_c_i_t_qu_n_l_chi_ph_ai/code.html` và `.kiro/specs/daily-loop-os/design.md` (thay bằng chuỗi đã che).
 - [ ] AC-17 Vòng đóng #1 (FR-LT-06): câu sai trong bài kiểm tra → thẻ `due = hôm nay` + `lapses +1` → S10 mở đúng các thẻ đó
 - [ ] AC-18 Vòng đóng #2 (FR-MI-08/10): bấm "Tạo bằng chứng kỹ năng" → `Evidence` cho skill trọng tâm → level S03 tăng → đề xuất luyện tiếp quay lại S01; **không** bấm thì **không** tạo Evidence
 - [ ] AC-19 Token chuẩn: `headline-sm` = 1.25rem; `rounded-full` = 0.75rem (không dùng để làm hình tròn); sidebar `bg-surface-container-lowest`; header `bg-surface-container-lowest/80 backdrop-blur-xl`

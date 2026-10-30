@@ -62,7 +62,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Bài kiểm tra",
     icon: "assignment",
     // S19 danh sách + S20 làm bài + S21 kết quả (`/test/[id]` ở Phase 1).
-    sections: ["/test"],
+    sections: ["/test", "/test/session"],
   },
   {
     href: "/review",

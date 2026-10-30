@@ -18,6 +18,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
 
 import { prisma } from "@/lib/db";
+import { readEnvLocalKeyCached } from "@/lib/settings-api-key";
 import {
   AiNetworkError,
   AiRateLimitError,
@@ -145,6 +146,9 @@ export type AnthropicCallOptions<T> = {
 /** Client dùng chung — SDK tự đọc `ANTHROPIC_API_KEY` từ env. */
 let client: Anthropic | null = null;
 
+/** Key đã dùng để dựng `client` — dùng để phát hiện key đổi giữa phiên làm việc. */
+let clientApiKey: string | null = null;
+
 /**
  * Client Anthropic dùng chung cho cả router lẫn helper streaming.
  *
@@ -154,20 +158,30 @@ let client: Anthropic | null = null;
  *     qua gateway/proxy (thiết lập mặc định của môi trường dev này).
  *
  * Không có biến nào → ném `AiUnavailableError` để router fallback sang local.
+ *
+ * ⚠️ AC-16 — key đọc **lúc runtime** từ `.env.local` (qua `readEnvLocalKeyCached`),
+ * không chỉ từ `process.env`. Lý do: Next.js chỉ nạp `.env.local` một lần lúc
+ * khởi động process → người dùng bấm "Lưu khóa" giữa phiên làm việc sẽ không
+ * có hiệu lực tới khi restart app. `.env.local` là **nguồn sự thật** theo
+ * requirements.md AC-16 / tasks.md 17.9; `process.env` chỉ là fallback cho
+ * lúc app vừa khởi động (CI, container).
  */
 export function getAnthropicClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const apiKey = readEnvLocalKeyCached() ?? process.env.ANTHROPIC_API_KEY?.trim();
   const authToken = process.env.ANTHROPIC_AUTH_TOKEN?.trim();
 
   if (!apiKey && !authToken) {
     // Không có key → offline. Ném `AiUnavailableError` để router fallback sang local.
     throw new AiUnavailableError("Chưa cấu hình Anthropic API key.", "no_api_key");
   }
-  if (!client) {
+  // Dựng lại client nếu key đổi (người dùng vừa lưu key mới) — client cũ giữ
+  // key cũ trong header nên sẽ gọi với key cũ.
+  if (!client || clientApiKey !== apiKey) {
     client = new Anthropic({
       ...(apiKey ? { apiKey } : {}),
       ...(authToken ? { authToken } : {}),
     });
+    clientApiKey = apiKey ?? null;
   }
   return client;
 }

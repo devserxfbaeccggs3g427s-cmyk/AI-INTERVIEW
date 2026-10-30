@@ -27,9 +27,11 @@ import {
   type AiErrorCode,
 } from "@/lib/errors";
 import { generateLocalPlan, type LocalPlanContext } from "@/lib/plan";
+import { readEnvLocalKeyCached } from "@/lib/settings-api-key";
 import type { AiEnvelope } from "@/lib/types";
 import { callAnthropicDetailed, estimateCost, writeAiCall } from "@/lib/ai/anthropic";
 import { callLocal } from "@/lib/ai/ollama";
+import { prisma } from "@/lib/db";
 
 /** 18 task mà router điều phối (design.md §6.1). */
 export type AiTask =
@@ -138,9 +140,112 @@ export function isAiFreeTask(task: AiTask): boolean {
   return NON_AI_TASKS.includes(task);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Chế độ khẩn cấp tiết kiệm (task 17.6)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Model rẻ nhất của Anthropic — dùng khi bật chế độ khẩn cấp. */
+export const EMERGENCY_CLOUD_MODEL = "claude-haiku-4-5";
+
+/**
+ * Cache trạng thái chế độ khẩn cấp trong tiến trình.
+ *
+ * Vì sao cache: `route()` được gọi **mỗi lượt gọi AI** — đọc DB mỗi lần là
+ * 1 query thừa. Đọc 1 lần rồi cache, đổi cờ qua API settings sẽ xoá cache.
+ */
+let emergencyModeCache: boolean | null = null;
+
+/** Đọc cờ `UserProfile.emergencyMode` (có cache trong tiến trình). */
+export async function isEmergencyMode(): Promise<boolean> {
+  if (emergencyModeCache !== null) return emergencyModeCache;
+  try {
+    const profile = await prisma.userProfile.findFirst({
+      select: { emergencyMode: true },
+      orderBy: { createdAt: "asc" },
+    });
+    emergencyModeCache = profile?.emergencyMode ?? false;
+  } catch {
+    // DB lỗi → không chặn người dùng, coi như không bật chế độ khẩn cấp.
+    emergencyModeCache = false;
+  }
+  return emergencyModeCache;
+}
+
+/** Xoá cache chế độ khẩn cấp — gọi sau khi bật/tắt trong S15. */
+export function resetEmergencyModeCache(): void {
+  emergencyModeCache = null;
+}
+
+/**
+ * Route đã điều chỉnh theo chế độ khẩn cấp.
+ *
+ * - Task **local** → giữ nguyên provider `local` (đã 0 token).
+ * - Task **cloud** → đổi model sang `claude-haiku-4-5` (rẻ nhất).
+ *
+ * Task chấm điểm cũng dùng Haiku — đánh đổi chất lượng chấm lấy chi phí, đúng
+ * như ý nghĩa "khẩn cấp tiết kiệm" (task 17.6).
+ */
+export function applyEmergencyMode(target: AiRoute): AiRoute {
+  if (target.provider === "local") return target;
+  return { ...target, model: EMERGENCY_CLOUD_MODEL };
+}
+
 /** Chọn provider theo bảng định tuyến (design.md §6.1). */
 export function route(task: AiTask): AiRoute {
   return ROUTES[task];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Route Override — model local do người dùng chọn (task 17.10)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Cache model override cho từng task local. */
+let routeOverrideCache: Record<string, string> | null = null;
+
+/** Đọc model override từ DB (có cache tiến trình). */
+async function getRouteOverrides(): Promise<Record<string, string>> {
+  if (routeOverrideCache !== null) return routeOverrideCache;
+  try {
+    const overrides = await prisma.routeOverride.findMany({
+      select: { task: true, model: true },
+    });
+    routeOverrideCache = Object.fromEntries(overrides.map((o) => [o.task, o.model]));
+  } catch {
+    routeOverrideCache = {};
+  }
+  return routeOverrideCache;
+}
+
+/** Xoá cache override — gọi sau khi cập nhật model local trong S15. */
+export function resetRouteOverrideCache(): void {
+  routeOverrideCache = null;
+}
+
+/**
+ * Route có tính tới: chế độ khẩn cấp + override model local (task 17.10).
+ *
+ * - Task local: áp dụng override nếu có (người dùng chọn model khác).
+ * - Task cloud: áp dụng chế độ khẩn cấp (đổi sang Haiku).
+ * - Task không gọi AI: trả về route gốc.
+ *
+ * Khác `route()` ở chỗ: đây là hàm async vì phải đọc DB.
+ */
+export async function resolveRoute(task: AiTask): Promise<AiRoute> {
+  const target = ROUTES[task];
+  const emergency = await isEmergencyMode();
+
+  // Task local → áp override model (nếu có) trước, rồi mới xét emergency
+  if (target.provider === "local") {
+    const overrides = await getRouteOverrides();
+    const customModel = overrides[task];
+    const withOverride = customModel ? { ...target, model: customModel } : target;
+    if (emergency) return applyEmergencyMode(withOverride);
+    return withOverride;
+  }
+
+  // Task cloud / không AI → chỉ áp emergency
+  if (emergency) return applyEmergencyMode(target);
+  return target;
 }
 
 /** Task được phép fallback sang provider local không (bước 2 của fallback chain). */
@@ -154,9 +259,14 @@ function supportsLocalFallback(task: AiTask): boolean {
  * Nhận cả `ANTHROPIC_API_KEY` (chuẩn) và `ANTHROPIC_AUTH_TOKEN` (gateway) —
  * phải khớp với `getAnthropicClient()` trong `anthropic.ts`, nếu không router
  * sẽ nghĩ là offline trong khi client thực tế có thể gọi được.
+ *
+ * ⚠️ AC-16 — đọc key từ `.env.local` **lúc runtime** (nguồn sự thật theo
+ * tasks.md 17.9), fallback `process.env`. Phải khớp **đúng** logic với
+ * `getAnthropicClient()` — nếu lệch, router sẽ tưởng offline trong khi client
+ * có thể gọi được (hoặc ngược lại).
  */
 function hasApiKey(): boolean {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const apiKey = readEnvLocalKeyCached() ?? process.env.ANTHROPIC_API_KEY?.trim();
   const authToken = process.env.ANTHROPIC_AUTH_TOKEN?.trim();
   return Boolean(apiKey || authToken);
 }
@@ -208,7 +318,9 @@ export async function runWithFallback<T>(
   task: AiTask,
   opts: CallAiOptions<T>,
 ): Promise<CallResult<T>> {
-  const target = ROUTES[task];
+  // `resolveRoute` áp dụng chế độ khẩn cấp tiết kiệm (task 17.6) — nếu bật,
+  // task cloud chạy `claude-haiku-4-5` thay vì model đắt.
+  const target = await resolveRoute(task);
   const model = opts.model ?? target.model;
   const effort = opts.effort ?? target.effort;
 
@@ -378,10 +490,12 @@ export async function callAi<T>(task: AiTask, opts: CallAiOptions<T>): Promise<A
     const message = error instanceof Error ? error.message : "AI không trả lời được.";
 
     // Ghi log lượt gọi thất bại để S15 hiện đúng số lượt lỗi / offline fallback.
+    // Dùng route đã áp chế độ khẩn cấp để `model` khớp với cái thực sự đã thử.
+    const failedRoute = await resolveRoute(task);
     await writeAiCall({
       feature: task,
-      provider: ROUTES[task].provider,
-      model: ROUTES[task].model,
+      provider: failedRoute.provider,
+      model: failedRoute.model,
       inputTokens: 0,
       outputTokens: 0,
       cacheRead: 0,

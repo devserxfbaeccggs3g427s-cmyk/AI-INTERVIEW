@@ -3,16 +3,15 @@
 /**
  * S15 — Bộ 4 tab của trang Cài đặt (task 9.1).
  *
- * Tab 1 (Hồ sơ & Mục tiêu) và Tab 2 (Khóa API) là **bắt buộc** ở Phase 0.
- * Tab 3 (Chi phí AI) và Tab 4 (Quản trị dữ liệu) ở Phase 0 chỉ là placeholder
- * rõ ràng "Sẽ dựng ở Phase 1" — KHÔNG hardcode bất kỳ con số mockup nào
- * (design.md §4.15 cảnh báo các số liệu tab 3/4 là giá trị mockup).
- *
- * Xem tasks.md 9.1 · design.md §4.15.
+ * Tab 3 (Chi phí AI) và Tab 4 (Quản trị dữ liệu) hiển thị số liệu thật từ DB —
+ * KHÔNG hardcode con số mockup (design.md §4.15).
  */
 
 import { ProfileTab, type ProfileSaveState, type ProfileValues } from "@/components/settings/ProfileTab";
 import { ApiKeyTab } from "@/components/settings/ApiKeyTab";
+import { CostTab } from "@/components/settings/CostTab";
+import { DataTab } from "@/components/settings/DataTab";
+import type { TableData } from "@/lib/settings/cost-data";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Chip";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/Tabs";
@@ -35,6 +34,9 @@ export function SettingsTabs({
   keyConfigured,
   keyMasked,
   saveProfileAction,
+  dataPromise,
+  tableCountsPromise,
+  routeOverrides,
 }: {
   /** Hồ sơ hiện tại — server đọc từ `UserProfile`. */
   profile: ProfileValues;
@@ -46,6 +48,12 @@ export function SettingsTabs({
     prev: ProfileSaveState,
     formData: FormData,
   ) => Promise<ProfileSaveState>;
+  /** Promise dữ liệu chi phí tháng (task 17.5). */
+  dataPromise: Promise<TableData>;
+  /** Promise số bản ghi mừi bảng (task 17.8). */
+  tableCountsPromise: Promise<Record<string, number>>;
+  /** Ghi đè model local — server đọc từ bảng `RouteOverride` (task 17.10). */
+  routeOverrides: Array<{ task: string; model: string }>;
 }) {
   const [active, setActive] = useState("profile");
 
@@ -63,36 +71,14 @@ export function SettingsTabs({
         <ApiKeyTab initialConfigured={keyConfigured} initialMasked={keyMasked} />
       </TabPanel>
 
-      {/* ── Tab 3 — placeholder Phase 1 ────────────────────────────────── */}
+      {/* ── Tab 3 (Phase 1) ─────────────────────────────────────────────── */}
       <TabPanel id="cost" active={active}>
-        <Card tone="low">
-          <CardHeader
-            title="Chi Phí AI & Prompt Caching"
-            subtitle="Sẽ dựng ở Phase 1"
-            icon="database"
-            action={<Badge tone="outline">Phase 1</Badge>}
-          />
-          <p className="text-body-md text-on-surface-variant">
-            Ngân sách tháng, cache hit rate và nhật ký gọi API sẽ được tính trực tiếp từ bảng{" "}
-            <code className="font-code-md text-primary">AiCall</code>. Ở Phase 0 chưa dựng để tránh
-            hiển thị con số không có nguồn gốc thật.
-          </p>
-        </Card>
+        <CostTab dataPromise={dataPromise} routeOverrides={routeOverrides} />
       </TabPanel>
 
-      {/* ── Tab 4 — placeholder Phase 1 ────────────────────────────────── */}
+      {/* ── Tab 4 (Phase 1) ─────────────────────────────────────────────── */}
       <TabPanel id="data" active={active}>
-        <Card tone="low">
-          <CardHeader
-            title="Quản trị dữ liệu (Backup / Export JSON)"
-            subtitle="Sẽ dựng ở Phase 1"
-            icon="storage"
-            action={<Badge tone="outline">Phase 1</Badge>}
-          />
-          <p className="text-body-md text-on-surface-variant">
-            Xuất / nhập toàn bộ cơ sở dữ liệu JSON và thống kê số bản ghi mỗi bảng sẽ dựng ở Phase 1.
-          </p>
-        </Card>
+        <DataTab tableCountsPromise={tableCountsPromise} />
       </TabPanel>
     </div>
   );
