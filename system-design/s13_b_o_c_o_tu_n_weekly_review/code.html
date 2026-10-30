@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error": "#690005", "inverse-on-surface": "#2c303a", "error": "#ffb4ab", "on-error-container": "#ffdad6", "outline": "#86948a", "on-primary-container": "#00422b", "on-surface": "#dfe2ef", "surface-tint": "#4edea3", "background": "#0f131c", "primary-fixed": "#6ffbbe", "secondary-fixed": "#e1e0ff", "on-tertiary": "#472a00", "surface": "#0f131c", "surface-bright": "#353943", "on-tertiary-fixed-variant": "#653e00", "primary": "#4edea3", "inverse-primary": "#006c49", "error-container": "#93000a", "surface-dim": "#0f131c", "on-tertiary-container": "#523200", "on-primary-fixed-variant": "#005236", "on-secondary-container": "#b0b2ff", "on-surface-variant": "#bbcabf", "surface-container-high": "#262a34", "surface-container-highest": "#31353f", "tertiary-container": "#e29100", "surface-container": "#1c1f29", "secondary-fixed-dim": "#c0c1ff", "secondary-container": "#3131c0", "on-background": "#dfe2ef", "on-secondary": "#1000a9", "on-secondary-fixed-variant": "#2f2ebe", "secondary": "#c0c1ff", "tertiary": "#ffb95f", "primary-container": "#10b981", "on-primary": "#003824", "surface-variant": "#31353f", "primary-fixed-dim": "#4edea3", "surface-container-low": "#181b25", "on-secondary-fixed": "#07006c", "surface-container-lowest": "#0a0e17", "inverse-surface": "#dfe2ef", "on-tertiary-fixed": "#2a1700", "outline-variant": "#3c4a42", "tertiary-fixed": "#ffddb8", "on-primary-fixed": "#002113", "tertiary-fixed-dim": "#ffb95f" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2rem", "gutter-md": "1.25rem", "gutter-lg": "1.5rem", "space-lg": "1.25rem", "gutter": "1rem", "margin-lg": "2.5rem", "margin-md": "1.5rem", "space-sm": "0.5rem", "margin": "1rem", "space-md": "0.75rem" }, "fontFamily": { "label-md": [ "JetBrains Mono" ], "headline-lg": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "body-sm": [ "Be Vietnam Pro" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Be Vietnam Pro" ], "headline-lg-mobile": [ "Space Grotesk" ], "display": [ "Space Grotesk" ], "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "headline-md": [ "Space Grotesk" ] }, "fontSize": { "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">Local-First v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm overflow-y-auto"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cay-ky-nang" href="#">Cây kỹ năng</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="on-tap-ngoai-ngu-srs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s07-luyen-giao-tiep-viet" href="#">Luyện giao tiếp</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-va-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s17-mock-interview-phien-phong-van" href="#">Mock Interview</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s21-ket-qua-bai-kiem-tra-ngoai-ngu" href="#">Bài kiểm tra</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s13-bao-cao-tuan-weekly-review" href="#">Báo cáo tuần &amp; tiến độ</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cai-dat" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" type="button"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></button><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<div class="w-full max-w-[1540px] mx-auto px-gutter-lg py-margin space-y-gutter-lg">
+<!-- TOP OPERATIONAL BANNER -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-gutter-lg shadow-md">
+<div class="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
+<div class="absolute right-1/3 -bottom-24 w-72 h-72 rounded-full bg-secondary-container/10 blur-2xl pointer-events-none"></div>
+<div class="relative flex flex-col xl:flex-row xl:items-center justify-between gap-gutter-lg">
+<div class="space-y-space-xs">
+<div class="flex flex-wrap items-center gap-space-sm font-label-sm text-label-sm text-on-surface-variant">
+<span class="px-2 py-0.5 rounded-sm bg-surface-container-high text-primary font-semibold tracking-wider uppercase">FR-WR-01 · v1.1 SPEC</span>
+<span class="text-outline">/</span>
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-secondary">psychology</span>
+              Tự động tổng hợp Chủ nhật 20:00 bởi Claude Opus 5
+            </span>
+<span class="text-outline">/</span>
+<span class="font-code-md text-label-sm text-outline">HASH: #REV-2026-W43-FSRS</span>
+</div>
+<div class="flex flex-wrap items-baseline gap-space-md">
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+              Báo cáo tuần 43 <span class="font-headline-sm text-headline-sm text-on-surface-variant font-normal">(23/10 - 29/10/2026)</span>
+</h1>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-3xl">
+            Tổng kết chu kỳ phản xạ có chủ đích (Deliberate Practice) kết hợp phân tích tương quan sinh trắc học và hiệu suất bộ nhớ dài hạn FSRS.
+          </p>
+</div>
+<div class="flex flex-wrap items-center gap-space-md">
+<div class="px-space-md py-space-sm rounded-lg bg-surface-container flex items-center gap-space-sm shadow-sm">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Sync State</span>
+<span class="font-label-md text-label-md text-primary font-semibold">Local SQLite · Ready</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+</div>
+<button class="flex items-center gap-1.5 px-space-md py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all font-label-md text-label-md" id="btn-export-json">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+<span>Xuất JSON</span>
+</button>
+<button class="flex items-center gap-1.5 px-space-lg py-2.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-md" id="btn-approve-top">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Duyệt Tuần 44</span>
+</button>
+</div>
+</div>
+<!-- HIGHLIGHT METRICS ROW -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter-md mt-gutter">
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between shadow-sm">
+<div>
+<div class="font-label-sm text-label-sm text-outline uppercase">Tỷ lệ hoàn thành</div>
+<div class="font-headline-sm text-headline-sm font-bold text-primary mt-1">38/42 <span class="font-label-md text-label-md font-normal text-on-surface-variant">(90.4%)</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">+4.2% so với Tuần 42</div>
+</div>
+<div class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">task_alt</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between shadow-sm">
+<div>
+<div class="font-label-sm text-label-sm text-outline uppercase">Chuỗi Kỷ Luật</div>
+<div class="font-headline-sm text-headline-sm font-bold text-tertiary mt-1">12 ngày <span class="font-label-md text-label-md font-normal text-on-surface-variant">Active</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Không vi phạm zero-day</div>
+</div>
+<div class="w-11 h-11 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[24px]">local_fire_department</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between shadow-sm">
+<div>
+<div class="font-label-sm text-label-sm text-outline uppercase">Năng lượng trung bình</div>
+<div class="font-headline-sm text-headline-sm font-bold text-secondary mt-1">78% <span class="font-label-md text-label-md font-normal text-on-surface-variant">Optimum</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Biên độ ổn định: ±6%</div>
+</div>
+<div class="w-11 h-11 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">bolt</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between shadow-sm">
+<div>
+<div class="font-label-sm text-label-sm text-outline uppercase">FSRS Retention Rate</div>
+<div class="font-headline-sm text-headline-sm font-bold text-on-surface mt-1">94.8% <span class="font-label-md text-label-md font-normal text-primary">Target: 90%</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">380 lượt ôn tập thành công</div>
+</div>
+<div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">school</span>
+</div>
+</div>
+</div>
+</div>
+<!-- MAIN GRID: DOMAIN DISTRIBUTION + SKILLS & BIOMETRICS -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg items-start">
+<!-- LEFT COLUMN: 4 DOMAIN PROGRESSION + VISUAL HEATMAP (7 COLS) -->
+<div class="xl:col-span-7 space-y-gutter-lg">
+<!-- Domain Allocation Bento -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">category</span>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Phân bổ 4 Trục Thực Thi (FR-WR-02)</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Chỉ tiêu cam kết tối thiểu 7 hành động/tuần theo cấu trúc Daily Loop OS</p>
+</div>
+</div>
+<span class="font-label-md text-label-md px-2.5 py-1 rounded bg-surface-container-high text-on-surface-variant">38 / 42 Slot đã khóa</span>
+</div>
+<div class="space-y-space-md pt-space-xs">
+<!-- Domain 1: Chuyên môn -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-2">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<span class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                  Chuyên môn (Software &amp; System Architecture)
+                </span>
+<span class="text-primary font-bold">14/14 (100%)</span>
+</div>
+<div class="w-full h-2 rounded bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary transition-all duration-700" style="width: 100%;"></div>
+</div>
+<div class="flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
+<span>Hoàn thành trọn vẹn 2 deep work slots/ngày</span>
+<span class="text-primary">Đạt chuẩn Elite</span>
+</div>
+</div>
+<!-- Domain 2: Ngoại ngữ -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-2">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<span class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                  Ngoại ngữ (Tiếng Trung HSK4 &amp; Tiếng Anh Kỹ thuật)
+                </span>
+<span class="text-secondary font-bold">13/14 (93%)</span>
+</div>
+<div class="w-full h-2 rounded bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-secondary transition-all duration-700" style="width: 93%;"></div>
+</div>
+<div class="flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
+<span>Lỡ 1 slot Shadowing ngày thứ Tư (đã bù SRS từ vựng)</span>
+<span class="text-on-surface-variant">13 slot xác thực</span>
+</div>
+</div>
+<!-- Domain 3: Giao tiếp -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-2">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<span class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+                  Giao tiếp (Viết giải pháp &amp; Thuyết trình Tech)
+                </span>
+<span class="text-tertiary font-bold">6/7 (86%)</span>
+</div>
+<div class="w-full h-2 rounded bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-tertiary transition-all duration-700" style="width: 86%;"></div>
+</div>
+<div class="flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
+<span>Thiếu 1 phiên phản xạ thảo luận kỹ thuật ngày thứ Sáu</span>
+<span class="text-tertiary">Khuyến nghị điều chỉnh</span>
+</div>
+</div>
+<!-- Domain 4: Cá nhân -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-2">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<span class="flex items-center gap-2 text-on-surface font-semibold">
+<span class="w-2.5 h-2.5 rounded-full bg-outline"></span>
+                  Cá nhân (Thể lực, Nhật ký suy ngẫm, Đọc sách)
+                </span>
+<span class="text-outline font-bold">5/7 (71%)</span>
+</div>
+<div class="w-full h-2 rounded bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-outline transition-all duration-700" style="width: 71%;"></div>
+</div>
+<div class="flex justify-between items-center font-label-sm text-label-sm text-on-surface-variant">
+<span>Bị trễ 2 phiên suy ngẫm cuối ngày do làm việc quá 22:30</span>
+<span class="text-error">Cần can thiệp P2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Weekly Activity & Energy Matrix Graph -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Nhịp Độ Năng Lượng &amp; Điểm Slot Trong Tuần</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Phân tích nhịp sinh học theo 7 ngày (Thứ Hai → Chủ Nhật)</p>
+</div>
+<div class="flex items-center gap-space-md font-label-sm text-label-sm">
+<span class="flex items-center gap-1.5 text-primary"><span class="w-2 h-2 rounded-full bg-primary"></span> Slot hoàn thành</span>
+<span class="flex items-center gap-1.5 text-secondary"><span class="w-2 h-2 rounded-full bg-secondary"></span> Năng lượng ghi nhận (%)</span>
+</div>
+</div>
+<!-- Inline SVG Chart (under 2KB) -->
+<div class="w-full bg-surface-container p-space-md rounded-lg">
+<svg class="w-full h-44 text-outline-variant overflow-visible" preserveaspectratio="none" viewbox="0 0 700 180">
+<!-- Grid lines -->
+<line stroke="currentColor" stroke-dasharray="3 3" stroke-opacity="0.15" x1="0" x2="700" y1="30" y2="30"></line>
+<line stroke="currentColor" stroke-dasharray="3 3" stroke-opacity="0.15" x1="0" x2="700" y1="80" y2="80"></line>
+<line stroke="currentColor" stroke-dasharray="3 3" stroke-opacity="0.15" x1="0" x2="700" y1="130" y2="130"></line>
+<!-- Energy Polyline (Secondary: #c0c1ff) -->
+<polyline fill="none" points="50,60 150,40 250,95 350,55 450,110 550,65 650,50" stroke="#c0c1ff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></polyline>
+<!-- Completion Bars (Primary: #4edea3 / #10b981) -->
+<!-- Mon -->
+<rect fill="#10b981" height="90" opacity="0.85" rx="3" width="30" x="35" y="50"></rect>
+<!-- Tue -->
+<rect fill="#10b981" height="105" opacity="0.95" rx="3" width="30" x="135" y="35"></rect>
+<!-- Wed (Drop) -->
+<rect fill="#10b981" height="60" opacity="0.6" rx="3" width="30" x="235" y="80"></rect>
+<!-- Thu -->
+<rect fill="#10b981" height="95" opacity="0.9" rx="3" width="30" x="335" y="45"></rect>
+<!-- Fri (Drop) -->
+<rect fill="#10b981" height="50" opacity="0.55" rx="3" width="30" x="435" y="90"></rect>
+<!-- Sat -->
+<rect fill="#10b981" height="100" opacity="0.9" rx="3" width="30" x="535" y="40"></rect>
+<!-- Sun -->
+<rect fill="#10b981" height="100" opacity="0.9" rx="3" width="30" x="635" y="40"></rect>
+<!-- Value dots on line -->
+<circle cx="50" cy="60" fill="#c0c1ff" r="4"></circle>
+<circle cx="150" cy="40" fill="#c0c1ff" r="4"></circle>
+<circle cx="250" cy="95" fill="#ffb4ab" r="4"></circle>
+<circle cx="350" cy="55" fill="#c0c1ff" r="4"></circle>
+<circle cx="450" cy="110" fill="#ffb4ab" r="4"></circle>
+<circle cx="550" cy="65" fill="#c0c1ff" r="4"></circle>
+<circle cx="650" cy="50" fill="#c0c1ff" r="4"></circle>
+</svg>
+<div class="grid grid-cols-7 text-center font-label-sm text-label-sm text-on-surface-variant pt-2">
+<div>Th 2 (6/6)</div>
+<div class="text-primary font-semibold">Th 3 (6/6) ★</div>
+<div class="text-error">Th 4 (4/6)</div>
+<div>Th 5 (6/6)</div>
+<div class="text-error">Th 6 (4/6)</div>
+<div>Th 7 (6/6)</div>
+<div>CN (6/6)</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: TOP 3 SKILLS & BIOMETRICS (5 COLS) -->
+<div class="xl:col-span-5 space-y-gutter-lg">
+<!-- Top 3 Progressing Skills -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">trending_up</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Top 3 Kỹ Năng Bứt Phá</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Dựa trên bằng chứng nghiệm thu (Evidence Nodes)</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-primary uppercase">Confirmed</span>
+</div>
+<div class="space-y-space-sm">
+<!-- Skill 1 -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</div>
+<div class="truncate">
+<div class="font-body-md text-body-md font-semibold text-on-surface truncate">System Design &amp; Sharding</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Distributed Systems Architecture</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="px-2 py-0.5 rounded font-label-md text-label-md bg-primary-container text-on-primary font-semibold">+6 Evidence</span>
+<div class="font-label-sm text-label-sm text-outline mt-0.5">Level 3.4 → 3.9</div>
+</div>
+</div>
+<!-- Skill 2 -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]">translate</span>
+</div>
+<div class="truncate">
+<div class="font-body-md text-body-md font-semibold text-on-surface truncate">Tiếng Trung HSK4 Vocab</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">FSRS Space Repetition Memory</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="px-2 py-0.5 rounded font-label-md text-label-md bg-secondary text-on-secondary font-semibold">+45 Thẻ nhớ</span>
+<div class="font-label-sm text-label-sm text-outline mt-0.5">820 / 1200 mục</div>
+</div>
+</div>
+<!-- Skill 3 -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<div class="truncate">
+<div class="font-body-md text-body-md font-semibold text-on-surface truncate">Giao tiếp viết Email Tech</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Rõ ràng, súc tích &amp; dứt khoát</div>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="px-2 py-0.5 rounded font-label-md text-label-md bg-tertiary text-on-tertiary font-semibold">+3 Evidence</span>
+<div class="font-label-sm text-label-sm text-outline mt-0.5">Điểm AI: 9.2/10</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Biometric Correlation Panel -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[22px]">vital_signs</span>
+<h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Chỉ Số Sinh Trắc Học Tuần</h3>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Apple Health / Oura Sync</span>
+</div>
+<div class="grid grid-cols-3 gap-space-sm text-center">
+<div class="p-space-sm rounded-lg bg-surface-container">
+<span class="font-label-sm text-label-sm text-outline">Mood TB</span>
+<div class="font-headline-sm text-headline-sm font-bold text-primary mt-0.5">4.2<span class="font-label-sm text-label-sm text-outline">/5</span></div>
+<span class="font-label-sm text-label-sm text-primary">Tích cực</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container">
+<span class="font-label-sm text-label-sm text-outline">Focus TB</span>
+<div class="font-headline-sm text-headline-sm font-bold text-secondary mt-0.5">4.5<span class="font-label-sm text-label-sm text-outline">/5</span></div>
+<span class="font-label-sm text-label-sm text-secondary">Tập trung cao</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container">
+<span class="font-label-sm text-label-sm text-outline">Giấc ngủ TB</span>
+<div class="font-headline-sm text-headline-sm font-bold text-tertiary mt-0.5">7.2h<span class="font-label-sm text-label-sm text-outline">/đêm</span></div>
+<span class="font-label-sm text-label-sm text-tertiary">Đủ nhịp REM</span>
+</div>
+</div>
+<!-- Insight Box -->
+<div class="p-space-md rounded-lg bg-surface-container-high flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">insights</span>
+<div class="text-body-sm font-body-sm text-on-surface">
+<span class="font-semibold text-primary">Quy luật tương quan vàng:</span> Những ngày duy trì giấc ngủ <span class="font-code-md text-label-sm font-semibold text-primary">&gt; 7.0h</span> ghi nhận tỷ lệ hoàn thành <strong>100% các slot sáng</strong> trước 12:00 mà không gặp bất kỳ hiện tượng trì hoãn hay brain-fog.
+            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI OPUS 5 TRI-FACTOR DIAGNOSTIC (FR-WR-03) -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-gutter-md">
+<div class="flex flex-wrap items-center justify-between gap-space-sm pb-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Khối Nhận Định 3 Điểm (FR-WR-03 · AI Analysis)</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Được trích xuất từ 42 nhật ký hành động, logs thời gian và độ trôi focus</p>
+</div>
+</div>
+<div class="flex items-center gap-2 font-label-sm text-label-sm text-secondary bg-secondary-container/30 px-3 py-1 rounded">
+<span class="material-symbols-outlined text-[15px]">model_training</span>
+<span>Claude Opus 5 (Local Context Engine)</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-md">
+<!-- 1. Điểm Tốt -->
+<div class="p-space-lg rounded-xl bg-surface-container flex flex-col justify-between space-y-space-md shadow-sm">
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm uppercase font-semibold bg-primary/10 text-primary">Điểm Mạnh Thực Thi</span>
+<span class="material-symbols-outlined text-primary text-[22px]">check_circle</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm font-bold text-primary">1. Điều đã làm rất tốt (✓)</h4>
+<p class="font-body-sm text-body-sm text-on-surface">
+              Giữ vững kỷ luật ôn SRS tiếng Trung hàng ngày chính xác vào khung giờ <strong>14:00</strong>. Tốc độ phản hồi trung bình 1.8s/thẻ, không phát sinh thẻ nợ quá hạn (zero backlogs).
+            </p>
+</div>
+<div class="pt-space-sm font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">verified_user</span>
+<span>Hiệu ứng Spaced Repetition ổn định 100%</span>
+</div>
+</div>
+<!-- 2. Điểm Cần Sửa -->
+<div class="p-space-lg rounded-xl bg-surface-container flex flex-col justify-between space-y-space-md shadow-sm">
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm uppercase font-semibold bg-error-container/40 text-error">Nút Thắt (Bottleneck)</span>
+<span class="material-symbols-outlined text-error text-[22px]">error</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm font-bold text-error">2. Điểm cần sửa ngay (✗)</h4>
+<p class="font-body-sm text-body-sm text-on-surface">
+              Hai ngày <strong>thứ Tư</strong> và <strong>thứ Sáu</strong> ghi nhận 40 phút lướt tin tức ngoài luồng lúc 16:00, tạo hiệu ứng domino đẩy slot viết nhật ký sang sau 22:30 làm giảm 18% chất lượng phục hồi giấc ngủ.
+            </p>
+</div>
+<div class="pt-space-sm font-label-sm text-label-sm text-error flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span>Vi phạm quy tắc bảo vệ Wind-down Zone</span>
+</div>
+</div>
+<!-- 3. Đề Xuất Thử Nghiệm -->
+<div class="p-space-lg rounded-xl bg-surface-container flex flex-col justify-between space-y-space-md shadow-sm">
+<div class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm uppercase font-semibold bg-tertiary-container/30 text-tertiary">Chiến Lược Tối Ưu</span>
+<span class="material-symbols-outlined text-tertiary text-[22px]">lightbulb</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm font-bold text-tertiary">3. Nên thử tuần sau (💡)</h4>
+<p class="font-body-sm text-body-sm text-on-surface">
+              Chuyển phiên <strong>Mock Interview (S17)</strong> từ tối thứ Sáu lên <strong>sáng thứ Ba</strong> (08:30 - 09:30). Đây là khung giờ ghi nhận chỉ số tập trung Focus Score đạt đỉnh tuyệt đối (5.0/5).
+            </p>
+</div>
+<div class="pt-space-sm font-label-sm text-label-sm text-tertiary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">psychology_alt</span>
+<span>Tối ưu tải nhận thức theo đồ thị Chronotype</span>
+</div>
+</div>
+</div>
+</div>
+<!-- PROPOSED PLAN FOR WEEK 44 (FR-WR-04 & FR-WR-05) -->
+<div class="p-gutter-lg rounded-xl bg-surface-container-low shadow-sm space-y-gutter-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-gutter-md">
+<div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-primary mb-1">
+<span class="material-symbols-outlined text-[16px]">event_repeat</span>
+<span class="uppercase tracking-wider font-semibold">Khung Lập Kế Hoạch Động (FR-WR-04)</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Kế Hoạch Đề Xuất Tuần 44 (30/10 - 05/11/2026)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tối ưu hóa 6 slot mẫu hàng ngày, phân bổ theo chỉ số nhịp sinh học tuần trước</p>
+</div>
+<!-- P2 / FR-WR-05 Adaptive Notice Badge -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-center gap-space-sm max-w-md shadow-sm">
+<span class="material-symbols-outlined text-tertiary text-[22px] shrink-0">balance</span>
+<div class="font-label-sm text-label-sm text-on-surface-variant">
+<strong class="text-on-surface">Quy tắc thích ứng P2 (FR-WR-05):</strong> Nếu có bất kỳ ngày nào trượt quá 2 slot, hệ thống tự động giãn biên độ ôn tập SRS &amp; giảm tải slot phụ ngày kế tiếp.
+          </div>
+</div>
+</div>
+<!-- 6 Sample Template Slots for Week 44 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter-md" id="slots-container">
+<!-- Slot 1 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-primary/10 text-primary">Slot 1 · 07:30 - 09:00</span>
+<span class="font-label-sm text-label-sm text-outline">Chuyên môn</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">Deep Work: Distributed Transactions</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Nghiên cứu 2PC, Saga Pattern &amp; Viết Proof-of-concept</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Mục tiêu: +2 Evidence Nodes</span>
+<span class="text-primary font-code-md">Focus: 5/5</span>
+</div>
+</div>
+<!-- Slot 2 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-tertiary/10 text-tertiary">Slot 2 · 09:15 - 10:15</span>
+<span class="font-label-sm text-label-sm text-outline">Giao tiếp</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">Mock Interview (S17) / Tech Talk</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Chuyển lên sáng Thứ 3 theo khuyến nghị AI</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Đánh giá AI: Grammar &amp; Clarify</span>
+<span class="text-tertiary font-code-md">Peak Energy</span>
+</div>
+</div>
+<!-- Slot 3 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-secondary-container/40 text-secondary">Slot 3 · 14:00 - 14:45</span>
+<span class="font-label-sm text-label-sm text-outline">Ngoại ngữ</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">FSRS Drill Tiếng Trung HSK4</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Duy trì nhịp hoàn hảo: 50 thẻ SRS / ngày</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Thuật toán FSRS v4.5</span>
+<span class="text-secondary font-code-md">Retention 90%</span>
+</div>
+</div>
+<!-- Slot 4 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-primary/10 text-primary">Slot 4 · 15:30 - 17:00</span>
+<span class="font-label-sm text-label-sm text-outline">Chuyên môn</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">Thực thi Kỹ thuật &amp; Code Review</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Tích hợp Cache Invalidation &amp; Benchmarking</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Chặn web gây nhiễu lúc 16:00</span>
+<span class="text-primary font-code-md">Shield On</span>
+</div>
+</div>
+<!-- Slot 5 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-secondary-container/40 text-secondary">Slot 5 · 17:15 - 18:00</span>
+<span class="font-label-sm text-label-sm text-outline">Ngoại ngữ</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">Luyện Nghe / Shadowing Tin Tức</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">30 phút audio Podcast Tech tiếng Anh/Trung</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Bù slot trượt tuần trước</span>
+<span class="text-secondary font-code-md">Input Comprehension</span>
+</div>
+</div>
+<!-- Slot 6 -->
+<div class="p-space-md rounded-lg bg-surface-container space-y-space-sm shadow-sm group hover:bg-surface-container-high transition-all">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm font-semibold bg-outline-variant/50 text-on-surface">Slot 6 · 21:00 - 21:45</span>
+<span class="font-label-sm text-label-sm text-outline">Cá nhân</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-semibold text-on-surface">Nhật ký Tự phản chiếu &amp; Chốt Ngày</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Kết thúc trước 22:00 nhằm bảo vệ mốc ngủ 7.2h</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs font-label-sm text-label-sm text-outline">
+<span>Quy tắc Wind-down</span>
+<span class="text-primary font-code-md">Sleep Guard</span>
+</div>
+</div>
+</div>
+<!-- Action Panel for Week Plan (FR-WR-04 Commit Engine) -->
+<div class="p-gutter rounded-xl bg-surface-container flex flex-col sm:flex-row items-center justify-between gap-space-md shadow-inner">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[24px]">database</span>
+<div class="text-left">
+<div class="font-label-md text-label-md font-semibold text-on-surface">Lưu trữ kế hoạch trực tiếp vào PlanItem DB (SQLite)</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Không yêu cầu kết nối đám mây · Mã hóa an toàn nội bộ</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+<button class="flex items-center gap-1.5 px-space-md py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright transition-all font-label-md text-label-md" id="btn-edit-inline">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+<span>Chỉnh sửa inline</span>
+</button>
+<button class="flex items-center gap-2 px-space-lg py-2.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-md" id="btn-approve-plan">
+<span class="material-symbols-outlined text-[18px]">done_all</span>
+<span>Duyệt &amp; Áp dụng Kế hoạch Tuần 44</span>
+</button>
+</div>
+</div>
+</div>
+<!-- TOAST NOTIFICATION CONTAINER (FOR MICRO-INTERACTIONS) -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none p-space-md rounded-lg bg-surface-container-highest shadow-xl flex items-center gap-space-sm text-on-surface font-body-sm text-body-sm" id="toast-notify">
+<span class="material-symbols-outlined text-primary text-[20px]" id="toast-icon">task_alt</span>
+<span id="toast-msg">Kế hoạch Tuần 44 đã được nạp thành công vào SQLite.</span>
+</div>
+</div>
+</div>
+<script>
+  (function initWeeklyReview() {
+    const toast = document.getElementById('toast-notify');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = document.getElementById('toast-icon');
+
+    function triggerToast(message, icon = 'task_alt') {
+      if (!toast) return;
+      toastMsg.textContent = message;
+      toastIcon.textContent = icon;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3500);
+    }
+
+    const btnApprove = document.getElementById('btn-approve-plan');
+    const btnApproveTop = document.getElementById('btn-approve-top');
+    const btnEditInline = document.getElementById('btn-edit-inline');
+    const btnExport = document.getElementById('btn-export-json');
+
+    function executeApproval() {
+      triggerToast('Đã phê duyệt! 42 PlanItem của Tuần 44 đã được lưu trữ vào Local SQLite.', 'verified');
+    }
+
+    if (btnApprove) btnApprove.addEventListener('click', executeApproval);
+    if (btnApproveTop) btnApproveTop.addEventListener('click', executeApproval);
+
+    if (btnEditInline) {
+      btnEditInline.addEventListener('click', () => {
+        const slots = document.querySelectorAll('#slots-container > div');
+        slots.forEach(slot => {
+          slot.classList.toggle('ring-1');
+          slot.classList.toggle('ring-primary');
+        });
+        triggerToast('Chế độ chỉnh sửa inline đã kích hoạt trên 6 slot tuần mới.', 'edit');
+      });
+    }
+
+    if (btnExport) {
+      btnExport.addEventListener('click', () => {
+        triggerToast('Đã trích xuất payload JSON báo cáo Tuần 43 vào Clipboard.', 'data_object');
+      });
+    }
+  })();
+</script></main></div></body></html>

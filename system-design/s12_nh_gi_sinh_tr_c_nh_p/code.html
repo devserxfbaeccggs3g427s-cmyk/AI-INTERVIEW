@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-variant": "#31353f", "on-primary-fixed": "#002113", "secondary": "#c0c1ff", "surface-dim": "#0f131c", "error-container": "#93000a", "on-primary": "#003824", "tertiary-fixed": "#ffddb8", "primary-fixed": "#6ffbbe", "on-primary-fixed-variant": "#005236", "surface-container-low": "#181b25", "surface-container": "#1c1f29", "surface-container-high": "#262a34", "on-tertiary-fixed-variant": "#653e00", "on-secondary-fixed": "#07006c", "outline": "#86948a", "surface-bright": "#353943", "surface-container-lowest": "#0a0e17", "background": "#0f131c", "inverse-surface": "#dfe2ef", "error": "#ffb4ab", "inverse-primary": "#006c49", "on-secondary": "#1000a9", "on-tertiary": "#472a00", "surface-tint": "#4edea3", "on-primary-container": "#00422b", "on-secondary-fixed-variant": "#2f2ebe", "secondary-fixed": "#e1e0ff", "on-background": "#dfe2ef", "secondary-container": "#3131c0", "primary": "#4edea3", "on-secondary-container": "#b0b2ff", "on-surface": "#dfe2ef", "on-error-container": "#ffdad6", "primary-container": "#10b981", "primary-fixed-dim": "#4edea3", "tertiary-container": "#e29100", "surface-container-highest": "#31353f", "outline-variant": "#3c4a42", "on-error": "#690005", "on-surface-variant": "#bbcabf", "on-tertiary-container": "#523200", "tertiary-fixed-dim": "#ffb95f", "tertiary": "#ffb95f", "inverse-on-surface": "#2c303a", "surface": "#0f131c", "on-tertiary-fixed": "#2a1700", "secondary-fixed-dim": "#c0c1ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-lg": "2.5rem", "margin": "1rem", "space-xs": "0.25rem", "gutter-md": "1.25rem", "space-sm": "0.5rem", "gutter-lg": "1.5rem", "margin-md": "1.5rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-xl": "2rem", "gutter": "1rem" }, "fontFamily": { "body-sm": [ "Be Vietnam Pro" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Be Vietnam Pro" ], "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "headline-lg-mobile": [ "Space Grotesk" ], "headline-lg": [ "Space Grotesk" ], "headline-md": [ "Space Grotesk" ], "display": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "label-md": [ "JetBrains Mono" ] }, "fontSize": { "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full overflow-y-auto"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60 shrink-0"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s03-cay-ky-nang-bang-chung" href="#">Cây kỹ năng</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s10-on-tap-ngoai-ngu-srs-fsrs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s07-luyen-giao-tiep-viet" href="#">Luyện giao tiếp</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s16-mock-interview-cau-hinh" href="#">Mock Interview</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s19-danh-sach-bai-kiem-tra-ngoai-ngu" href="#">Bài kiểm tra</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s13-bao-cao-tuan-weekly-review" href="#">Báo cáo &amp; tiến độ</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s15-cai-dat-quan-ly-chi-phi-ai" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50 shrink-0"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" type="button"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></button><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Status & Local Shield Top Banner -->
+<div class="px-margin-lg pt-space-md pb-space-sm flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="h-2 w-2 rounded-full bg-primary animate-ping"></div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary">FR-PS-01 · State Logger Engine</span>
+<span class="text-outline-variant">•</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">SQLite Encrypted Local Node (P6 Standard)</span>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5 px-space-sm py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-primary">lock</span>
+<span>E2EE Device Storage</span>
+</div>
+<div class="flex items-center gap-1.5 px-space-sm py-0.5 rounded bg-surface-container-high text-secondary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">timer</span>
+<span>Ghi nhận mục tiêu: ≤15s</span>
+</div>
+</div>
+</div>
+<!-- Primary Page Header -->
+<div class="px-margin-lg pb-space-lg flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm uppercase tracking-widest mb-1">
+<span>Phân hệ Cá nhân</span>
+<span>/</span>
+<span class="text-primary">Đánh giá chính (/state)</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Theo Dõi Trạng Thái &amp; Chỉ Số Sinh Học Cá Nhân</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Đồng bộ cục bộ SQLite • Mã hóa End-to-End không gửi đám mây • Chu kỳ phân tích 7 ngày gần nhất</p>
+</div>
+<!-- Quick Stats Pill -->
+<div class="flex items-center gap-space-xs p-1.5 rounded-xl bg-surface-container-low shadow-sm">
+<div class="px-3 py-1.5 rounded-lg bg-surface-container-high text-center">
+<span class="block font-label-sm text-label-sm text-outline">Điểm phục hồi</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">92%</span>
+</div>
+<div class="px-3 py-1.5 rounded-lg text-center">
+<span class="block font-label-sm text-label-sm text-outline">Ngủ TB</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">7.4h</span>
+</div>
+<div class="px-3 py-1.5 rounded-lg text-center">
+<span class="block font-label-sm text-label-sm text-outline">Độ ổn định</span>
+<span class="font-headline-sm text-headline-sm text-tertiary font-semibold">Cao</span>
+</div>
+</div>
+</div>
+<!-- Main Content Layout Grid -->
+<div class="px-margin-lg pb-margin-lg grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg">
+<!-- LEFT PANEL: Quick Log Engine (Goal: <=15s) [7 Cols] -->
+<div class="xl:col-span-7 flex flex-col gap-gutter-md">
+<!-- Card: Input Panel with Fast Sliders -->
+<section class="rounded-xl bg-surface-container-low p-space-lg shadow-md relative overflow-hidden">
+<!-- Visual Accent bar -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary-container to-secondary"></div>
+<div class="flex items-center justify-between pb-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">pace</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Ghi nhận siêu tốc hôm nay</h2>
+<p class="font-label-sm text-label-sm text-outline">Prefill tự động từ hôm qua • Bấm một chạm lưu ngay</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-primary/10 text-primary">Chế độ ≤15s</span>
+</div>
+<form class="space-y-space-md" id="state-quick-form" onsubmit="event.preventDefault(); window.saveDailyBiometrics();">
+<!-- Metric 1: Tâm trạng (Mood) -->
+<div class="p-space-md rounded-lg bg-surface-container transition-all hover:bg-surface-container-high">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-tertiary">sentiment_very_satisfied</span>
+<span class="font-body-md text-body-md font-semibold">Tâm trạng (Mood)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-primary font-semibold" id="mood-label">Tích cực, phấn chấn</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold" id="mood-score">4/5</span>
+</div>
+</div>
+<div class="relative flex items-center gap-space-sm pt-1">
+<input class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none" id="mood-slider" max="5" min="1" oninput="window.updateMetric('mood', this.value)" step="1" type="range" value="4"/>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>1 Kiệt sức</span>
+<span>2 Chùng chình</span>
+<span>3 Ổn định</span>
+<span class="text-primary font-bold">4 Tích cực</span>
+<span>5 Thăng hoa</span>
+</div>
+</div>
+<!-- Metric 2: Năng lượng (Energy) -->
+<div class="p-space-md rounded-lg bg-surface-container transition-all hover:bg-surface-container-high">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">bolt</span>
+<span class="font-body-md text-body-md font-semibold">Năng lượng sinh lý (Energy)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-primary font-semibold" id="energy-label">Sung sức, Deep Work</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold" id="energy-score">4/5</span>
+</div>
+</div>
+<div class="relative flex items-center gap-space-sm pt-1">
+<input class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none" id="energy-slider" max="5" min="1" oninput="window.updateMetric('energy', this.value)" step="1" type="range" value="4"/>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>1 Uể oải</span>
+<span>2 Hơi mỏi</span>
+<span>3 Vừa đủ</span>
+<span class="text-primary font-bold">4 Tràn đầy</span>
+<span>5 Cực đỉnh</span>
+</div>
+</div>
+<!-- Metric 3: Mức độ tập trung (Focus) -->
+<div class="p-space-md rounded-lg bg-surface-container transition-all hover:bg-surface-container-high">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-secondary">center_focus_strong</span>
+<span class="font-body-md text-body-md font-semibold">Mức độ tập trung (Focus)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-secondary font-semibold" id="focus-label">Dòng chảy (Flow State)</span>
+<span class="font-headline-sm text-headline-sm text-secondary font-bold" id="focus-score">5/5</span>
+</div>
+</div>
+<div class="relative flex items-center gap-space-sm pt-1">
+<input class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-secondary focus:outline-none" id="focus-slider" max="5" min="1" oninput="window.updateMetric('focus', this.value)" step="1" type="range" value="5"/>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>1 Phân tâm</span>
+<span>2 Gián đoạn</span>
+<span>3 Kiểm soát</span>
+<span>4 Rất sâu</span>
+<span class="text-secondary font-bold">5 Flow State</span>
+</div>
+</div>
+<!-- Metric 4: Giấc ngủ đêm qua (Sleep Quality & Breakdown) -->
+<div class="p-space-md rounded-lg bg-surface-container">
+<div class="flex flex-wrap items-center justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-secondary">bedtime</span>
+<span class="font-body-md text-body-md font-semibold">Giấc ngủ đêm qua</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary/20 text-primary">Đạt chuẩn hồi phục</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">7.5 giờ</span>
+</div>
+</div>
+<!-- Sleep Stages visual indicator -->
+<div class="space-y-1.5">
+<div class="w-full h-3 rounded-full bg-surface-variant flex overflow-hidden">
+<div class="h-full bg-secondary-container" style="width: 23%;" title="REM: 1h45m"></div>
+<div class="h-full bg-primary" style="width: 29%;" title="Deep Sleep: 2h10m"></div>
+<div class="h-full bg-surface-bright" style="width: 48%;" title="Light Sleep: 3h35m"></div>
+</div>
+<div class="grid grid-cols-3 gap-space-xs font-label-sm text-label-sm pt-1">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span>REM: <strong class="text-on-surface">1h 45m</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span>Ngủ sâu: <strong class="text-on-surface">2h 10m</strong></span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant text-right justify-end">
+<div class="w-2 h-2 rounded-full bg-surface-bright"></div>
+<span>Ngủ nông: <strong class="text-on-surface">3h 35m</strong></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro Quick Note Input -->
+<div class="rounded-lg bg-surface-container p-space-md">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1" for="quick-note">
+              Ghi chú nhịp sinh học (1 dòng tùy chọn)
+            </label>
+<div class="flex items-center gap-space-sm bg-surface-container-lowest px-3 py-2 rounded-lg">
+<span class="material-symbols-outlined text-[18px] text-outline">edit_note</span>
+<input class="w-full bg-transparent text-on-surface font-body-md text-body-md focus:outline-none" id="quick-note" placeholder="VD: Không cafe sau 14h, thiền 10p..." type="text" value="Uống đủ 2L nước, đi dạo sáng 15 phút, tinh thần minh mẫn."/>
+<button class="text-outline hover:text-on-surface" onclick="document.getElementById('quick-note').value=''" type="button">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<!-- Fast Action Strip -->
+<div class="pt-space-xs flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">history</span>
+<span>Prefill hôm qua: <span class="text-on-surface font-mono">100% khớp</span></span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-4 py-2.5 rounded-lg font-code-md text-code-md text-on-surface-variant bg-surface-container-high hover:bg-surface-bright hover:text-on-surface transition-all" onclick="window.resetForm()" type="button">
+                Mặc định
+              </button>
+<button class="flex items-center gap-space-xs px-6 py-2.5 rounded-lg bg-primary-container text-on-primary font-code-md text-code-md font-semibold hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_16px_rgba(16,185,129,0.25)]" id="save-btn" type="submit">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Lưu trạng thái (≤15s)</span>
+</button>
+</div>
+</div>
+</form>
+</section>
+<!-- Security / Privacy Commitment P6 Box -->
+<div class="rounded-xl bg-surface-container-low p-space-md shadow-sm flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">verified_user</span>
+</div>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Cam kết bảo mật dữ liệu sinh trắc P6</span>
+<span class="px-2 py-0.2 rounded font-label-sm text-label-sm bg-surface-container-high text-primary font-mono">STRICT_LOCAL</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Toàn bộ nhật ký tâm trạng, chỉ số sinh học, thời lượng giấc ngủ được lưu trữ độc quyền trên SQLite thiết bị cá nhân. Hệ thống <span class="text-on-surface font-semibold">không tải dữ liệu lên bất kỳ máy chủ đám mây nào</span>. Phân tích mô hình do engine máy học cục bộ xử lý.
+          </p>
+</div>
+</div>
+</div>
+<!-- RIGHT PANEL: AI Correlation Insights & Visual Rhythm Charts [5 Cols] -->
+<div class="xl:col-span-5 flex flex-col gap-gutter-md">
+<!-- AI Correlation Insights Card (FR-PS-05) -->
+<section class="rounded-xl bg-surface-container-low p-space-lg shadow-md">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">psychology</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Tương quan sinh học AI</h2>
+<span class="font-label-sm text-label-sm text-outline">Engine suy diễn cục bộ (Local Vector Engine)</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/10 text-secondary">Độ tin cậy 94%</span>
+</div>
+<div class="space-y-space-sm pt-space-xs">
+<!-- Insight 1 -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-start gap-space-sm hover:bg-surface-container-high transition-colors">
+<div class="w-7 h-7 rounded bg-primary/20 text-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">task_alt</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wide text-primary">Quy luật ngủ • Hiệu suất sáng</span>
+<span class="font-label-sm text-label-sm text-outline font-mono">+42% Slots</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">
+                Khi ngủ <span class="text-primary font-semibold">≥ 7.0 giờ</span>, bạn hoàn thành <span class="text-primary font-semibold">100%</span> các slot sáng trước 12:00 mà không gặp hiện tượng trì hoãn.
+              </p>
+</div>
+</div>
+<!-- Insight 2 -->
+<div class="p-space-md rounded-lg bg-surface-container flex items-start gap-space-sm hover:bg-surface-container-high transition-colors">
+<div class="w-7 h-7 rounded bg-tertiary/20 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wide text-tertiary">Bẫy năng lượng chiều</span>
+<span class="font-label-sm text-label-sm text-outline font-mono">-35% Focus</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">
+                Mức tập trung buổi chiều <span class="text-tertiary font-semibold">giảm 35%</span> vào những ngày năng lượng sáng ghi nhận dưới 3 điểm. Khuyến nghị slot ngủ trưa 20 phút.
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- 7-Day & 30-Day Rhythm Analytics (FR-PS-06) -->
+<section class="rounded-xl bg-surface-container-low p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Biểu đồ nhịp độ 7 ngày</h2>
+<p class="font-label-sm text-label-sm text-outline">Đối chiếu Mood / Energy với Slot hoàn thành</p>
+</div>
+<div class="flex rounded-lg bg-surface-container p-0.5 text-on-surface-variant font-label-sm text-label-sm">
+<button class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-semibold shadow-xs">7 Ngày</button>
+<button class="px-2.5 py-1 rounded hover:text-on-surface transition-colors">30 Ngày</button>
+</div>
+</div>
+<!-- Inline Visual Dual SVG Chart -->
+<div class="rounded-lg bg-surface-container p-space-md space-y-space-xs">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline pb-1">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-1 rounded-full bg-primary"></span>
+<span>Năng lượng / Mood (1-5)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-1 rounded-full bg-secondary"></span>
+<span>Slots Daily Loop (0-10)</span>
+</div>
+</div>
+<span class="font-mono text-primary font-semibold">Tương quan r=0.88</span>
+</div>
+<!-- Responsive SVG Curve with Dual Area Overlays -->
+<div class="w-full h-40">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 380 140">
+<defs>
+<lineargradient id="primaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4edea3" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#4edea3" stop-opacity="0.0"></stop>
+</lineargradient>
+<lineargradient id="secondaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#c0c1ff" stop-opacity="0.25"></stop>
+<stop offset="100%" stop-color="#c0c1ff" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Subtle Background Guidelines -->
+<line stroke="#31353f" stroke-dasharray="2,3" stroke-width="1" x1="0" x2="380" y1="30" y2="30"></line>
+<line stroke="#31353f" stroke-dasharray="2,3" stroke-width="1" x1="0" x2="380" y1="70" y2="70"></line>
+<line stroke="#31353f" stroke-dasharray="2,3" stroke-width="1" x1="0" x2="380" y1="110" y2="110"></line>
+<!-- Line 2: Slots Completed (Cyan / Indigo Path) -->
+<path d="M 15,100 Q 75,70 135,75 T 255,40 T 365,30 L 365,130 L 15,130 Z" fill="url(#secondaryAreaGrad)"></path>
+<path d="M 15,100 Q 75,70 135,75 T 255,40 T 365,30" fill="none" stroke="#c0c1ff" stroke-width="2.5"></path>
+<!-- Line 1: Energy & Mood Score (Emerald Path) -->
+<path d="M 15,85 Q 75,95 135,55 T 255,45 T 365,25 L 365,130 L 15,130 Z" fill="url(#primaryAreaGrad)"></path>
+<path d="M 15,85 Q 75,95 135,55 T 255,45 T 365,25" fill="none" stroke="#4edea3" stroke-width="2.5"></path>
+<!-- Data Node Markers -->
+<circle cx="15" cy="85" fill="#4edea3" r="3.5"></circle>
+<circle cx="75" cy="95" fill="#4edea3" r="3.5"></circle>
+<circle cx="135" cy="55" fill="#4edea3" r="3.5"></circle>
+<circle cx="195" cy="65" fill="#4edea3" r="3.5"></circle>
+<circle cx="255" cy="45" fill="#4edea3" r="3.5"></circle>
+<circle cx="315" cy="40" fill="#4edea3" r="3.5"></circle>
+<circle cx="365" cy="25" fill="#4edea3" r="4.5" stroke="#0a0e17" stroke-width="2"></circle>
+<circle cx="365" cy="30" fill="#c0c1ff" r="4" stroke="#0a0e17" stroke-width="1.5"></circle>
+</svg>
+</div>
+<!-- Days Axis -->
+<div class="flex justify-between font-label-sm text-label-sm text-outline pt-1">
+<span>T5 (23)</span>
+<span>T6 (24)</span>
+<span>T7 (25)</span>
+<span>CN (26)</span>
+<span>T2 (27)</span>
+<span>T3 (28)</span>
+<span class="text-primary font-bold">Hôm nay</span>
+</div>
+</div>
+<!-- 7-Day Dot Matrix Table for Quick Inspection & Editing -->
+<div class="rounded-lg bg-surface-container p-space-sm">
+<div class="flex items-center justify-between px-space-xs pb-space-xs font-label-sm text-label-sm text-outline">
+<span>Ma trận điểm 7 ngày (Bấm để sửa nhanh)</span>
+<span class="material-symbols-outlined text-[14px]">touch_app</span>
+</div>
+<div class="grid grid-cols-7 gap-1.5 pt-1 text-center font-label-sm text-label-sm">
+<!-- Day 1 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Thứ 5: Mood 3, Energy 3, Ngủ 6.8h" type="button">
+<span class="text-outline">T5</span>
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">3/5</span>
+</button>
+<!-- Day 2 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Thứ 6: Mood 2, Energy 3, Ngủ 6.2h" type="button">
+<span class="text-outline">T6</span>
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">2.5</span>
+</button>
+<!-- Day 3 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Thứ 7: Mood 4, Energy 4, Ngủ 8.0h" type="button">
+<span class="text-outline">T7</span>
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">4/5</span>
+</button>
+<!-- Day 4 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Chủ nhật: Mood 4, Energy 4, Ngủ 7.8h" type="button">
+<span class="text-outline">CN</span>
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">4/5</span>
+</button>
+<!-- Day 5 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Thứ 2: Mood 4, Energy 5, Ngủ 7.5h" type="button">
+<span class="text-outline">T2</span>
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">4.5</span>
+</button>
+<!-- Day 6 -->
+<button class="p-2 rounded bg-surface-container-high/60 hover:bg-surface-container-high flex flex-col items-center gap-1 transition-transform hover:scale-105" title="Thứ 3: Mood 5, Energy 4, Ngủ 7.6h" type="button">
+<span class="text-outline">T3</span>
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-mono text-[10px] text-on-surface-variant">4.5</span>
+</button>
+<!-- Day 7: Today -->
+<button class="p-2 rounded bg-primary/20 flex flex-col items-center gap-1 ring-1 ring-primary transition-transform hover:scale-105" title="Hôm nay: Mood 4, Energy 4, Focus 5" type="button">
+<span class="text-primary font-bold">Nay</span>
+<div class="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
+<span class="font-mono text-[10px] text-primary font-bold">4.3</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Routine Context Info -->
+<div class="rounded-xl bg-surface-container-low p-space-md shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[18px]">alarm</span>
+</div>
+<div>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Khung giờ sinh học lý tưởng</span>
+<p class="font-label-sm text-label-sm text-outline">Đỉnh cao tư duy phân tích: 08:30 — 11:30</p>
+</div>
+</div>
+<span class="font-code-md text-code-md text-primary px-2.5 py-1 rounded bg-surface-container-high font-semibold">Active Slot</span>
+</div>
+</div>
+</div>
+<!-- Notification Toast Modal Container (Dynamic via JS) -->
+<div class="fixed bottom-6 right-6 hidden transform transition-all duration-300 z-50" id="save-toast">
+<div class="rounded-xl bg-surface-container-highest p-space-md shadow-xl flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<div>
+<div class="font-body-md text-body-md font-bold text-on-surface">Đã lưu trạng thái hôm nay thành công!</div>
+<div class="font-label-sm text-label-sm text-outline">Ghi vào SQLite cục bộ • Thời gian thao tác: 3.2 giây</div>
+</div>
+</div>
+</div>
+<!-- Micro Interaction Handler Scripts -->
+<script>
+    (function() {
+      const moodDescriptions = {
+        '1': 'Kiệt sức, áp lực lớn',
+        '2': 'Chùng chình, mệt mỏi nhẹ',
+        '3': 'Bình thản, cân bằng',
+        '4': 'Tích cực, phấn chấn',
+        '5': 'Thăng hoa, tinh thần cực cao'
+      };
+
+      const energyDescriptions = {
+        '1': 'Uể oải, cạn pin sinh lý',
+        '2': 'Mỏi mệt, cần nghỉ ngắn',
+        '3': 'Vừa đủ làm việc thông thường',
+        '4': 'Sung sức, sẵn sàng Deep Work',
+        '5': 'Năng lượng tràn ngập đỉnh điểm'
+      };
+
+      const focusDescriptions = {
+        '1': 'Phân tán, khó tập trung',
+        '2': 'Gián đoạn thường xuyên',
+        '3': 'Tập trung cơ bản',
+        '4': 'Rất sâu, ít xao nhãng',
+        '5': 'Trạng thái dòng chảy (Flow State)'
+      };
+
+      window.updateMetric = function(type, val) {
+        if (type === 'mood') {
+          const scoreEl = document.getElementById('mood-score');
+          const labelEl = document.getElementById('mood-label');
+          if (scoreEl) scoreEl.textContent = val + '/5';
+          if (labelEl) labelEl.textContent = moodDescriptions[val] || '';
+        } else if (type === 'energy') {
+          const scoreEl = document.getElementById('energy-score');
+          const labelEl = document.getElementById('energy-label');
+          if (scoreEl) scoreEl.textContent = val + '/5';
+          if (labelEl) labelEl.textContent = energyDescriptions[val] || '';
+        } else if (type === 'focus') {
+          const scoreEl = document.getElementById('focus-score');
+          const labelEl = document.getElementById('focus-label');
+          if (scoreEl) scoreEl.textContent = val + '/5';
+          if (labelEl) labelEl.textContent = focusDescriptions[val] || '';
+        }
+      };
+
+      window.resetForm = function() {
+        const moodSlider = document.getElementById('mood-slider');
+        const energySlider = document.getElementById('energy-slider');
+        const focusSlider = document.getElementById('focus-slider');
+        const note = document.getElementById('quick-note');
+
+        if (moodSlider) { moodSlider.value = 3; window.updateMetric('mood', 3); }
+        if (energySlider) { energySlider.value = 3; window.updateMetric('energy', 3); }
+        if (focusSlider) { focusSlider.value = 3; window.updateMetric('focus', 3); }
+        if (note) note.value = '';
+      };
+
+      window.saveDailyBiometrics = function() {
+        const btn = document.getElementById('save-btn');
+        const toast = document.getElementById('save-toast');
+
+        if (btn) {
+          btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Đang mã hóa & lưu...</span>';
+          btn.classList.add('opacity-80', 'pointer-events-none');
+        }
+
+        setTimeout(() => {
+          if (btn) {
+            btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">done</span><span>Đã lưu (&le;15s)</span>';
+            btn.classList.remove('opacity-80', 'pointer-events-none');
+          }
+          if (toast) {
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+              toast.classList.add('hidden');
+              if (btn) {
+                btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">bolt</span><span>Lưu trạng thái (&le;15s)</span>';
+              }
+            }, 3200);
+          }
+        }, 350);
+      };
+    })();
+  </script>
+</div></main></div></body></html>

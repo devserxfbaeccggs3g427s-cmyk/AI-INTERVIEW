@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-variant": "#31353f", "on-primary-fixed": "#002113", "secondary": "#c0c1ff", "surface-dim": "#0f131c", "error-container": "#93000a", "on-primary": "#003824", "tertiary-fixed": "#ffddb8", "primary-fixed": "#6ffbbe", "on-primary-fixed-variant": "#005236", "surface-container-low": "#181b25", "surface-container": "#1c1f29", "surface-container-high": "#262a34", "on-tertiary-fixed-variant": "#653e00", "on-secondary-fixed": "#07006c", "outline": "#86948a", "surface-bright": "#353943", "surface-container-lowest": "#0a0e17", "background": "#0f131c", "inverse-surface": "#dfe2ef", "error": "#ffb4ab", "inverse-primary": "#006c49", "on-secondary": "#1000a9", "on-tertiary": "#472a00", "surface-tint": "#4edea3", "on-primary-container": "#00422b", "on-secondary-fixed-variant": "#2f2ebe", "secondary-fixed": "#e1e0ff", "on-background": "#dfe2ef", "secondary-container": "#3131c0", "primary": "#4edea3", "on-secondary-container": "#b0b2ff", "on-surface": "#dfe2ef", "on-error-container": "#ffdad6", "primary-container": "#10b981", "primary-fixed-dim": "#4edea3", "tertiary-container": "#e29100", "surface-container-highest": "#31353f", "outline-variant": "#3c4a42", "on-error": "#690005", "on-surface-variant": "#bbcabf", "on-tertiary-container": "#523200", "tertiary-fixed-dim": "#ffb95f", "tertiary": "#ffb95f", "inverse-on-surface": "#2c303a", "surface": "#0f131c", "on-tertiary-fixed": "#2a1700", "secondary-fixed-dim": "#c0c1ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-lg": "2.5rem", "margin": "1rem", "space-xs": "0.25rem", "gutter-md": "1.25rem", "space-sm": "0.5rem", "gutter-lg": "1.5rem", "margin-md": "1.5rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-xl": "2rem", "gutter": "1rem" }, "fontFamily": { "body-sm": [ "Be Vietnam Pro" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Be Vietnam Pro" ], "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "headline-lg-mobile": [ "Space Grotesk" ], "headline-lg": [ "Space Grotesk" ], "headline-md": [ "Space Grotesk" ], "display": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "label-md": [ "JetBrains Mono" ] }, "fontSize": { "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full overflow-y-auto"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60 shrink-0"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s03-cay-ky-nang-bang-chung" href="#">Cây kỹ năng</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s10-on-tap-ngoai-ngu-srs-fsrs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s07-luyen-giao-tiep-viet" href="#">Luyện giao tiếp</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s16-mock-interview-cau-hinh" href="#">Mock Interview</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s19-danh-sach-bai-kiem-tra-ngoai-ngu" href="#">Bài kiểm tra</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s13-bao-cao-tuan-weekly-review" href="#">Báo cáo &amp; tiến độ</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s15-cai-dat-quan-ly-chi-phi-ai" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50 shrink-0"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" type="button"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></button><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full px-margin-lg py-margin-md space-y-gutter-lg max-w-[1600px] mx-auto">
+<!-- Header & Meta Bar -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="space-y-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded-sm bg-primary/10 text-primary font-label-sm text-label-sm tracking-widest uppercase">Mô-đun AI-08 · S11 Active Drill</span>
+<span class="text-outline font-label-sm text-label-sm">|</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+          FSRS Spaced Repetition v4 Sync
+        </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">
+        Luyện Ngoại Ngữ Chủ Động
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+        Khung phản xạ tạo sinh chủ động đa ngữ thức (Active Output). Hỗ trợ song hành <span class="text-on-surface font-medium">Trung văn (HSK 3-5)</span> &amp; <span class="text-on-surface font-medium">Anh văn chuyên môn</span>.
+      </p>
+</div>
+<!-- Mode Selector & Stats -->
+<div class="flex items-center gap-space-md shrink-0">
+<div class="px-space-md py-space-sm rounded-lg bg-surface-container-low shadow-sm flex items-center gap-space-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">Mục tiêu ngày</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">2 / 3 Bài viết</span>
+</div>
+<div class="w-px h-8 bg-surface-variant"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase">Tỷ lệ chính xác FSRS</span>
+<span class="font-label-md text-label-md text-primary font-semibold">91.4%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Dual Mega Tab Navigation -->
+<section class="p-1 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col sm:flex-row gap-1">
+<button class="flex-1 flex items-center justify-center gap-space-sm px-space-lg py-space-md rounded-lg bg-surface-container-high text-primary shadow-sm font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+<span class="font-semibold tracking-wide">Tab 1: Luyện Viết &amp; Sửa Lỗi 4 Nhóm (Writing Rubric 4-Tier)</span>
+<span class="px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary font-label-sm text-[10px]">ĐANG MỞ</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-space-sm px-space-lg py-space-md rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px] text-outline">forum</span>
+<span class="tracking-wide">Tab 2: Hội Thoại AI Role-Play (Interactive Scenario)</span>
+<span class="px-1.5 py-0.5 rounded-sm bg-surface-container text-outline font-label-sm text-[10px]">LOCAL VOX</span>
+</button>
+</section>
+<!-- Workspace 2-Column Split Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg items-start">
+<!-- CỘT TRÁI: Không gian soạn thảo & Đề bài (5 Columns) -->
+<div class="xl:col-span-5 space-y-gutter">
+<!-- Prompt Specification Card -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm space-y-space-md relative overflow-hidden">
+<div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-primary/5 pointer-events-none blur-xl"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider font-semibold">Chủ đề chủ động #ZH-042</span>
+</div>
+<span class="px-2 py-0.5 rounded-sm bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">HSK 3+</span>
+</div>
+<div class="space-y-space-xs">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+            Miêu tả ngày làm việc thực tế bằng tiếng Trung
+          </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Viết từ 3-5 câu tự nhiên, kết hợp trật tự thời gian logic và các từ khoá ngữ cảnh công sở.
+          </p>
+</div>
+<!-- Target Lexical / Grammar Tokens -->
+<div class="space-y-space-xs pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase">Từ khóa bắt buộc sử dụng:</span>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface font-code-md text-label-sm">今天 <span class="text-outline text-[11px]">(jīntiān)</span></span>
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface font-code-md text-label-sm">工作 <span class="text-outline text-[11px]">(gōngzuò)</span></span>
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface font-code-md text-label-sm">去 <span class="text-outline text-[11px]">(qù)</span></span>
+<span class="px-2 py-1 rounded bg-surface-container text-on-surface font-code-md text-label-sm">喜欢 <span class="text-outline text-[11px]">(xǐhuan)</span></span>
+</div>
+</div>
+</div>
+<!-- Editor Panel -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">keyboard</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold uppercase tracking-wider">Khung Nhập Văn Bản (IME Ready)</span>
+</div>
+<div class="flex items-center gap-space-xs text-outline font-label-sm text-label-sm">
+<span>Hanzi + Pinyin / English</span>
+</div>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-lg bg-surface-container-lowest p-space-md font-body-md text-body-md text-on-surface placeholder:text-outline/60 focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none transition-all shadow-inner leading-relaxed" id="writing-input" rows="8">今天我七点去公司工作。虽然有很多任务，但是我非常喜欢我的新工作。晚上我和同事去咖啡馆聊天，过得很开心。</textarea>
+<!-- Character & Word Counter Overlay -->
+<div class="absolute bottom-3 right-3 flex items-center gap-2 px-2 py-1 rounded bg-surface-container-low/90 backdrop-blur font-label-sm text-label-sm text-outline">
+<span id="char-count">48 ký tự Hanzi</span>
+<span>·</span>
+<span>3 câu</span>
+</div>
+</div>
+<!-- Assistant Keyboard Controls & Submission -->
+<div class="space-y-space-sm pt-space-xs">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-1.5 text-outline font-label-sm text-label-sm">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-md">Ctrl</span>
+<span>+</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-code-md">Enter</span>
+<span class="ml-1">để chấm tức thì</span>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                Xoá nhập lại
+              </button>
+</div>
+</div>
+<!-- Master AI Stream Button -->
+<button class="w-full py-3 px-4 rounded-lg bg-primary-container hover:brightness-105 active:scale-[0.99] text-on-primary font-code-md text-code-md font-semibold flex items-center justify-center gap-space-sm shadow-md transition-all" id="stream-eval-btn" type="button">
+<span class="material-symbols-outlined text-[20px] animate-spin hidden" id="loading-spinner">progress_activity</span>
+<span class="material-symbols-outlined text-[20px]" id="sparkle-icon">auto_awesome</span>
+<span>Chấm &amp; Phân tích 4 nhóm lỗi (Claude Opus 5 streaming)</span>
+</button>
+</div>
+</div>
+<!-- Quick Tips Card -->
+<div class="rounded-xl bg-surface-container p-space-md shadow-sm flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[20px] shrink-0 mt-0.5">tips_and_updates</span>
+<div class="space-y-0.5">
+<p class="font-label-md text-label-md text-on-surface font-semibold">Quy tắc trật tự thời gian (Chủ ngữ + Thời gian + Địa điểm + Động từ)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Người học tiếng Trung hay mắc lỗi đặt trạng từ thời gian sau động từ như tiếng Việt. AI-09 sẽ quét lỗi này trước tiên.
+          </p>
+</div>
+</div>
+</div>
+<!-- CỘT PHẢI: Kết quả phân tích Rubric 4 nhóm & Tác vụ AI-10 (7 Columns) -->
+<div class="xl:col-span-7 space-y-gutter">
+<!-- Realtime Evaluation Status Banner -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">verified</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-label-md font-semibold text-on-surface">Đánh Giá Sư Phạm Chuẩn Hoá</span>
+<span class="px-1.5 py-0.2 rounded-sm bg-primary/20 text-primary font-label-sm text-[10px]">TỐT · 8.8/10</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Phát hiện 2 điểm cần cải tiến (Ngữ pháp thứ tự &amp; Từ vựng tự nhiên).</p>
+</div>
+</div>
+<span class="font-code-md text-label-sm text-outline">Latency: 284ms · Token In/Out: 340/512</span>
+</div>
+<!-- 4-Tier Rubric Fault Taxonomy Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm">
+<!-- Nhóm 1: Ngữ pháp (Grammar) -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+<span class="font-headline-sm text-label-md font-bold text-on-surface">1. Ngữ pháp (Grammar)</span>
+</div>
+<span class="px-2 py-0.5 rounded-sm bg-error-container/40 text-error font-label-sm text-label-sm">Cần sửa 1 vị trí</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Lỗi trật tự từ: <code class="text-error font-code-md font-semibold">七点去公司工作</code> cần đặt trạng từ thời gian rõ ràng hơn trước hành động di chuyển để tạo nhịp điệu bản xứ.
+          </p>
+<div class="pt-1 flex items-center gap-1.5 font-label-sm text-label-sm text-primary">
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+<span>Khuyên dùng: 我早上七点到公司上班</span>
+</div>
+</div>
+<!-- Nhóm 2: Từ vựng (Vocabulary) -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-label-md font-bold text-on-surface">2. Từ vựng (Vocabulary)</span>
+</div>
+<span class="px-2 py-0.5 rounded-sm bg-tertiary/20 text-tertiary font-label-sm text-label-sm">Nâng cấp Collocation</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Từ <code class="text-on-surface font-code-md">工作</code> lặp lại nhiều lần. Trong bối cảnh đi làm hàng ngày, bản xứ sử dụng cặp động từ <code class="text-tertiary font-code-md">上班 / 下班</code>.
+          </p>
+<div class="pt-1 flex items-center gap-1.5 font-label-sm text-label-sm text-tertiary">
+<span class="material-symbols-outlined text-[14px]">lightbulb</span>
+<span>Thay <code class="font-code-md">去工作</code> bằng <code class="font-code-md">去上班</code></span>
+</div>
+</div>
+<!-- Nhóm 3: Cách diễn đạt (Expression) -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="font-headline-sm text-label-md font-bold text-on-surface">3. Cách diễn đạt (Expression)</span>
+</div>
+<span class="px-2 py-0.5 rounded-sm bg-secondary-container/30 text-secondary font-label-sm text-label-sm">Khử Việt-hóa</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Khắc phục tư duy dịch từng chữ (Vietnamese-mindset): Cụm <code class="text-secondary font-code-md">有很多任务</code> đúng nghĩa nhưng thiếu tự nhiên.
+          </p>
+<div class="pt-1 flex items-center gap-1.5 font-label-sm text-label-sm text-secondary">
+<span class="material-symbols-outlined text-[14px]">auto_fix_high</span>
+<span>Diễn đạt bản ngữ: 事情挺多的 / 工作节奏快</span>
+</div>
+</div>
+<!-- Nhóm 4: Ngữ cảnh (Context) -->
+<div class="p-space-md rounded-xl bg-surface-container-low shadow-sm space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-headline-sm text-label-md font-bold text-on-surface">4. Ngữ cảnh (Context)</span>
+</div>
+<span class="px-2 py-0.5 rounded-sm bg-primary/20 text-primary font-label-sm text-label-sm">Đạt chuẩn 95%</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Tông giọng thân thiện, cởi mở, phản ánh chân thực nhịp sống văn phòng đương đại. Kết hợp vế trước và vế sau hợp lý.
+          </p>
+<div class="pt-1 flex items-center gap-1.5 font-label-sm text-label-sm text-primary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Phù hợp khẩu ngữ &amp; nhật ký thường nhật</span>
+</div>
+</div>
+</div>
+<!-- Diff Highlight View (Original vs Standardized Sentence) -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm space-y-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">compare_arrows</span>
+<span class="font-headline-sm text-label-md font-semibold text-on-surface">Đối Chiếu Trực Quan &amp; Phiên Âm Chuẩn Hóa</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Bản hiệu đính bởi AI Pedagogy Engine</span>
+</div>
+<!-- Before / After Panels -->
+<div class="space-y-space-sm">
+<!-- Original -->
+<div class="p-space-md rounded-lg bg-surface-container-lowest space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-error uppercase font-semibold">Câu gốc của bạn:</span>
+<span class="font-label-sm text-label-sm text-outline">Chưa chuẩn hóa</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface line-through decoration-error/50">
+              今天我七点去公司工作。虽然有很多任务，但是我非常喜欢我的新工作。晚上我和同事去咖啡馆聊天，过得很开心。
+            </p>
+</div>
+<!-- Standardized with Pinyin & Annotations -->
+<div class="p-space-md rounded-lg bg-surface-container-high space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary uppercase font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                Bản chuẩn hóa tối ưu (Native Fluency):
+              </span>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 font-label-sm text-label-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">volume_up</span>
+                Phát âm mẫu
+              </button>
+</div>
+<!-- Standardized Text -->
+<div class="space-y-1">
+<p class="font-headline-sm text-headline-sm text-on-surface tracking-wide">
+                今天早上我七点<span class="text-primary font-bold underline decoration-primary/40">去公司上班</span>。虽然<span class="text-tertiary font-bold underline decoration-tertiary/40">事情挺多的</span>，但我特别喜欢这份新工作。晚上我和同事去咖啡厅喝咖啡聊天，过得很充实。
+              </p>
+<!-- Pinyin Notation -->
+<p class="font-code-md text-label-sm text-on-surface-variant pt-1 leading-relaxed">
+                Jīntiān zǎoshang wǒ qī diǎn qù gōngsī shàngbān. Suīrán shìqing tǐng duō de, dàn wǒ tèbié xǐhuan zhè fèn xīn gōngzuò. Wǎnshang wǒ hé tóngshì qù kāfēitīng hē kāfēi liáotiān, guò de hěn chōngshí.
+              </p>
+</div>
+<!-- Vietnamese Explanation Annotation -->
+<div class="pt-2 p-space-sm rounded bg-surface-container-low text-on-surface-variant font-body-sm text-body-sm leading-relaxed">
+<span class="text-primary font-medium">💡 Giải thích ngữ pháp:</span> Thay <code class="font-code-md text-on-surface">去公司工作</code> thành <code class="font-code-md text-primary font-semibold">去公司上班</code> (đi làm); thay <code class="font-code-md text-on-surface">过得很开心</code> bằng <code class="font-code-md text-primary font-semibold">过得很充实</code> (trôi qua một ngày rất ý nghĩa, trọn vẹn) để văn cảnh ngày làm việc mang chiều sâu trí tuệ hơn.
+            </div>
+</div>
+</div>
+</div>
+<!-- Action Panel AI-10 & Evidence Commitment -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">psychology</span>
+<h3 class="font-headline-sm text-label-md font-semibold text-on-surface">Vòng Lặp Lưu Giữ Trí Nhớ (AI-10 Spaced Integration)</h3>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Tự động hóa 100%</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Chuyển hóa trực tiếp sai lầm vừa mắc phải thành thẻ ghi nhớ chủ động trong hệ thống FSRS. Tránh tình trạng lặp lại lỗi cũ trong phiên viết tiếp theo.
+        </p>
+<!-- Dynamic Action Buttons -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm pt-space-xs">
+<!-- AI-10 Flashcard Button -->
+<button class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center justify-between group transition-all" id="add-fsrs-btn" type="button">
+<div class="flex items-center gap-2.5 text-left">
+<div class="w-8 h-8 rounded bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">style</span>
+</div>
+<div>
+<span class="font-semibold block text-on-surface">Tạo 2 thẻ Flashcard mới</span>
+<span class="font-label-sm text-label-sm text-outline">Vào Deck FSRS Ngoại Ngữ</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[20px]">add_circle</span>
+</button>
+<!-- Skill Tree Evidence Commitment Button -->
+<button class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center justify-between group transition-all" id="commit-evidence-btn" type="button">
+<div class="flex items-center gap-2.5 text-left">
+<div class="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">award_star</span>
+</div>
+<div>
+<span class="font-semibold block text-on-surface">Ghi nhận 1 Evidence</span>
+<span class="font-label-sm text-label-sm text-outline">+15 XP Skill Tree (Ngoại ngữ)</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-[20px]">verified</span>
+</button>
+</div>
+<!-- Success Toast Notification (Hidden by default) -->
+<div class="hidden p-space-sm rounded-lg bg-primary/10 text-primary font-label-sm text-label-sm items-center justify-between animate-fade-in" id="status-toast">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+<span id="toast-message">Đã thêm 2 thẻ vào Deck FSRS thành công! Lịch ôn tập kế tiếp: Sau 12 giờ.</span>
+</div>
+<span class="material-symbols-outlined text-[16px] cursor-pointer" onclick="this.parentElement.classList.add('hidden')">close</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Dynamic Character Counter & Micro-Interactions
+  const textarea = document.getElementById('writing-input');
+  const charCounter = document.getElementById('char-count');
+  const streamBtn = document.getElementById('stream-eval-btn');
+  const loadingSpinner = document.getElementById('loading-spinner');
+  const sparkleIcon = document.getElementById('sparkle-icon');
+  const addFsrsBtn = document.getElementById('add-fsrs-btn');
+  const commitEvidenceBtn = document.getElementById('commit-evidence-btn');
+  const statusToast = document.getElementById('status-toast');
+  const toastMsg = document.getElementById('toast-message');
+
+  if (textarea && charCounter) {
+    textarea.addEventListener('input', () => {
+      const len = textarea.value.length;
+      charCounter.textContent = `${len} ký tự`;
+    });
+
+    textarea.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        triggerStreamEval();
+      }
+    });
+  }
+
+  function triggerStreamEval() {
+    if (!streamBtn) return;
+    loadingSpinner.classList.remove('hidden');
+    sparkleIcon.classList.add('hidden');
+    streamBtn.disabled = true;
+    streamBtn.classList.add('opacity-80');
+
+    setTimeout(() => {
+      loadingSpinner.classList.add('hidden');
+      sparkleIcon.classList.remove('hidden');
+      streamBtn.disabled = false;
+      streamBtn.classList.remove('opacity-80');
+      showNotification('Đã cập nhật phân tích 4 nhóm lỗi mới nhất từ Claude Opus 5.');
+    }, 900);
+  }
+
+  if (streamBtn) {
+    streamBtn.addEventListener('click', triggerStreamEval);
+  }
+
+  function showNotification(msg) {
+    if (!statusToast || !toastMsg) return;
+    toastMsg.textContent = msg;
+    statusToast.classList.remove('hidden');
+    statusToast.classList.add('flex');
+    setTimeout(() => {
+      statusToast.classList.add('hidden');
+      statusToast.classList.remove('flex');
+    }, 4500);
+  }
+
+  if (addFsrsBtn) {
+    addFsrsBtn.addEventListener('click', () => {
+      showNotification('Đã thêm 2 thẻ FSRS mới (shàngbān vs gōngzuò, chōngshí vs kāixīn).');
+    });
+  }
+
+  if (commitEvidenceBtn) {
+    commitEvidenceBtn.addEventListener('click', () => {
+      showNotification('Đã ghi nhận 1 Evidence vào Cây Kỹ Năng: Ngoại Ngữ > Tiếng Trung Văn Phòng (+15 XP).');
+    });
+  }
+</script></main></div></body></html>

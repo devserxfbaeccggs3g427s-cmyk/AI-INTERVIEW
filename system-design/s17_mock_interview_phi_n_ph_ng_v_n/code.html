@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-error": "#690005", "inverse-on-surface": "#2c303a", "error": "#ffb4ab", "on-error-container": "#ffdad6", "outline": "#86948a", "on-primary-container": "#00422b", "on-surface": "#dfe2ef", "surface-tint": "#4edea3", "background": "#0f131c", "primary-fixed": "#6ffbbe", "secondary-fixed": "#e1e0ff", "on-tertiary": "#472a00", "surface": "#0f131c", "surface-bright": "#353943", "on-tertiary-fixed-variant": "#653e00", "primary": "#4edea3", "inverse-primary": "#006c49", "error-container": "#93000a", "surface-dim": "#0f131c", "on-tertiary-container": "#523200", "on-primary-fixed-variant": "#005236", "on-secondary-container": "#b0b2ff", "on-surface-variant": "#bbcabf", "surface-container-high": "#262a34", "surface-container-highest": "#31353f", "tertiary-container": "#e29100", "surface-container": "#1c1f29", "secondary-fixed-dim": "#c0c1ff", "secondary-container": "#3131c0", "on-background": "#dfe2ef", "on-secondary": "#1000a9", "on-secondary-fixed-variant": "#2f2ebe", "secondary": "#c0c1ff", "tertiary": "#ffb95f", "primary-container": "#10b981", "on-primary": "#003824", "surface-variant": "#31353f", "primary-fixed-dim": "#4edea3", "surface-container-low": "#181b25", "on-secondary-fixed": "#07006c", "surface-container-lowest": "#0a0e17", "inverse-surface": "#dfe2ef", "on-tertiary-fixed": "#2a1700", "outline-variant": "#3c4a42", "tertiary-fixed": "#ffddb8", "on-primary-fixed": "#002113", "tertiary-fixed-dim": "#ffb95f" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xs": "0.25rem", "space-xl": "2rem", "gutter-md": "1.25rem", "gutter-lg": "1.5rem", "space-lg": "1.25rem", "gutter": "1rem", "margin-lg": "2.5rem", "margin-md": "1.5rem", "space-sm": "0.5rem", "margin": "1rem", "space-md": "0.75rem" }, "fontFamily": { "label-md": [ "JetBrains Mono" ], "headline-lg": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "body-sm": [ "Be Vietnam Pro" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Be Vietnam Pro" ], "headline-lg-mobile": [ "Space Grotesk" ], "display": [ "Space Grotesk" ], "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "headline-md": [ "Space Grotesk" ] }, "fontSize": { "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">Local-First v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm overflow-y-auto"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cay-ky-nang" href="#">Cây kỹ năng</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="on-tap-ngoai-ngu-srs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s07-luyen-giao-tiep-viet" href="#">Luyện giao tiếp</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-va-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s17-mock-interview-phien-phong-van" href="#">Mock Interview</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s21-ket-qua-bai-kiem-tra-ngoai-ngu" href="#">Bài kiểm tra</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s13-bao-cao-tuan-weekly-review" href="#">Báo cáo tuần &amp; tiến độ</a><a class="block px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="cai-dat" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" type="button"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></button><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<div class="w-full max-w-7xl mx-auto px-margin-lg py-gutter-lg flex flex-col gap-gutter-lg">
+<!-- TOP CONTEXT & SESSION HEADER -->
+<div class="relative bg-surface-container-low rounded-xl p-gutter-lg shadow-md overflow-hidden">
+<!-- Ambient subtle aura -->
+<div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-secondary-container/10 blur-3xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-gutter">
+<div class="flex flex-wrap items-center justify-between gap-gutter">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="px-2.5 py-1 rounded bg-surface-container-high text-primary font-label-md text-label-md font-semibold tracking-wide">
+                FR-MI-01 · LIVE SESSION
+              </span>
+<span class="px-2.5 py-1 rounded bg-secondary-container/30 text-secondary font-label-md text-label-md">
+                Senior Backend Engineer
+              </span>
+<span class="flex items-center gap-1 font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">translate</span>
+                Phỏng vấn Tiếng Anh
+              </span>
+</div>
+<div class="flex items-baseline gap-space-md">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">
+                Phiên Phỏng Vấn Thích Ứng · Câu 3/8
+              </h1>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">
+                ID: MI-2025-1029-SE3
+              </span>
+</div>
+</div>
+<!-- Timers & Actions -->
+<div class="flex items-center gap-space-md flex-wrap">
+<div class="flex items-center gap-space-md bg-surface-container px-space-md py-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-1.5 font-code-md text-code-md text-tertiary">
+<span class="material-symbols-outlined text-[18px]">timer</span>
+<span class="font-bold">⏱ 04:12</span>
+<span class="font-label-sm text-label-sm text-outline ml-0.5">cho câu này</span>
+</div>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant"></div>
+<div class="flex items-center gap-1 font-code-md text-code-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-outline">history</span>
+<span>Tổng: 18:30</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[16px]">pause_circle</span>
+<span>Tạm dừng &amp; Lưu</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-error hover:bg-surface-container-highest font-label-md text-label-md transition-all active:scale-[0.98]" title="Báo lỗi câu hỏi" type="button">
+<span class="material-symbols-outlined text-[16px]">flag</span>
+<span>Flag</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 8-Question Adaptive Track -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>Tiến độ thích ứng năng lực (FSRS &amp; Cognitive Depth)</span>
+<span class="text-primary font-semibold">37.5% Hoàn thành (3/8 câu)</span>
+</div>
+<div class="grid grid-cols-8 gap-space-xs">
+<!-- Q1 Done -->
+<div class="group flex flex-col gap-1 p-2 rounded bg-surface-container transition-all hover:bg-surface-container-high">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-semibold text-primary">Q1</span>
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="h-1.5 w-full bg-primary rounded-full"></div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">4.2<span class="text-outline font-normal">/5</span></span>
+</div>
+<!-- Q2 Done -->
+<div class="group flex flex-col gap-1 p-2 rounded bg-surface-container transition-all hover:bg-surface-container-high">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-semibold text-primary">Q2</span>
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="h-1.5 w-full bg-primary rounded-full"></div>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">3.9<span class="text-outline font-normal">/5</span></span>
+</div>
+<!-- Q3 Active Current -->
+<div class="relative flex flex-col gap-1 p-2 rounded bg-surface-container-highest shadow-sm">
+<div class="absolute inset-x-0 -top-1 flex justify-center">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-bold text-primary">Q3 · Đang thi</span>
+<span class="material-symbols-outlined text-[14px] text-primary">radio_button_checked</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3 rounded-full animate-pulse"></div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold">Adaptive Gen</span>
+</div>
+<!-- Q4 Pending -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-60">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Q4</span>
+<span class="material-symbols-outlined text-[14px] text-outline">hourglass_empty</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full"></div>
+<span class="font-label-sm text-label-sm text-outline">Chờ sinh</span>
+</div>
+<!-- Q5 Pending -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-60">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Q5</span>
+<span class="material-symbols-outlined text-[14px] text-outline">hourglass_empty</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full"></div>
+<span class="font-label-sm text-label-sm text-outline">Chờ sinh</span>
+</div>
+<!-- Q6 Pending -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-60">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Q6</span>
+<span class="material-symbols-outlined text-[14px] text-outline">hourglass_empty</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full"></div>
+<span class="font-label-sm text-label-sm text-outline">Chờ sinh</span>
+</div>
+<!-- Q7 Pending -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-60">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Q7</span>
+<span class="material-symbols-outlined text-[14px] text-outline">hourglass_empty</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full"></div>
+<span class="font-label-sm text-label-sm text-outline">Chờ sinh</span>
+</div>
+<!-- Q8 Final / Summary -->
+<div class="flex flex-col gap-1 p-2 rounded bg-surface-container-low opacity-40">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Q8 (Wrap-up)</span>
+<span class="material-symbols-outlined text-[14px] text-outline">lock</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full"></div>
+<span class="font-label-sm text-label-sm text-outline">Tổng kết</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- MAIN TWO-COLUMN / MODULAR WORKSPACE -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
+<!-- LEFT & CENTER: ACTIVE INTERVIEW CARD + RESPONSE INPUT (8 Cols) -->
+<div class="lg:col-span-8 flex flex-col gap-gutter-lg">
+<!-- AI INTERVIEWER CARD -->
+<div class="relative bg-surface-container-low rounded-xl p-gutter-lg shadow-md flex flex-col gap-gutter">
+<div class="flex items-start justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="relative w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center shadow-sm overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Futuristic AI conversational persona avatar, subtle indigo and teal holographic lighting, minimalist high-tech portrait for an executive mock interview system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCizwWj_smsopCf9SQZb4ctakxbV1t1zdW_aMZbmX2zzcLT1F71vVmB8GctjUdxXPQInZPm716aQWZHZ7OuIfNv74XIBgAAprq3ffn9tjx93w0x0LNP2lSzWVP-GYZ3MALrmjfUozDDY05B8I65at6rk7GEkF3BePXxWz-Y-uTvKxAmz0VyvJ53A_0hjP_sxIS7f8i8r1amyk_T2eEoEGNipq4e1X1BYxS2CSKILiR"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary"></div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">Claude Opus 5</span>
+<span class="px-2 py-0.5 rounded bg-secondary-container/40 text-secondary font-label-sm text-label-sm font-semibold uppercase">
+                    Adaptive Lead Evaluator
+                  </span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Sinh câu hỏi theo thời gian thực (Local Vector Graph)</span>
+</div>
+</div>
+<!-- Audio TTS Button -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" id="ttsPlayBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+<span>Nghe câu hỏi</span>
+</button>
+</div>
+<!-- Question Content -->
+<div class="bg-surface-container rounded-xl p-gutter flex flex-col gap-space-md">
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed select-text">
+              “You are designing an Airport Flight Booking System. With 10 million daily active users and peak flash-sale loads of 150,000 bookings/second, describe how you mitigate race conditions on seat reservations and your database concurrency strategy.”
+            </p>
+<div class="flex flex-wrap items-center gap-space-sm pt-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Kỹ năng mục tiêu:</span>
+<span class="px-2.5 py-1 rounded bg-secondary-container/30 text-secondary font-label-sm text-label-sm font-medium">
+                System Design → Concurrency &amp; Locks
+              </span>
+<span class="px-2 py-0.5 rounded bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">priority_high</span>
+                Ưu tiên node yếu nhất (ít bằng chứng)
+              </span>
+</div>
+</div>
+</div>
+<!-- CANDIDATE RESPONSE INPUT SUITE -->
+<div class="relative bg-surface-container-low rounded-xl p-gutter-lg shadow-md flex flex-col gap-gutter">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-md text-label-md font-bold">
+                YOU
+              </div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Câu trả lời của bạn</span>
+<span class="font-label-sm text-label-sm text-outline">Hỗ trợ Markdown, Code snippet &amp; Giọng nói</span>
+</div>
+</div>
+<!-- Formatting & STT Controls -->
+<div class="flex items-center gap-space-xs">
+<button class="p-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md" title="Code Block ()" type="button">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md" title="Bulleted list" type="button">
+<span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md" title="Insert formula" type="button">
+<span class="material-symbols-outlined text-[18px]">functions</span>
+</button>
+<div class="h-4 w-px bg-outline-variant mx-1"></div>
+<!-- Web Speech STT Toggle -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-tertiary hover:bg-surface-container-high transition-colors font-label-md text-label-md font-semibold" id="sttToggleBtn" type="button">
+<span class="material-symbols-outlined text-[18px]" id="micIcon">mic</span>
+<span id="micStatusText">Ghi âm giọng nói (STT)</span>
+</button>
+</div>
+</div>
+<!-- Dynamic Textarea -->
+<div class="relative flex flex-col">
+<textarea class="w-full bg-surface-container-lowest rounded-xl p-gutter font-code-md text-code-md text-on-surface placeholder:text-outline-variant focus:outline-none transition-colors resize-y leading-relaxed" id="candidateAnswer" placeholder="Type your response in English, structure with key bullet points and edge cases..." rows="9">I would implement a two-phase reservation approach. At the edge, use Redis distributed locks (Redlock) or Redis Lua scripts with short TTL (e.g., 5 minutes) to hold seats temporarily in memory. To eliminate inventory race conditions at scale, bookings are published to a Kafka topic partitioned by flight_id to enforce sequential processing...</textarea>
+<div class="flex items-center justify-between px-space-md py-space-sm bg-surface-container-lowest rounded-b-xl -mt-2">
+<div class="flex items-center gap-space-md font-label-sm text-label-sm text-outline">
+<span>Số từ: <span class="text-on-surface font-semibold" id="wordCount">52</span> từ</span>
+<span>Thời gian gõ: <span class="text-on-surface">02:18</span></span>
+<span class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[12px]">cloud_done</span> Local Autosave (0.4s)
+                </span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Phím tắt: <kbd class="px-1.5 py-0.5 bg-surface-container rounded font-label-sm text-on-surface font-semibold">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 bg-surface-container rounded font-label-sm text-on-surface font-semibold">Enter</kbd></span>
+</div>
+</div>
+<!-- Bottom Action Bar -->
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex items-center gap-space-sm">
+<button class="px-3.5 py-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+                Xem lại gợi ý cấu trúc (STAR)
+              </button>
+<button class="px-3.5 py-2 rounded-lg bg-surface-container text-outline hover:text-error transition-colors font-label-md text-label-md" type="button">
+                Xóa làm lại
+              </button>
+</div>
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary-container text-on-primary font-code-md text-code-md font-bold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_16px_rgba(16,185,129,0.25)]" id="submitAnswerBtn" type="button">
+<span>Gửi câu trả lời &amp; AI chấm tiếp</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: PREVIOUS QUESTION SCORE & ADAPTIVE LOOP CONTEXT (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-gutter-lg">
+<!-- PREVIOUS QUESTION EVALUATION PANEL (FR-MI-06) -->
+<div class="bg-surface-container-low rounded-xl p-gutter-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">assessment</span>
+<h2 class="font-headline-sm text-headline-sm font-semibold text-on-surface">
+                Đánh giá Câu 2
+              </h2>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-bold">
+              Tổng 3.9 / 5.0
+            </span>
+</div>
+<!-- Radial / Metric Breakdowns -->
+<div class="bg-surface-container rounded-xl p-gutter flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-xs">
+<span class="font-label-sm text-label-sm uppercase text-outline tracking-wider">Tiêu chí chấm điểm đa chiều</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Benchmark Senior</span>
+</div>
+<!-- Metric 1: Chính xác -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface">Độ chính xác kỹ thuật</span>
+<span class="font-bold text-primary">4.2 / 5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 84%;"></div>
+</div>
+</div>
+<!-- Metric 2: Chiều sâu -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface">Chiều sâu giải pháp</span>
+<span class="font-bold text-tertiary">3.5 / 5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 70%;"></div>
+</div>
+</div>
+<!-- Metric 3: Lập luận -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface">Khả năng lập luận</span>
+<span class="font-bold text-primary">4.0 / 5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 80%;"></div>
+</div>
+</div>
+<!-- Metric 4: Đánh đổi -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface">Phân tích đánh đổi (Trade-offs)</span>
+<span class="font-bold text-secondary">3.8 / 5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 76%;"></div>
+</div>
+</div>
+</div>
+<!-- AI Follow-up Rationale Note -->
+<div class="bg-secondary-container/20 rounded-xl p-space-md flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-secondary flex-shrink-0 mt-0.5">psychology</span>
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm font-bold text-secondary uppercase tracking-wider">
+                Ghi chú thích ứng (Adaptive Trigger)
+              </span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                Câu 3 được AI tự động sinh thêm để kiểm tra chiều sâu giải pháp đánh đổi khóa phân tán mà bạn đã đề cập ở câu 2.
+              </p>
+</div>
+</div>
+</div>
+<!-- LIVE AUDIO & STT WAVEFORM MONITOR -->
+<div class="bg-surface-container-low rounded-xl p-gutter-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary">mic_external_on</span>
+<span class="font-headline-sm text-headline-sm font-semibold text-on-surface">Trạng thái phát âm</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-outline">
+              Web Speech API
+            </span>
+</div>
+<!-- Waveform visualizer simulation -->
+<div class="bg-surface-container-lowest rounded-xl p-gutter flex flex-col gap-space-sm items-center justify-center">
+<div class="flex items-end gap-1.5 h-12 w-full justify-center px-4">
+<div class="w-1.5 bg-primary/40 rounded-full h-3 animate-pulse"></div>
+<div class="w-1.5 bg-primary/60 rounded-full h-7 animate-pulse"></div>
+<div class="w-1.5 bg-primary rounded-full h-10 animate-pulse"></div>
+<div class="w-1.5 bg-primary/80 rounded-full h-5 animate-pulse"></div>
+<div class="w-1.5 bg-primary rounded-full h-12 animate-pulse"></div>
+<div class="w-1.5 bg-primary/90 rounded-full h-8 animate-pulse"></div>
+<div class="w-1.5 bg-primary/50 rounded-full h-4 animate-pulse"></div>
+<div class="w-1.5 bg-primary/70 rounded-full h-9 animate-pulse"></div>
+<div class="w-1.5 bg-primary rounded-full h-11 animate-pulse"></div>
+<div class="w-1.5 bg-primary/40 rounded-full h-4 animate-pulse"></div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">
+              Độ trễ xử lý: 42ms · Độ nhạy mic: Chuẩn
+            </span>
+</div>
+<!-- Interview Environment Settings -->
+<div class="flex flex-col gap-space-xs font-label-md text-label-md text-on-surface-variant">
+<div class="flex justify-between py-1">
+<span>Độ khắt khe ngữ pháp:</span>
+<span class="font-semibold text-on-surface">C1 / Professional</span>
+</div>
+<div class="flex justify-between py-1">
+<span>Mô hình đánh giá:</span>
+<span class="font-semibold text-on-surface">Local Llama-3.3 + Opus</span>
+</div>
+<div class="flex justify-between py-1">
+<span>Quy tắc chấm:</span>
+<span class="font-semibold text-primary">FR-MI-04 / Real-time Rubrics</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function initMockInterview() {
+    const textarea = document.getElementById('candidateAnswer');
+    const wordCountSpan = document.getElementById('wordCount');
+    const micBtn = document.getElementById('sttToggleBtn');
+    const micIcon = document.getElementById('micIcon');
+    const micText = document.getElementById('micStatusText');
+    const submitBtn = document.getElementById('submitAnswerBtn');
+
+    if (textarea && wordCountSpan) {
+      const updateWordCount = () => {
+        const text = textarea.value.trim();
+        const words = text ? text.split(/\s+/).length : 0;
+        wordCountSpan.textContent = words;
+      };
+      textarea.addEventListener('input', updateWordCount);
+      updateWordCount();
+
+      textarea.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          if (submitBtn) submitBtn.click();
+        }
+      });
+    }
+
+    let isRecording = false;
+    if (micBtn && micIcon && micText) {
+      micBtn.addEventListener('click', () => {
+        isRecording = !isRecording;
+        if (isRecording) {
+          micBtn.classList.remove('bg-surface-container', 'text-tertiary');
+          micBtn.classList.add('bg-error-container', 'text-on-error-container', 'animate-pulse');
+          micIcon.textContent = 'mic_off';
+          micText.textContent = 'Đang nghe... (Click để dừng)';
+        } else {
+          micBtn.classList.add('bg-surface-container', 'text-tertiary');
+          micBtn.classList.remove('bg-error-container', 'text-on-error-container', 'animate-pulse');
+          micIcon.textContent = 'mic';
+          micText.textContent = 'Ghi âm giọng nói (STT)';
+        }
+      });
+    }
+
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        submitBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+          <span>AI Đang Phân Tích &amp; Chấm Điểm...</span>
+        `;
+        setTimeout(() => {
+          submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+          submitBtn.innerHTML = `
+            <span>Gửi câu trả lời &amp; AI chấm tiếp</span>
+            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+          `;
+          alert('Đã nộp câu trả lời thành công! Điểm số và Câu hỏi số 4 thích ứng đã được tạo.');
+        }, 1500);
+      });
+    }
+  })();
+</script></main></div></body></html>

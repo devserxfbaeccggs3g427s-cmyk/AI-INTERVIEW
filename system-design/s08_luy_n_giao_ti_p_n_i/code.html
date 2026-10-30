@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-variant": "#31353f", "on-primary-fixed": "#002113", "secondary": "#c0c1ff", "surface-dim": "#0f131c", "error-container": "#93000a", "on-primary": "#003824", "tertiary-fixed": "#ffddb8", "primary-fixed": "#6ffbbe", "on-primary-fixed-variant": "#005236", "surface-container-low": "#181b25", "surface-container": "#1c1f29", "surface-container-high": "#262a34", "on-tertiary-fixed-variant": "#653e00", "on-secondary-fixed": "#07006c", "outline": "#86948a", "surface-bright": "#353943", "surface-container-lowest": "#0a0e17", "background": "#0f131c", "inverse-surface": "#dfe2ef", "error": "#ffb4ab", "inverse-primary": "#006c49", "on-secondary": "#1000a9", "on-tertiary": "#472a00", "surface-tint": "#4edea3", "on-primary-container": "#00422b", "on-secondary-fixed-variant": "#2f2ebe", "secondary-fixed": "#e1e0ff", "on-background": "#dfe2ef", "secondary-container": "#3131c0", "primary": "#4edea3", "on-secondary-container": "#b0b2ff", "on-surface": "#dfe2ef", "on-error-container": "#ffdad6", "primary-container": "#10b981", "primary-fixed-dim": "#4edea3", "tertiary-container": "#e29100", "surface-container-highest": "#31353f", "outline-variant": "#3c4a42", "on-error": "#690005", "on-surface-variant": "#bbcabf", "on-tertiary-container": "#523200", "tertiary-fixed-dim": "#ffb95f", "tertiary": "#ffb95f", "inverse-on-surface": "#2c303a", "surface": "#0f131c", "on-tertiary-fixed": "#2a1700", "secondary-fixed-dim": "#c0c1ff" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-lg": "2.5rem", "margin": "1rem", "space-xs": "0.25rem", "gutter-md": "1.25rem", "space-sm": "0.5rem", "gutter-lg": "1.5rem", "margin-md": "1.5rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-xl": "2rem", "gutter": "1rem" }, "fontFamily": { "body-sm": [ "Be Vietnam Pro" ], "headline-sm": [ "Space Grotesk" ], "body-lg": [ "Be Vietnam Pro" ], "body-md": [ "Be Vietnam Pro" ], "label-sm": [ "JetBrains Mono" ], "headline-lg-mobile": [ "Space Grotesk" ], "headline-lg": [ "Space Grotesk" ], "headline-md": [ "Space Grotesk" ], "display": [ "Space Grotesk" ], "code-md": [ "JetBrains Mono" ], "label-md": [ "JetBrains Mono" ] }, "fontSize": { "body-sm": [ "0.8125rem", { "lineHeight": "1.375rem", "letterSpacing": "0.005em", "fontWeight": "400" } ], "headline-sm": [ "1.25rem", { "lineHeight": "1.75rem", "letterSpacing": "-0.015em", "fontWeight": "500" } ], "body-lg": [ "1.125rem", { "lineHeight": "1.875rem", "letterSpacing": "0em", "fontWeight": "400" } ], "body-md": [ "0.9375rem", { "lineHeight": "1.625rem", "letterSpacing": "0em", "fontWeight": "400" } ], "label-sm": [ "0.6875rem", { "lineHeight": "0.875rem", "letterSpacing": "0.06em", "fontWeight": "600" } ], "headline-lg-mobile": [ "1.75rem", { "lineHeight": "2.25rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "headline-lg": [ "2.25rem", { "lineHeight": "2.75rem", "letterSpacing": "-0.025em", "fontWeight": "600" } ], "headline-md": [ "1.5rem", { "lineHeight": "2rem", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "display": [ "3.5rem", { "lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "code-md": [ "0.875rem", { "lineHeight": "1.5rem", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "label-md": [ "0.75rem", { "lineHeight": "1rem", "letterSpacing": "0.04em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between border-r border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col h-full overflow-y-auto"><div class="h-16 px-gutter flex items-center gap-space-sm border-b border-outline-variant/20 bg-surface-container-low/60 shrink-0"><img alt="Daily Loop Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XHk36qPgX_vm6uSCzcQ3lge34J20MIe0Q2kZzS0gpc4bsATko55H3tYvnf4KeDrPuL9R58fA2rVNTxZyqjOC2RlMyXb0pWZCI957zdNEIp8nxAAVsQ5T4e0fSwcWc3aVF00JC9Nbnwot9A1joK0eP-NQwNCCweuqD3qr2iewLw5A3Y7QdUCV4-SEG_9-1oQ2aghtauQaKwIeXcQLujMP5Z1v5V3EPhVOEM5EzXnzrz"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Daily Loop OS</span><span class="px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-label-sm text-label-sm uppercase tracking-wider">v1.1</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">Personal Operating System</span></div></div><div class="px-space-md py-space-sm"><div class="px-space-sm py-space-xs mb-space-xs flex items-center justify-between font-label-sm text-label-sm text-outline uppercase tracking-wider"><span>Phân hệ tác vụ</span><span class="material-symbols-outlined text-[14px] text-outline">terminal</span></div><nav class="space-y-1" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-inner border border-outline-variant/40"><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s01-daily-loop-hom-nay" href="#">Hôm nay (Daily Loop)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s03-cay-ky-nang-bang-chung" href="#">Cây kỹ năng</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s10-on-tap-ngoai-ngu-srs-fsrs" href="#">Ôn tập ngoại ngữ (SRS)</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s07-luyen-giao-tiep-viet" href="#">Luyện giao tiếp</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s06-nhat-ky-ai-phan-hoi" href="#">Nhật ký &amp; AI</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s16-mock-interview-cau-hinh" href="#">Mock Interview</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s19-danh-sach-bai-kiem-tra-ngoai-ngu" href="#">Bài kiểm tra</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s13-bao-cao-tuan-weekly-review" href="#">Báo cáo &amp; tiến độ</a><a class="flex items-center px-space-md py-2.5 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="s15-cai-dat-quan-ly-chi-phi-ai" href="#">Cài đặt</a></nav></div></div><div class="p-space-md border-t border-outline-variant/30 bg-surface-container-low/50 shrink-0"><div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low border border-outline-variant/20"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface font-semibold">SQLite / Vector</span><span class="font-label-sm text-label-sm text-outline">Local DB Active</span></div></div><span class="material-symbols-outlined text-[18px] text-outline">database</span></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 z-40 px-gutter-lg flex items-center justify-between"><div class="flex items-center gap-gutter"><div class="flex items-center gap-space-xs font-label-md text-label-md px-3 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/20 text-on-surface"><span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span><span>Thứ Tư 29/10</span></div><div class="flex items-center gap-gutter-md"><div class="flex items-center gap-1.5 font-label-md text-label-md text-tertiary"><span class="material-symbols-outlined text-[16px] text-tertiary">local_fire_department</span><span class="font-semibold">Streak 12 ngày</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md text-primary"><span class="material-symbols-outlined text-[16px] text-primary">bolt</span><span class="font-semibold">Năng lượng tuần 78%</span></div><div class="flex items-center gap-1.5 font-label-md text-label-md px-2.5 py-1 rounded bg-secondary-container/40 border border-secondary/20 text-secondary"><span class="material-symbols-outlined text-[15px]">memory</span><span>AI Offline / Local (Ollama)</span></div></div></div><div class="flex items-center gap-space-md"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_12px_rgba(16,185,129,0.2)]" type="button"><span class="material-symbols-outlined text-[18px]">add_circle</span><span>+ Ghi nhanh (≤10s)</span></button><div class="h-5 w-px bg-outline-variant/30 mx-1"></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<div class="w-full max-w-[1520px] mx-auto px-margin-md md:px-margin-lg py-gutter flex flex-col gap-gutter-lg">
+<!-- Breadcrumb & Control Context Meta Header -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm bg-surface-container-low px-space-md py-space-sm rounded-xl shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-primary">record_voice_over</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Giao tiếp</span>
+<span class="text-outline-variant font-code-md">/</span>
+<span class="text-on-surface font-semibold">Luyện nói thực chiến</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container font-code-md text-label-sm text-primary tracking-wide">
+          #SP-08
+        </span>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-label-md text-label-md text-secondary">
+<span class="material-symbols-outlined text-[15px]">psychology</span>
+<span>Claude Opus 5</span>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container font-label-md text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">mic</span>
+<span>Web Speech API · 48kHz PCM</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-primary/10 text-primary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span>Độ trễ STT 45ms</span>
+</div>
+</div>
+</div>
+<!-- Main Workspace Layout: Two Primary Columns (Practice Console & Realtime AI Rubric) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter-lg items-start">
+<!-- Left Column: Audio Recording Station & Live STT (7 Cols) -->
+<div class="xl:col-span-7 flex flex-col gap-gutter">
+<!-- Challenge Brief Card -->
+<div class="bg-surface-container-low p-gutter rounded-xl shadow-md flex flex-col gap-space-sm relative overflow-hidden">
+<div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-primary/5 blur-3xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm uppercase font-semibold">
+                Thực chiến Pitching 60s
+              </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                Target: B2/C1 Bilingual (EN/VI)
+              </span>
+</div>
+<span class="font-code-md text-label-md text-outline">Giới hạn: 60 Giây</span>
+</div>
+<h1 class="font-headline-md text-headline-md text-on-surface mt-1 tracking-tight">
+            Trình bày bản thảo (Pitching) giải pháp kiến trúc hệ thống trước hội đồng kỹ thuật
+          </h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Mục tiêu: Đưa ra quyết định chuyển đổi từ kiến trúc <span class="text-primary font-code-md">Monolith</span> sang <span class="text-primary font-code-md">Event-Driven với Apache Kafka</span>. Nêu bật bài toán Idempotency, khả năng tự hồi phục lỗi và trade-off chi phí hạ tầng trong đúng 60 giây.
+          </p>
+</div>
+<!-- Recording & Waveform Interaction Cockpit -->
+<div class="bg-surface-container rounded-xl p-gutter-lg shadow-xl flex flex-col gap-space-lg relative">
+<!-- Timer and Status Bar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="relative flex items-center justify-center">
+<span class="w-3.5 h-3.5 rounded-full bg-error animate-ping absolute"></span>
+<span class="w-3.5 h-3.5 rounded-full bg-error relative"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-code-md text-label-md text-on-surface font-semibold">LIVE RECORDING</span>
+<span class="font-label-sm text-label-sm text-outline">MediaRecorder: Nhạy cao 48kHz Stereo</span>
+</div>
+</div>
+<!-- Big Digital Timer -->
+<div class="flex items-baseline gap-1 font-display text-display text-on-surface tracking-tighter">
+<span class="text-primary" id="record-timer-text">00:48</span>
+<span class="font-code-md text-headline-sm text-outline-variant">/ 01:00</span>
+</div>
+</div>
+<!-- Dynamic Audio Waveform Canvas Box -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-md flex flex-col justify-between h-44 shadow-inner relative overflow-hidden">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline px-1">
+<span class="flex items-center gap-1 font-code-md">
+<span class="material-symbols-outlined text-[14px] text-primary">equalizer</span> 
+                INPUT: Built-in Micro Array (DSP Noise Suppressed)
+              </span>
+<span class="font-code-md text-tertiary">Peak: -2.8 dBFS</span>
+</div>
+<!-- Visualizer SVG Bars -->
+<div class="flex items-end justify-between h-24 gap-1 px-1 py-1">
+<div class="w-1.5 bg-primary/40 rounded-full h-8 animate-pulse"></div>
+<div class="w-1.5 bg-primary/50 rounded-full h-12"></div>
+<div class="w-1.5 bg-primary/70 rounded-full h-16 animate-pulse"></div>
+<div class="w-1.5 bg-primary rounded-full h-20 shadow-[0_0_8px_rgba(78,222,163,0.5)]"></div>
+<div class="w-1.5 bg-primary rounded-full h-14"></div>
+<div class="w-1.5 bg-primary/60 rounded-full h-9"></div>
+<div class="w-1.5 bg-primary/80 rounded-full h-22 animate-pulse shadow-[0_0_8px_rgba(78,222,163,0.5)]"></div>
+<div class="w-1.5 bg-primary rounded-full h-24"></div>
+<div class="w-1.5 bg-primary rounded-full h-18"></div>
+<div class="w-1.5 bg-primary/90 rounded-full h-12"></div>
+<div class="w-1.5 bg-primary rounded-full h-20 animate-pulse"></div>
+<div class="w-1.5 bg-primary rounded-full h-22"></div>
+<div class="w-1.5 bg-primary rounded-full h-16"></div>
+<div class="w-1.5 bg-primary/60 rounded-full h-10"></div>
+<div class="w-1.5 bg-primary/80 rounded-full h-14"></div>
+<div class="w-1.5 bg-primary rounded-full h-20"></div>
+<div class="w-1.5 bg-primary rounded-full h-24 shadow-[0_0_8px_rgba(78,222,163,0.5)]"></div>
+<div class="w-1.5 bg-primary/90 rounded-full h-16 animate-pulse"></div>
+<div class="w-1.5 bg-primary/50 rounded-full h-8"></div>
+<div class="w-1.5 bg-primary/70 rounded-full h-12"></div>
+<div class="w-1.5 bg-primary rounded-full h-18"></div>
+<div class="w-1.5 bg-primary rounded-full h-14"></div>
+<div class="w-1.5 bg-primary/60 rounded-full h-6"></div>
+<div class="w-1.5 bg-primary/80 rounded-full h-16"></div>
+<div class="w-1.5 bg-primary rounded-full h-22 animate-pulse shadow-[0_0_8px_rgba(78,222,163,0.5)]"></div>
+<div class="w-1.5 bg-primary/90 rounded-full h-14"></div>
+<div class="w-1.5 bg-primary/60 rounded-full h-8"></div>
+<div class="w-1.5 bg-primary/40 rounded-full h-5"></div>
+<div class="w-1.5 bg-primary/30 rounded-full h-4"></div>
+<div class="w-1.5 bg-outline-variant/40 rounded-full h-2"></div>
+<div class="w-1.5 bg-outline-variant/30 rounded-full h-2"></div>
+<div class="w-1.5 bg-outline-variant/30 rounded-full h-2"></div>
+</div>
+<!-- Pitch/Timeline Tracker -->
+<div class="flex items-center justify-between font-code-md text-label-sm text-outline-variant pt-1">
+<span>00:00</span>
+<span class="text-primary font-semibold">Tự động ngắt khi chạm 01:00</span>
+<span>01:00 MAX</span>
+</div>
+</div>
+<!-- Controls Button Deck -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+<div class="flex items-center gap-space-sm">
+<!-- Pause Button -->
+<button class="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-bright active:scale-[0.98] transition-all font-code-md text-label-md font-semibold" type="button">
+<span class="material-symbols-outlined text-[18px]">pause</span>
+<span>Tạm dừng</span>
+</button>
+<!-- Redo Button -->
+<button class="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright active:scale-[0.98] transition-all font-code-md text-label-md" type="button">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+<span>Thu lại từ đầu</span>
+</button>
+</div>
+<!-- Submit & Evaluate Button -->
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-on-primary font-code-md text-label-md font-semibold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_18px_rgba(78,222,163,0.3)]" type="button">
+<span class="material-symbols-outlined text-[18px]">neurology</span>
+<span>Gửi AI Chấm &amp; Phân tích âm vị</span>
+<span class="px-1.5 py-0.5 rounded bg-on-primary/20 text-on-primary text-[10px] font-mono ml-1">Ctrl + ↵</span>
+</button>
+</div>
+</div>
+<!-- Live Real-Time Transcription Stream -->
+<div class="bg-surface-container-low rounded-xl p-gutter shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">subtitles</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                Bản ghi thời gian thực (Live STT Transcript)
+              </h2>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline">Đang nhận diện giọng nói</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+</div>
+<!-- Transcript Content Block -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl flex flex-col gap-space-sm font-body-md text-body-md leading-relaxed text-on-surface-variant">
+<p>
+              "Kính thưa hội đồng, chúng tôi đề xuất chuyển dịch dịch vụ thanh toán cốt lõi sang mô hình 
+              <span class="text-primary font-semibold bg-primary/10 px-1 py-0.5 rounded font-code-md">Event-Driven Architecture</span> 
+              sử dụng <span class="text-primary font-semibold bg-primary/10 px-1 py-0.5 rounded font-code-md">Apache Kafka</span>. 
+              Mô hình hiện tại đang gặp nút thắt cổ chai khi lưu lượng đạt 20.000 TPS trong các đợt flash sale."
+            </p>
+<p>
+              "Để bảo toàn tính toàn vẹn tài chính, cơ chế 
+              <span class="text-secondary font-semibold bg-secondary/10 px-1 py-0.5 rounded font-code-md">Idempotency Key</span> 
+              kết hợp với <span class="text-secondary font-semibold bg-secondary/10 px-1 py-0.5 rounded font-code-md">CQRS pattern</span> 
+              sẽ triệt tiêu hoàn toàn rủi ro trùng lặp giao dịch. 
+              <span class="text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-label-sm">
+<span class="material-symbols-outlined text-[13px]">warning</span> uhm... (0.6s)
+              </span> 
+              Về mặt trade-off, chi phí cụm Cloud sẽ tăng 15% trong quý đầu, nhưng đổi lại độ trễ ghi sổ (latency) giảm từ 420ms xuống dưới 35ms."
+            </p>
+<!-- Active token stream placeholder -->
+<p class="text-outline font-body-sm flex items-center gap-2 italic">
+<span class="material-symbols-outlined text-[16px] text-primary animate-spin">sync</span>
+              "Chúng tôi đã sẵn sàng bộ test bench..." [đang giải mã tín hiệu âm thanh tiếp theo...]
+            </p>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-outline">info</span>
+              Từ vựng kỹ thuật được tự động bắt cặp đối chiếu từ điển kiến trúc phần mềm
+            </span>
+<span class="font-code-md text-on-surface font-semibold">108 từ đã nhận diện</span>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Rubric Evaluation & Skills Loop (5 Cols) -->
+<div class="xl:col-span-5 flex flex-col gap-gutter">
+<!-- AI Overall Scoring Panel -->
+<div class="bg-surface-container rounded-xl p-gutter-lg shadow-xl flex flex-col gap-space-md relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Kết quả thẩm định Claude Opus 5</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold mt-0.5">
+                Bảng điểm Rubric 5 Tiêu chí
+              </h2>
+</div>
+<!-- Global Overall Score Widget -->
+<div class="flex flex-col items-end">
+<div class="flex items-baseline gap-1">
+<span class="font-display text-display text-primary leading-none">4.2</span>
+<span class="font-headline-sm text-headline-sm text-outline-variant font-semibold">/ 5.0</span>
+</div>
+<div class="flex items-center gap-1 text-primary font-label-sm text-label-sm mt-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-semibold">+0.3</span> so với bài nói trước
+              </div>
+</div>
+</div>
+<!-- 5 Criteria Breakdowns -->
+<div class="flex flex-col gap-space-sm pt-space-xs">
+<!-- Item 1 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface font-medium">1. Rõ ràng &amp; Tốc độ nói (Pacing)</span>
+<span class="font-code-md text-label-md text-primary font-bold">4.5 / 5.0</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 90%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                132 từ/phút — nhịp điệu diễn đạt chuẩn kỹ thuật, không vấp gãy
+              </span>
+</div>
+<!-- Item 2 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface font-medium">2. Cấu trúc &amp; Logic (Structure)</span>
+<span class="font-code-md text-label-md text-primary font-bold">4.0 / 5.0</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 80%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                Mở đầu trực diện, nêu giải pháp trước, phân tích trade-off chi phí rõ ràng
+              </span>
+</div>
+<!-- Item 3 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface font-medium">3. Giọng văn &amp; Sự tự tin (Tone)</span>
+<span class="font-code-md text-label-md text-primary font-bold">4.5 / 5.0</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 90%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                Quyết đoán, ngữ khí thuyết phục cao, không dùng từ mơ hồ phỏng đoán
+              </span>
+</div>
+<!-- Item 4 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface font-medium">4. Tự nhiên &amp; Ngữ điệu (Prosody)</span>
+<span class="font-code-md text-label-md text-tertiary font-bold">3.8 / 5.0</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 76%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                Cần hạ tông khi kết thúc câu; nhấn trọng âm chính xác hơn ở các thuật ngữ
+              </span>
+</div>
+<!-- Item 5 -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface font-medium">5. Phát âm kỹ thuật (Phonetics)</span>
+<span class="font-code-md text-label-md text-primary font-bold">4.2 / 5.0</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 84%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                Phát âm chuẩn xác: <span class="font-code-md text-primary">/ˈkɑːfkə/</span>, <span class="font-code-md text-primary">/ˌaɪdəmˈpoʊtənsi/</span>, <span class="font-code-md text-primary">CQRS</span>
+</span>
+</div>
+</div>
+<!-- Deep Diagnostic & Filler Words Counter -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl flex flex-col gap-space-sm">
+<span class="font-code-md text-label-sm text-outline uppercase font-semibold">Phân tích Filler Words &amp; Nhịp thở</span>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="p-space-sm bg-surface-container rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Số lần ậm ừ ('uhm', 'err')</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md text-primary font-bold">1 lần</span>
+<span class="font-label-sm text-label-sm text-outline">(Mức xuất sắc &lt; 3)</span>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Điểm ngắt nhịp khuyến nghị</span>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-headline-md text-headline-md text-tertiary font-bold">Giây thứ 35</span>
+<span class="font-label-sm text-label-sm text-outline">Lấy hơi sâu</span>
+</div>
+</div>
+</div>
+<div class="p-2.5 rounded bg-surface-container-high text-on-surface font-body-sm text-body-sm flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary shrink-0 mt-0.5">tips_and_updates</span>
+<span>
+<strong>Khuyên nghị huấn luyện viên:</strong> Sau khi nêu con số "20.000 TPS", hãy ngắt khoảng lặng 0.8 giây để tạo sức nặng trước khi công bố giải pháp kiến trúc Idempotency.
+              </span>
+</div>
+</div>
+<!-- Skill Tree Closed Loop (FR-CM-04 Evidence Injection) -->
+<div class="pt-space-xs flex flex-col gap-space-sm">
+<button class="w-full flex items-center justify-center gap-2 py-3 px-space-md rounded-lg bg-primary text-on-primary font-code-md text-label-md font-bold hover:brightness-105 active:scale-[0.98] transition-all shadow-[0_0_16px_rgba(78,222,163,0.35)]" type="button">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span>Chấp nhận &amp; Ghi nhận 1 Evidence vào Cây kỹ năng</span>
+</button>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+<span>Node: Kỹ năng Nói / Architecture Pitching</span>
+<span class="text-primary font-code-md">Rating lưu: 4.2 / 5.0</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Practice Library Section: 6 Technical Scenarios -->
+<div class="flex flex-col gap-gutter mt-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">category</span>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Kho tình huống luyện nói kỹ thuật (Role-play Drills)
+            </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Chọn chủ đề tình huống giả lập để thực hành phản xạ nói kỹ thuật với AI theo khung thời gian thực
+            </p>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-bright transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>Bộ lọc tình huống</span>
+</button>
+</div>
+<!-- 6 Scenarios Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Drill Card 1 (Active / Current) -->
+<div class="bg-surface-container-high p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-md relative group">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-label-sm font-semibold">
+                Đang mở · #SP-08
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">60 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+              Pitching Kiến Trúc Hệ Thống
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Thuyết phục Tech Lead &amp; Principal Architect chuyển dịch nền tảng dữ liệu lớn mà không gián đoạn giao dịch.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level C1 Technical</span>
+<span class="font-code-md text-label-sm text-primary font-semibold flex items-center gap-1">
+              Đang luyện <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Drill Card 2 -->
+<div class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-sm transition-all group cursor-pointer">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+                #SP-01
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">60 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+              Daily Standup Súc Tích 60s
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Báo cáo tiến độ: Việc hoàn thành hôm qua, mục tiêu hôm nay và nêu rõ rủi ro cản trở (blocker) mà không lan man.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level B1 Focus</span>
+<span class="font-code-md text-label-sm text-outline-variant group-hover:text-on-surface transition-colors flex items-center gap-1">
+              Bắt đầu <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</span>
+</div>
+</div>
+<!-- Drill Card 3 -->
+<div class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-sm transition-all group cursor-pointer">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+                #SP-03
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">90 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+              Trình Bày Incident Post-Mortem
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Giải trình sự cố sập hệ thống (P0), phân tích nguyên nhân gốc rễ (Root Cause) theo quy tắc 5-Whys không đổ lỗi.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level B2 Executive</span>
+<span class="font-code-md text-label-sm text-outline-variant group-hover:text-on-surface transition-colors flex items-center gap-1">
+              Bắt đầu <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</span>
+</div>
+</div>
+<!-- Drill Card 4 -->
+<div class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-sm transition-all group cursor-pointer">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+                #SP-05
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">120 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+              Đàm Phán Scope &amp; Deadline
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Từ chối bổ sung tính năng gấp từ Product Manager bằng cách đưa ra dữ liệu velocity thực tế và giải pháp phased rollout.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level B2 Negotiation</span>
+<span class="font-code-md text-label-sm text-outline-variant group-hover:text-on-surface transition-colors flex items-center gap-1">
+              Bắt đầu <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</span>
+</div>
+</div>
+<!-- Drill Card 5 -->
+<div class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-sm transition-all group cursor-pointer">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+                #SP-09
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">60 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+              Giải Thích Lỗi Kỹ Thuật Cho Non-Tech
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Diễn đạt lại lỗi database deadlock bằng phép ẩn dụ đời thường cho giám đốc kinh doanh hiểu rủi ro.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level C1 Metaphor</span>
+<span class="font-code-md text-label-sm text-outline-variant group-hover:text-on-surface transition-colors flex items-center gap-1">
+              Bắt đầu <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</span>
+</div>
+</div>
+<!-- Drill Card 6 -->
+<div class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex flex-col justify-between gap-space-md shadow-sm transition-all group cursor-pointer">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm">
+                #SP-12
+              </span>
+<span class="font-code-md text-label-sm text-on-surface-variant">90 Giây</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-primary transition-colors">
+              Bảo Vệ Quyết Định Refactor Codebase
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+              Giải thích nợ kỹ thuật (Technical Debt) trước ban giám đốc để xin cấp 2 sprint tái cấu trúc mô hình dữ liệu.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-outline">Level B2 Strategic</span>
+<span class="font-code-md text-label-sm text-outline-variant group-hover:text-on-surface transition-colors flex items-center gap-1">
+              Bắt đầu <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Client-side Script for Hotkeys & Simulation -->
+<script>
+    (function initSpeakRoom() {
+      // Shortcut handler for Ctrl + Enter
+      document.addEventListener('keydown', function(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          const feedbackToast = document.createElement('div');
+          feedbackToast.className = 'fixed bottom-6 right-6 z-50 bg-primary text-on-primary font-code-md text-label-md px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2';
+          feedbackToast.innerHTML = '<span class="material-symbols-outlined text-[18px]">cloud_sync</span> Đã gửi tín hiệu audio đến Claude Opus 5 chấm điểm...';
+          document.body.appendChild(feedbackToast);
+          setTimeout(() => feedbackToast.remove(), 2600);
+        }
+      });
+    })();
+  </script>
+</div></main></div></body></html>
