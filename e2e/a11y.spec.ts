@@ -52,7 +52,8 @@ test.describe("a11y — axe (AC-AF-8)", () => {
   test("nhãn (label) dùng JetBrains Mono + letter-spacing ≥ 0.04em", async ({ page }) => {
     await page.goto("/");
 
-    const label = page.locator("span").filter({ hasText: "TRỌNG TÂM HÔM NAY" }).first();
+    // Label uppercase đầu tiên trên trang (S01 thay placeholder Phase -1).
+    const label = page.locator("span.font-label-sm").first();
 
     const styles = await label.evaluate((el) => {
       const computed = window.getComputedStyle(el);

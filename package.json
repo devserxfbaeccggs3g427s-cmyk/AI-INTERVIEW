@@ -24,7 +24,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.70.0",
+    "@anthropic-ai/sdk": "^1.3.0",
     "@prisma/client": "^6.19.0",
     "next": "^15.5.28",
     "react": "^19.2.0",
@@ -51,5 +51,8 @@
     "postcss": "^8.5.32",
     "deepmerge-ts": "^8.0.2",
     "tinypool": "^2.2.0"
+  },
+  "overridesComment": {
+    "minimatch": "Advisory GHSA-g3hv-75wg-m249 (DoS qua globparts) yêu cầu minimatch>=11.0.1 (ESM-only). ESLint 9.39.5 + @eslint/config-array + @eslint/eslintrc cần minimatch@^3 (CJS, default export) => nâng cưỡng ép làm ESLint hỏng ('does not provide an export named default'). ESLint 10 dùng minimatch@^10.2.4 nhưng eslint-config-next@15.5.28 và eslint-plugin-react@7.37.5 chỉ hỗ trợ peer eslint <=9. => giữ nguyên: `npm audit --omit=dev` = 0 vulnerability (advisory chỉ nằm trong dev tooling, không vào runtime app). Sẽ nâng khi eslint-config-next hỗ trợ ESLint 10."
   }
 }

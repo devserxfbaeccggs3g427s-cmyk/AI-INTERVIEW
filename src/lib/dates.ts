@@ -65,3 +65,26 @@ export function startOfMonth(date: Date): Date {
 export function endOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0);
 }
+
+/**
+ * Parse khóa ngày `yyyy-MM-dd` thành Date 00:00 local.
+ * Trả `null` nếu chuỗi không đúng định dạng hoặc là ngày không tồn tại
+ * (ví dụ 2026-02-30 → Date tự rollover ⇒ phải kiểm lại).
+ */
+export function parseDateKey(key: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const date = new Date(year, month - 1, day);
+
+  // Ngày không tồn tại (31/02) → Date rollover sang tháng sau ⇒ reject.
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+
+  return normalizeDate(date);
+}

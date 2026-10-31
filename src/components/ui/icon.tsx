@@ -16,11 +16,13 @@ export interface IconProps {
   /** Tên icon trong Material Symbols Outlined, ví dụ "more_vert". */
   name: string;
   /** Kích thước theo design-system §7.1 — 16 / 18 / 20 / 24px. */
-  size?: 16 | 18 | 20 | 22 | 24;
+  size?: 12 | 14 | 16 | 18 | 20 | 22 | 24;
   className?: string;
 }
 
 const SIZE_CLASS: Record<NonNullable<IconProps["size"]>, string> = {
+  12: "text-[12px]",
+  14: "text-[14px]",
   16: "text-[16px]",
   18: "text-[18px]",
   20: "text-[20px]",

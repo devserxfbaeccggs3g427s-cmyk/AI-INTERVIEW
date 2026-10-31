@@ -3,8 +3,39 @@
  * Nguồn: `.kiro/steering/project.md` §5 + `.kiro/steering/data-model-registry.md`.
  */
 
+
 /** Số slot kế hoạch trong 1 ngày (S01). */
 export const SLOT_COUNT = 6;
+
+/**
+ * Domain cố định theo vị trí slot (P5, SPEC §2.1).
+ * AI KHÔNG được đổi — server từ chối payload có domain lệch vị trí.
+ */
+export const SLOT_DOMAINS = [
+  "professional",
+  "communication",
+  "language",
+  "language",
+  "personal",
+  "personal",
+] as const;
+
+export type SlotDomain = (typeof SLOT_DOMAINS)[number];
+
+/**
+ * Hợp đồng nội dung mỗi slot — nguồn chân lý cho schema Zod, fallback và UI.
+ * Thứ tự khớp `SLOT_DOMAINS` (slot 0..5).
+ */
+export const SLOT_CONTRACTS = [
+  { slot: 0, kind: "study", content: "Học kỹ năng chuyên môn", minMinutes: 25, maxMinutes: 45 },
+  { slot: 1, kind: "speak_write", content: "Luyện giao tiếp", minMinutes: 15, maxMinutes: 30 },
+  { slot: 2, kind: "srs", content: "Ôn ngoại ngữ (SRS)", minMinutes: 10, maxMinutes: 20 },
+  { slot: 3, kind: "language", content: "Luyện ngoại ngữ chủ động", minMinutes: 15, maxMinutes: 25 },
+  { slot: 4, kind: "journal", content: "Nhật ký & tự phản tư", minMinutes: 5, maxMinutes: 10 },
+  { slot: 5, kind: "health", content: "Thể chất & hồi phục", minMinutes: 15, maxMinutes: 30 },
+] as const;
+
+export type SlotKind = (typeof SLOT_CONTRACTS)[number]["kind"];
 
 /** Level kỹ năng tối đa (thang 0–5). */
 export const SKILL_LEVEL_MAX = 5;

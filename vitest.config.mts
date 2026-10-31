@@ -6,6 +6,9 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
     globals: false,
+    // Mỗi integration test file dùng DB SQLite riêng
+    // (`prisma/test-<slug>.db`) ⇒ các file chạy song song không race nhau.
+    fileParallelism: false,
   },
   resolve: {
     alias: {

@@ -1,139 +1,218 @@
 import { prisma } from "@/lib/db";
+import {
+  getFocusSkill,
+  getLatestAiFailure,
+  getPlanForDate,
+  getStageProgress,
+} from "@/lib/daily-loop";
+import { parseDateKey, toDateKey } from "@/lib/dates";
 import { env } from "@/lib/env";
 
+import { AiErrorBanner } from "@/components/daily-loop/ai-error-banner";
+import { BioPanel } from "@/components/daily-loop/bio-panel";
+import { DailyActions } from "@/components/daily-loop/daily-actions";
+import { DailySlotList } from "@/components/daily-loop/daily-slot-list";
+import { DailyTopStrip } from "@/components/daily-loop/daily-top-strip";
+import { DatePicker } from "@/components/daily-loop/date-picker";
+import { EmptyPlanCta } from "@/components/daily-loop/empty-plan-cta";
+import { FocusBanner } from "@/components/daily-loop/focus-banner";
+import { MetricsRow } from "@/components/daily-loop/metrics-row";
+import { WeekStreakWidget } from "@/components/daily-loop/week-streak-widget";
+import { WeeklyRhythm } from "@/components/daily-loop/weekly-rhythm";
+
+export const dynamic = "force-dynamic";
+
 /**
- * Trang chủ placeholder — Phase -1 (app-foundation).
+ * S01 — Daily Loop (trang chủ duy nhất, P1).
  *
- * ⚠️ KHÔNG implement logic S01 ở đây. Mục đích duy nhất là kiểm chứng:
- *   - design token render đúng (màu, font, typography)
- *   - layout shell + bottom nav 4 mục + menu 5 mục
- *   - app không crash khi thiếu API key hoặc chưa migrate DB
+ * Server Component: đọc dữ liệu song song, render bento 8+4 + danh sách 6 slot.
+ * Không chứa `onClick` — mọi tương tác nằm ở component Client con.
  */
+export default async function DailyLoopPage(props: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: dateParam } = await props.searchParams;
 
-interface Health {
-  db: boolean;
-  dbError?: string;
-  ai: "configured" | "offline";
-}
+  const todayKey = toDateKey(new Date());
+  const date = parseDateKey(dateParam ?? todayKey) ?? new Date();
+  const resolvedKey = toDateKey(date);
+  const isToday = resolvedKey === todayKey;
 
-async function checkHealth(): Promise<Health> {
-  const ai: Health["ai"] = env.isOffline ? "offline" : "configured";
+  const dbReady = await checkDb();
 
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    return { db: true, ai };
-  } catch (error) {
-    return {
-      db: false,
-      dbError: error instanceof Error ? error.message : String(error),
-      ai,
-    };
+  const [plan, focusSkill, dailyState, stage, aiFailure] = await Promise.all([
+    dbReady ? getPlanForDate(date) : null,
+    dbReady ? getFocusSkill(date) : null,
+    dbReady
+      ? prisma.dailyState.findUnique({
+          where: { date },
+          select: { mood: true, energy: true, sleep: true, focus: true },
+        })
+      : null,
+    dbReady ? getStageProgress() : null,
+    dbReady ? getLatestAiFailure() : null,
+  ]);
+
+  if (!plan) {
+    return <DbNotReady />;
   }
-}
 
-export default async function HomePage() {
-  const health = await checkHealth();
+  const hasPlan = plan.items.length > 0;
 
   return (
     <div className="space-y-gutter-lg">
-      {/* Top analytical status strip — placeholder, sẽ thay bằng S01 */}
+      {/* Top strip — ngày · streak · năng lượng tuần */}
+      <DailyTopStrip
+        dateLabel={formatDateVi(date)}
+        streak={plan.streak}
+        weeklyEnergy={plan.weeklyEnergy}
+        isToday={isToday}
+        stage={stage}
+      />
+
+      <h1 className="sr-only">Daily Loop OS — {formatDateVi(date)}</h1>
+
+      {/* Bộ chọn ngày — 7 ngày gần nhất (task 24.4) */}
+      <DatePicker todayKey={todayKey} selectedKey={resolvedKey} />
+
+      {/* Bento 8 + 4 */}
       <section
-        aria-label="Thanh trạng thái"
+        aria-label="Mục tiêu hạt nhân hôm nay"
         className="grid grid-cols-1 gap-gutter-md xl:grid-cols-12"
       >
-        <div className="rounded-xl bg-surface-container p-space-lg shadow-md xl:col-span-8">
-          <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">
-            Trọng tâm hôm nay
-          </span>
-          <p className="mt-space-sm font-headline-md text-headline-md text-on-surface">
-            Daily Loop OS
-          </p>
-          <p className="mt-space-sm text-body-sm text-body-sm text-on-surface-variant">
-            Khung dự án đã dựng xong. Nội dung S01 (Daily Loop) sẽ thay thế khối này ở
-            feature <code className="font-code-md text-code-md text-secondary">daily-loop-core</code>.
-          </p>
+        {/* Bento trái — 8 cột: mục tiêu hạt nhân + 4 metric */}
+        <div className="xl:col-span-8">
+          <FocusBanner focus={focusSkill} />
+          <MetricsRow focus={focusSkill} isOffline={env.isOffline} />
         </div>
 
-        <div className="flex flex-col justify-between rounded-xl bg-surface-container-low p-space-lg shadow-md xl:col-span-4">
-          <div>
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">
-              Hệ thống
-            </span>
-            <dl className="mt-space-sm space-y-space-xs">
-              <div className="flex items-center justify-between">
-                <dt className="text-body-sm text-body-sm text-on-surface-variant">Database</dt>
-                <dd
-                  className={`font-label-md text-label-md ${
-                    health.db ? "text-primary" : "text-tertiary"
-                  }`}
-                >
-                  {health.db ? "đã kết nối" : "chưa sẵn sàng"}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-body-sm text-body-sm text-on-surface-variant">AI</dt>
-                <dd
-                  className={`font-label-md text-label-md ${
-                    health.ai === "configured" ? "text-secondary" : "text-outline"
-                  }`}
-                >
-                  {health.ai === "configured" ? "đã cấu hình" : "offline mode"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
+        {/* Bento phải — 4 cột: sinh trắc & nhịp độ */}
+        <BioPanel
+          mood={dailyState?.mood ?? null}
+          energy={dailyState?.energy ?? null}
+          sleep={dailyState?.sleep ?? null}
+          focus={dailyState?.focus ?? null}
+        />
       </section>
 
-      {/* Banner hướng dẫn */}
-      {!health.db && (
+      {/* Banner offline — kế hoạch sinh bằng rule cục bộ */}
+      {plan.source === "fallback" && hasPlan && (
         <div
           role="status"
-          className="rounded-xl border border-tertiary/30 bg-tertiary/10 p-space-lg"
+          className="flex flex-wrap items-center gap-space-sm rounded-xl bg-tertiary/10 p-space-md"
         >
           <span className="font-label-sm text-label-sm uppercase tracking-wider text-tertiary">
-            Cần thiết lập
+            Đang dùng kế hoạch offline
           </span>
-          <p className="mt-space-sm text-body-md text-body-md text-on-surface">
-            Database chưa sẵn sàng. Chạy lệnh sau rồi tải lại trang:
-          </p>
-          <code className="mt-space-sm block rounded-lg bg-surface-container-lowest p-space-md font-code-md text-code-md text-primary">
-            npm run db:migrate &amp;&amp; npm run db:seed
-          </code>
+          <span className="text-body-sm text-body-sm text-on-surface-variant">
+            Kế hoạch được sinh bằng rule cục bộ — thêm API key để AI tối ưu thời lượng.
+          </span>
         </div>
       )}
 
-      {health.ai === "offline" && (
+      {/* AI lỗi ⇒ kế hoạch fallback + nút "Thử lại" (task 24.3 / AC-DL-6) */}
+      {aiFailure && (
+        <AiErrorBanner date={resolvedKey} message={aiFailure.message} />
+      )}
+
+      {/* Banner offline mode (chưa có key) */}
+      {env.isOffline && (
         <div
           role="status"
-          className="rounded-xl border border-outline-variant/40 bg-surface-container-low p-space-lg"
+          className="rounded-xl border border-outline-variant/40 bg-surface-container-low p-space-md"
         >
           <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">
             Offline mode
           </span>
-          <p className="mt-space-sm text-body-md text-body-md text-on-surface-variant">
-            Đang chạy offline mode — chưa có <code className="font-code-md text-code-md">ANTHROPIC_API_KEY</code>.
-            Mọi tính năng AI sẽ hiện &ldquo;cần API key&rdquo; thay vì gọi API. Thêm key trong{" "}
+          <p className="mt-space-xs text-body-sm text-body-sm text-on-surface-variant">
+            Chưa có <code className="font-code-md text-code-md">ANTHROPIC_API_KEY</code> — tính năng
+            AI dùng bộ sinh rule cục bộ. Thêm key trong{" "}
             <code className="font-code-md text-code-md">.env.local</code> rồi khởi động lại server.
           </p>
         </div>
       )}
 
-      {/* Placeholder chính */}
-      <section className="rounded-xl bg-surface-container p-space-lg shadow-md">
-        <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">
-          Phase -1 · Khung dự án
-        </span>
-        <h1 className="mt-space-sm font-headline-lg text-headline-lg text-on-surface">
-          Token, layout shell và dữ liệu seed đã sẵn sàng
-        </h1>
-        <ul className="mt-space-lg space-y-space-sm text-body-md text-body-md text-on-surface-variant">
-          <li>· Design token: màu, typography, spacing, shape — theo design-system.md</li>
-          <li>· Layout shell: top strip + main module + bottom nav 4 mục</li>
-          <li>· Prisma: 19 model của SPEC §4, đã migrate</li>
-          <li>· Seed: 53 node kỹ năng + 140 thẻ ngoại ngữ (không gọi AI)</li>
-        </ul>
+      {/* Hành động chính: ghi nhanh + lập lại kế hoạch */}
+      <DailyActions
+        date={resolvedKey}
+        isToday={isToday}
+        energyPct={plan.weeklyEnergy.pct}
+        doneCount={plan.doneCount}
+        items={plan.items}
+      />
+
+      {/* Danh sách 6 slot */}
+      <section aria-label="Hành động hôm nay">
+        <div className="flex items-center justify-between">
+          <h2 className="font-headline-md text-headline-md text-on-surface">
+            6 hành động nhỏ hôm nay
+          </h2>
+          {hasPlan && (
+            <span className="rounded-full bg-surface-container-high px-3 py-1 font-label-md text-label-md text-primary">
+              {plan.doneCount} / {plan.totalCount} đã xong
+            </span>
+          )}
+        </div>
+
+        {hasPlan ? (
+          <DailySlotList items={plan.items} date={resolvedKey} isToday={isToday} />
+        ) : (
+          <div className="mt-space-md">
+            <EmptyPlanCta date={resolvedKey} isToday={isToday} />
+          </div>
+        )}
       </section>
+
+      {/* Nhịp tuần & streak */}
+      <WeeklyRhythm weeklyEnergy={plan.weeklyEnergy} streak={plan.streak} />
+
+      <WeekStreakWidget weeklyEnergy={plan.weeklyEnergy} streak={plan.streak} />
     </div>
   );
+}
+
+/** Kiểm tra DB sẵn sàng — nếu chưa migrate thì hiện hướng dẫn, không crash. */
+async function checkDb(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Trạng thái DB chưa sẵn sàng. */
+function DbNotReady() {
+  return (
+    <div className="space-y-gutter-lg">
+      <div
+        role="status"
+        className="rounded-xl border border-tertiary/30 bg-tertiary/10 p-space-lg"
+      >
+        <span className="font-label-sm text-label-sm uppercase tracking-wider text-tertiary">
+          Cần thiết lập
+        </span>
+        <p className="mt-space-sm text-body-md text-body-md text-on-surface">
+          Database chưa sẵn sàng. Chạy lệnh sau rồi tải lại trang:
+        </p>
+        <code className="mt-space-sm block rounded-lg bg-surface-container-lowest p-space-md font-code-md text-code-md text-primary">
+          npm run db:migrate &amp;&amp; npm run db:seed
+        </code>
+      </div>
+    </div>
+  );
+}
+
+const WEEKDAY_VI = [
+  "Chủ Nhật",
+  "Thứ Hai",
+  "Thứ Ba",
+  "Thứ Tư",
+  "Thứ Năm",
+  "Thứ Sáu",
+  "Thứ Bảy",
+] as const;
+
+function formatDateVi(date: Date): string {
+  return `${WEEKDAY_VI[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }

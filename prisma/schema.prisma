@@ -149,6 +149,8 @@ model UserProfile {
   learningLangs String   @default("zh,en")
   zhLevel       String   @default("zero")
   enLevel       String   @default("zero")
+  // Registry C3 — trọng tâm hôm nay (FK logic tới Skill.id).
+  focusSkillId  String?
   createdAt     DateTime @default(now())
 }
 

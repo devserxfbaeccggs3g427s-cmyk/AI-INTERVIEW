@@ -81,3 +81,6 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   mock_interview: "Phỏng vấn",
   test: "Kiểm tra",
 };
+
+/** Loại nội dung của 1 slot — suy ra từ vị trí slot gốc (0..5). */
+export type { SlotKind } from "@/lib/config";

@@ -10,10 +10,14 @@ const baseURL = `http://localhost:${PORT}`;
  */
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  globalSetup: "./e2e/global-setup.ts",
+  // 2 project (mobile + desktop) dùng CHUNG SQLite local ⇒ phải chạy tuần tự,
+  // nếu không 2 project sẽ race trên slot đã xong (bất biến theo FR-DL-06).
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // 1 worker: các test dùng chung SQLite local — chạy song song sẽ race trên slot đã xong.
+  workers: 1,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL,
@@ -28,13 +32,27 @@ export default defineConfig({
     },
     {
       name: "desktop",
+      // ⚠️ `workers` là giới hạn PER-PROJECT trong Playwright ⇒ 2 project
+      // vẫn chạy SONG SONG và cùng đụng 1 file SQLite ⇒ race trên slot đã
+      // xong (bất biến). `dependencies` buộc desktop chỉ chạy SAU khi
+      // mobile xong hẳn.
+      dependencies: ["mobile"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } },
     },
   ],
   webServer: {
-    command: "npm run dev",
+    // ⚠️ Dùng **production build** (`next start`), không dùng `next dev`.
+    //
+    // `next dev` compile route lazy ⇒ lần gọi API đầu tiên tới một route
+    // chưa compile có thể trả HTML (trang lỗi) hoặc **mất body request**
+    // ⇒ `res.json()` ném "Unexpected token '<'" và `req.json()` ném
+    // "Unexpected end of JSON input". Triệu chứng giống hỏng logic ứng dụng
+    // nhưng hoàn toàn là hành vi của dev server.
+    //
+    // Production build compile sẵn toàn bộ route ⇒ ổn định cho E2E.
+    command: "npm run build && npm run start",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 300_000,
   },
 });
