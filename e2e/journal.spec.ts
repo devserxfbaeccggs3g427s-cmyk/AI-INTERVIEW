@@ -11,7 +11,7 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
-  test("mở trang nhật ký, có ô nhập + 3 câu hỏi gợi ý", async ({ page }) => {
+  test("mở trang nhật ký, có ô nhập + 3 câu hỏi gợi ý", async ({ page }, _testInfo) => {
     await page.goto("/journal");
 
     await expect(page.getByRole("heading", { name: "Nhật ký" })).toBeVisible();
@@ -22,27 +22,27 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
     expect(await chips.count()).toBeGreaterThanOrEqual(3);
   });
 
-  test("bản nháp tự lưu cục bộ sau 800ms ngừng gõ (FR-PSJ-01)", async ({ page }) => {
+  test("bản nháp tự lưu cục bộ sau 800ms ngừng gõ (FR-PSJ-01)", async ({ page }, testInfo) => {
     await page.goto("/journal");
 
     const textarea = page.getByPlaceholder(/Bạn nghĩ gì hôm nay/);
-    await textarea.fill(`Bản nháp tự lưu ${Date.now()}`);
+    await textarea.fill(`Bản nháp tự lưu ${testInfo.project.name} ${Date.now()}`);
 
     // Đợi autosave.
     await expect(page.getByText(/Đã lưu cục bộ lúc/)).toBeVisible({ timeout: 10_000 });
   });
 
-  test("bản nháp KHÔNG tính vào thống kê (P3)", async ({ page }) => {
+  test("bản nháp KHÔNG tính vào thống kê (P3)", async ({ page }, testInfo) => {
     await page.goto("/journal");
 
     const textarea = page.getByPlaceholder(/Bạn nghĩ gì hôm nay/);
-    await textarea.fill(`Bản nháp chưa commit ${Date.now()}`);
+    await textarea.fill(`Bản nháp chưa commit ${testInfo.project.name} ${Date.now()}`);
 
     await expect(page.getByText(/Bản nháp chưa tính vào thống kê/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Lưu vào lịch sử" })).toBeVisible();
   });
 
-  test("không có API key ⇒ ẩn nút AI, hiện hướng dẫn (FR-PSJ-05)", async ({ page }) => {
+  test("không có API key ⇒ ẩn nút AI, hiện hướng dẫn (FR-PSJ-05)", async ({ page }, _testInfo) => {
     await page.goto("/journal");
 
     // ⚠️ Không giả lập phản hồi AI — phải nói rõ là chỉ lưu cục bộ.
@@ -52,7 +52,7 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
 
   test("bấm chip gợi ý ⇒ chèn câu hỏi vào cuối textarea (FR-PSJ-02)", async ({
     page,
-  }) => {
+  }, _testInfo) => {
     await page.goto("/journal");
 
     const textarea = page.getByPlaceholder(/Bạn nghĩ gì hôm nay/);
@@ -68,9 +68,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
     );
   });
 
-  test("API lưu bản nháp — status = draft, không tạo Activity", async ({ request }) => {
+  test("API lưu bản nháp — status = draft, không tạo Activity", async ({ request }, testInfo) => {
     const res = await request.post("/api/journal", {
-      data: { answer: `Journal API test ${Date.now()}` },
+      data: { answer: `Journal API test ${testInfo.project.name} ${Date.now()}` },
     });
 
     expect(res.status()).toBe(200);
@@ -84,9 +84,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
     expect(payload.data.aiQuestion).toBeNull();
   });
 
-  test("commit nhật ký ⇒ status = published + có activityId", async ({ request }) => {
+  test("commit nhật ký ⇒ status = published + có activityId", async ({ request }, testInfo) => {
     const created = await request.post("/api/journal", {
-      data: { answer: `Journal commit test ${Date.now()}` },
+      data: { answer: `Journal commit test ${testInfo.project.name} ${Date.now()}` },
     });
     const createdBody = await created.json();
     const id = createdBody.data.id;
@@ -103,9 +103,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
     expect(payload.data.activityId).toBeTruthy();
   });
 
-  test("commit 2 lần ⇒ idempotent, không tạo 2 Activity (P3)", async ({ request }) => {
+  test("commit 2 lần ⇒ idempotent, không tạo 2 Activity (P3)", async ({ request }, testInfo) => {
     const created = await request.post("/api/journal", {
-      data: { answer: `Journal idempotent ${Date.now()}` },
+      data: { answer: `Journal idempotent ${testInfo.project.name} ${Date.now()}` },
     });
     const createdBody = await created.json();
     const id = createdBody.data.id;
@@ -125,9 +125,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
 
   test("API phản hồi AI không có key ⇒ 503 no_api_key, KHÔNG giả lập (FR-PSJ-05)", async ({
     request,
-  }) => {
+  }, testInfo) => {
     const created = await request.post("/api/journal", {
-      data: { answer: `Journal no-key ${Date.now()}` },
+      data: { answer: `Journal no-key ${testInfo.project.name} ${Date.now()}` },
     });
     const createdBody = await created.json();
 
@@ -143,9 +143,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
 
   test("thiếu consent ⇒ 401 consent_required, KHÔNG gọi SDK (FR-PSJ-03)", async ({
     request,
-  }) => {
+  }, testInfo) => {
     const created = await request.post("/api/journal", {
-      data: { answer: `Journal consent ${Date.now()}` },
+      data: { answer: `Journal consent ${testInfo.project.name} ${Date.now()}` },
     });
     const createdBody = await created.json();
 
@@ -161,9 +161,9 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
 
   test("phân loại cục bộ ⇒ source = local, không gọi AI (RB-03)", async ({
     request,
-  }) => {
+  }, testInfo) => {
     const created = await request.post("/api/journal", {
-      data: { answer: `Hôm nay học Java Spring Boot API ${Date.now()}` },
+      data: { answer: `Hôm nay học Java Spring Boot API ${testInfo.project.name} ${Date.now()}` },
     });
     const createdBody = await created.json();
 
@@ -182,7 +182,7 @@ test.describe("S06 — Nhật ký (FR-PSJ-01..06)", () => {
 test.describe("S12 — Đánh giá chính (FR-PS-01, FR-PS-05..07)", () => {
   test("render 4 chỉ số + nút lưu + biểu đồ + phân tích tương quan", async ({
     page,
-  }) => {
+  }, _testInfo) => {
     await page.goto("/state");
 
     await expect(page.getByRole("heading", { name: "Đánh giá chính" })).toBeVisible();
@@ -196,7 +196,7 @@ test.describe("S12 — Đánh giá chính (FR-PS-01, FR-PS-05..07)", () => {
     await expect(page.getByText("Phân tích tương quan")).toBeVisible();
   });
 
-  test("toggle 7 ngày / 30 ngày (FR-PSJ-09)", async ({ page }) => {
+  test("toggle 7 ngày / 30 ngày (FR-PSJ-09)", async ({ page }, _testInfo) => {
     await page.goto("/state");
 
     const group = page.getByRole("group", { name: "Khoảng thời gian" });
@@ -212,7 +212,7 @@ test.describe("S12 — Đánh giá chính (FR-PS-01, FR-PS-05..07)", () => {
     );
   });
 
-  test("ghi chỉ số qua API — upsert theo ngày (FR-PSJ-08)", async ({ request }) => {
+  test("ghi chỉ số qua API — upsert theo ngày (FR-PSJ-08)", async ({ request }, _testInfo) => {
     const today = new Date();
     const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
@@ -232,7 +232,7 @@ test.describe("S12 — Đánh giá chính (FR-PS-01, FR-PS-05..07)", () => {
 
   test("API correlation chạy cục bộ, không gọi AI (FR-PS-05, FR-PS-07)", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.get("/api/state/correlation?days=30");
     const payload = await res.json();
 
@@ -247,7 +247,7 @@ test.describe("S12 — Đánh giá chính (FR-PS-01, FR-PS-05..07)", () => {
 
   test("trạng thái thiếu dữ liệu hiện 'Chưa đủ dữ liệu' chứ không vẽ số 0", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.get("/api/state/correlation?days=7");
     const payload = await res.json();
 

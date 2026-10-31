@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
-  test("mở trang cài đặt, có 4 tab", async ({ page }) => {
+  test("mở trang cài đặt, có 4 tab", async ({ page }, _testInfo) => {
     await page.goto("/settings");
 
     await expect(page.getByRole("heading", { name: "Cài đặt" })).toBeVisible();
@@ -17,10 +17,10 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
     await expect(tablist.getByRole("tab")).toHaveCount(4);
   });
 
-  test("lưu hồ sơ có phản hồi rõ ràng (FR-SC-07)", async ({ page }) => {
+  test("lưu hồ sơ có phản hồi rõ ràng (FR-SC-07)", async ({ page }, testInfo) => {
     await page.goto("/settings");
 
-    await page.getByLabel("Tên hiển thị").fill(`DevMode ${Date.now()}`);
+    await page.getByLabel("Tên hiển thị").fill(`DevMode ${testInfo.project.name} ${Date.now()}`);
     await page.getByRole("button", { name: "Lưu thay đổi" }).click();
 
     // Toast có aria-live="polite".
@@ -29,7 +29,7 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
     });
   });
 
-  test("bỏ hết ngôn ngữ ⇒ chặn lưu, nói rõ lý do (FR-SC-04)", async ({ page }) => {
+  test("bỏ hết ngôn ngữ ⇒ chặn lưu, nói rõ lý do (FR-SC-04)", async ({ page }, _testInfo) => {
     await page.goto("/settings");
 
     // Bỏ tất cả ngôn ngữ đang học.
@@ -54,7 +54,7 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
     ).toBeVisible();
   });
 
-  test("chuyển tab sang API key / Chi phí / Dữ liệu", async ({ page }) => {
+  test("chuyển tab sang API key / Chi phí / Dữ liệu", async ({ page }, _testInfo) => {
     await page.goto("/settings");
 
     const tablist = page.getByRole("tablist", { name: "Nhóm cài đặt" });
@@ -77,7 +77,7 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
 test.describe("S15 — API key (FR-SC-08..14)", () => {
   test("key chỉ hiện dạng che, không bao giờ hiện đầy đủ (FR-SC-11)", async ({
     page,
-  }) => {
+  }, _testInfo) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "API key" }).click();
 
@@ -91,7 +91,7 @@ test.describe("S15 — API key (FR-SC-08..14)", () => {
 
   test("nút ping có tồn tại và không giả lập kết quả (FR-SC-10)", async ({
     page,
-  }) => {
+  }, _testInfo) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "API key" }).click();
 
@@ -102,7 +102,7 @@ test.describe("S15 — API key (FR-SC-08..14)", () => {
 
   test("API GET /api/settings/key không trả key đầy đủ (FR-SC-11)", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.get("/api/settings/key");
     const payload = await res.json();
 
@@ -117,7 +117,7 @@ test.describe("S15 — API key (FR-SC-08..14)", () => {
 
   test("API PUT key không hợp lệ ⇒ 400, không ghi file (FR-SC-08)", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.put("/api/settings/key", {
       data: { apiKey: "khong-phai-key-that" },
     });
@@ -131,7 +131,7 @@ test.describe("S15 — API key (FR-SC-08..14)", () => {
 test.describe("S15 — Chi phí (FR-SC-15..23)", () => {
   test("API /api/ai/costs trả tổng quan + cảnh báo ngân sách", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.get("/api/ai/costs?days=30");
     const payload = await res.json();
 
@@ -144,12 +144,12 @@ test.describe("S15 — Chi phí (FR-SC-15..23)", () => {
     );
   });
 
-  test("days không hợp lệ ⇒ 400", async ({ request }) => {
+  test("days không hợp lệ ⇒ 400", async ({ request }, _testInfo) => {
     const res = await request.get("/api/ai/costs?days=5");
     expect(res.status()).toBe(400);
   });
 
-  test("API /api/ai/calls trả nhật ký + CSV (FR-SC-19..21)", async ({ request }) => {
+  test("API /api/ai/calls trả nhật ký + CSV (FR-SC-19..21)", async ({ request }, _testInfo) => {
     const json = await request.get("/api/ai/calls?limit=10");
     const payload = await json.json();
     expect(payload.ok).toBe(true);
@@ -160,7 +160,7 @@ test.describe("S15 — Chi phí (FR-SC-15..23)", () => {
     expect(csv.headers()["content-type"]).toContain("text/csv");
   });
 
-  test("hiển thị hệ số ngân sách + nút xuất CSV", async ({ page }) => {
+  test("hiển thị hệ số ngân sách + nút xuất CSV", async ({ page }, _testInfo) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Chi phí AI" }).click();
 
@@ -170,7 +170,7 @@ test.describe("S15 — Chi phí (FR-SC-15..23)", () => {
 });
 
 test.describe("S15 — Dữ liệu (FR-SC-24..27)", () => {
-  test("API stats trả dung lượng + số bản ghi (FR-SC-26)", async ({ request }) => {
+  test("API stats trả dung lượng + số bản ghi (FR-SC-26)", async ({ request }, _testInfo) => {
     const res = await request.get("/api/data/stats");
     const payload = await res.json();
 
@@ -179,7 +179,7 @@ test.describe("S15 — Dữ liệu (FR-SC-24..27)", () => {
     expect(typeof payload.data.dbSizeBytes).toBe("number");
   });
 
-  test("xuất JSON chứa metadata + toàn bộ bảng (FR-SC-24)", async ({ request }) => {
+  test("xuất JSON chứa metadata + toàn bộ bảng (FR-SC-24)", async ({ request }, _testInfo) => {
     const res = await request.get("/api/data/export");
     const payload = await res.json();
 
@@ -190,7 +190,7 @@ test.describe("S15 — Dữ liệu (FR-SC-24..27)", () => {
     expect(payload.data.skills).toBeInstanceOf(Array);
   });
 
-  test("xoá trắng cần gõ đúng XOA (FR-SC-25)", async ({ page }) => {
+  test("xoá trắng cần gõ đúng XOA (FR-SC-25)", async ({ page }, _testInfo) => {
     await page.goto("/settings");
     await page.getByRole("tab", { name: "Dữ liệu" }).click();
 
@@ -206,7 +206,7 @@ test.describe("S15 — Dữ liệu (FR-SC-24..27)", () => {
 
   test("API DELETE /api/data sai xác nhận ⇒ 400, không xoá (FR-SC-25)", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.delete("/api/data", {
       data: { confirmation: "SAI" },
     });
@@ -218,7 +218,7 @@ test.describe("S15 — Dữ liệu (FR-SC-24..27)", () => {
 
   test("API privacy-log trả loại dữ liệu đã gửi (FR-SC-27)", async ({
     request,
-  }) => {
+  }, _testInfo) => {
     const res = await request.get("/api/data/privacy-log?limit=10");
     const payload = await res.json();
 
