@@ -7,35 +7,35 @@
 ## 0. Nền tảng dữ liệu
 
 - [ ] 1. Mở rộng schema Prisma
-  - [ ] 1.1 Thêm 2 cột vào model `AiCall` trong `prisma/schema.prisma`: `dataKinds String @default("[]")` và `dataPreview String?`
-  - [ ] 1.2 Thêm 3 cột vào model `UserProfile`: `interviewLang String @default("en")`, `monthlyBudgetUsd Float @default(15)`, `saverMode Boolean @default(false)`
-  - [ ] 1.3 Kiểm tra index `@@index([createdAt])` trên `AiCall` còn hiện diện (dùng cho lọc theo ngày)
-  - [ ] 1.4 Chạy `npx prisma migrate dev --name add_settings_cost_fields` và xác nhận migration sinh ra 5 cột mới
-  - [ ] 1.5 Chạy `npx prisma generate` và xác nhận `PrismaClient` type có `dataKinds`, `dataPreview`, `interviewLang`, `monthlyBudgetUsd`, `saverMode`
+  - [x] 1.1 Thêm 2 cột vào model `AiCall` trong `prisma/schema.prisma`: `dataKinds String @default("[]")` và `dataPreview String?`
+  - [x] 1.2 Thêm 3 cột vào model `UserProfile`: `interviewLang String @default("en")`, `monthlyBudgetUsd Float @default(15)`, `saverMode Boolean @default(false)`
+  - [x] 1.3 Kiểm tra index `@@index([createdAt])` trên `AiCall` còn hiện diện (dùng cho lọc theo ngày)
+  - [x] 1.4 Chạy `npx prisma migrate dev --name add_settings_cost_fields` và xác nhận migration sinh ra 5 cột mới
+  - [x] 1.5 Chạy `npx prisma generate` và xác nhận `PrismaClient` type có `dataKinds`, `dataPreview`, `interviewLang`, `monthlyBudgetUsd`, `saverMode`
   - [ ] 1.6 Bổ sung vào `prisma/seed.ts` 1 dòng `UserProfile` với `id = "default"`, `learningLangs = "zh,en"`, `monthlyBudgetUsd = 15` (idempotent, không nhân bản khi seed lại)
-  - [ ] 1.7 Thêm `.env.local` vào `.gitignore` (nếu chưa có) và xác nhận `.env` cũng không bị commit
+  - [x] 1.7 Thêm `.env.local` vào `.gitignore` (nếu chưa có) và xác nhận `.env` cũng không bị commit
   - [ ] 1.8 Viết migration test: seed dữ liệu cũ (không có cột mới) → chạy migrate → xác nhận `dataKinds = "[]"` cho các dòng cũ, app không crash
 - [ ] 2. Module giá & công thức chi phí
-  - [ ] 2.1 Tạo `src/lib/costs.ts` với hằng `MODEL_PRICING` cho `claude-opus-5` ($5/$25, cache read $0.5, cache write $6.25) và `claude-haiku-4-5` ($1/$5, $0.1, $1.25)
-  - [ ] 2.2 Thêm `FALLBACK_PRICING` = bảng Opus 5 cho model lạ (không ước tính thấp hơn thực tế)
+  - [x] 2.1 Tạo `src/lib/costs.ts` với hằng `MODEL_PRICING` cho `claude-opus-5` ($5/$25, cache read $0.5, cache write $6.25) và `claude-haiku-4-5` ($1/$5, $0.1, $1.25)
+  - [x] 2.2 Thêm `FALLBACK_PRICING` = bảng Opus 5 cho model lạ (không ước tính thấp hơn thực tế)
   - [ ] 2.3 Implement `estimateCost(model, usage)` đúng công thức spec.md §6.5, làm tròn 8 chữ số
-  - [ ] 2.4 Implement `cacheHitRate({inputTokens, cacheRead, cacheWrite})` với mẫu số = 0 → trả 0
-  - [ ] 2.5 Thêm hằng `FEATURE_LABELS` mapping 10 feature → nhãn + tone màu chip
-  - [ ] 2.6 Implement `buildPreview(text, max = 280)` — gộp khoảng trắng, cắt giữa câu, thêm "…"
-  - [ ] 2.7 Implement `maskKey(key)` → `sk-ant-••••••••••••abcd` (giữ 7 ký tự đầu + 4 ký tự cuối)
+  - [x] 2.4 Implement `cacheHitRate({inputTokens, cacheRead, cacheWrite})` với mẫu số = 0 → trả 0
+  - [x] 2.5 Thêm hằng `FEATURE_LABELS` mapping 10 feature → nhãn + tone màu chip
+  - [x] 2.6 Implement `buildPreview(text, max = 280)` — gộp khoảng trắng, cắt giữa câu, thêm "…"
+  - [x] 2.7 Implement `maskKey(key)` → `sk-ant-••••••••••••abcd` (giữ 7 ký tự đầu + 4 ký tự cuối)
   - [ ] 2.8 Unit test `estimateCost` với case kiểm chứng: Opus (3420 in / 3100 cacheRead / 420 out) = `0.02915`; Haiku (450 in / 65 out) = `0.000775`; model lạ → dùng bảng Opus
-  - [ ] 2.9 Unit test `cacheHitRate` cho 0 mẫu số, 0 hit, hit 100%
-  - [ ] 2.10 Unit test `buildPreview` với text < 280, > 280 không dấu câu, > 280 có dấu câu
-  - [ ] 2.11 Unit test `maskKey` với key ngắn (< 8 ký tự) → trả `••••`
+  - [x] 2.9 Unit test `cacheHitRate` cho 0 mẫu số, 0 hit, hit 100%
+  - [x] 2.10 Unit test `buildPreview` với text < 280, > 280 không dấu câu, > 280 có dấu câu
+  - [x] 2.11 Unit test `maskKey` với key ngắn (< 8 ký tự) → trả `••••`
 - [ ] 3. Module đọc/ghi `.env.local`
-  - [ ] 3.1 Tạo `src/lib/env-file.ts` với `readEnvLocal()` trả về `{ path, lines }`, giữ nguyên comment và thứ tự dòng
-  - [ ] 3.2 Implement `writeEnvFile()` — ghi file tạm `<file>.<uuid>.tmp` với `mode 0o600` → `chmod 600` → `rename` → `chmod 600` lần 2
-  - [ ] 3.3 Trong `writeEnvFile`, bọc `rename` bằng try/catch; khi throw → `fs.rm(tmp, {force:true})` rồi rethrow
-  - [ ] 3.4 Implement `upsertEnvVar(name, value)` — thay đúng dòng `NAME=` nếu có, nếu không thì append; **không** xoá các dòng khác
-  - [ ] 3.5 Implement `removeEnvVar(name)` — lọc bỏ dòng `NAME=`, giữ nguyên phần còn lại
-  - [ ] 3.6 Implement `getKeyStatus()` — đọc key từ `.env.local` (ưu tiên) rồi `process.env`; trả `{configured, masked, source, lastCheckedAt, lastLatencyMs, requiresRestart}`; **không** trả key đầy đủ
-  - [ ] 3.7 Xử lý `ENOENT` khi đọc → trả `{ path, lines: [] }` (không throw)
-  - [ ] 3.8 Xử lý `EXDEV` khi `rename` (khác filesystem) → fallback `copyFile` + `rm(tmp)`
+  - [x] 3.1 Tạo `src/lib/env-file.ts` với `readEnvLocal()` trả về `{ path, lines }`, giữ nguyên comment và thứ tự dòng
+  - [x] 3.2 Implement `writeEnvFile()` — ghi file tạm `<file>.<uuid>.tmp` với `mode 0o600` → `chmod 600` → `rename` → `chmod 600` lần 2
+  - [x] 3.3 Trong `writeEnvFile`, bọc `rename` bằng try/catch; khi throw → `fs.rm(tmp, {force:true})` rồi rethrow
+  - [x] 3.4 Implement `upsertEnvVar(name, value)` — thay đúng dòng `NAME=` nếu có, nếu không thì append; **không** xoá các dòng khác
+  - [x] 3.5 Implement `removeEnvVar(name)` — lọc bỏ dòng `NAME=`, giữ nguyên phần còn lại
+  - [x] 3.6 Implement `getKeyStatus()` — đọc key từ `.env.local` (ưu tiên) rồi `process.env`; trả `{configured, masked, source, lastCheckedAt, lastLatencyMs, requiresRestart}`; **không** trả key đầy đủ
+  - [x] 3.7 Xử lý `ENOENT` khi đọc → trả `{ path, lines: [] }` (không throw)
+  - [x] 3.8 Xử lý `EXDEV` khi `rename` (khác filesystem) → fallback `copyFile` + `rm(tmp)`
   - [ ] 3.9 Unit test (mock `node:fs`): `upsertEnvVar` tạo file mới chỉ có 1 dòng; `upsertEnvVar` giữ nguyên `DATABASE_URL`; `removeEnvVar` chỉ xoá đúng biến được yêu cầu
   - [ ] 3.10 Unit test: sau `writeEnvFile`, `stat().mode & 0o777 === 0o600`; file tạm không còn tồn tại
   - [ ] 3.11 Unit test: khi `writeFile` throw → không còn file `.tmp` rác, exception được ném ra
@@ -43,42 +43,42 @@
 ## 1. Lớp nghiệp vụ & truy vấn tổng hợp
 
 - [ ] 4. Hồ sơ (`src/lib/profile.ts`)
-  - [ ] 4.1 Implement `getProfile()` — `findUnique({id:"default"})`, nếu chưa có thì `create` 1 dòng mặc định (singleton, không tạo dòng thứ 2)
-  - [ ] 4.2 Implement `updateProfile(patch)` dùng `upsert` với `where.id = "default"`, serialize `learningLangs` thành chuỗi CSV
-  - [ ] 4.3 Implement `toDto(row)` map `learningLangs: "zh,en"` → `["zh","en"]`, map mức không hợp lệ về `"zero"` + `console.warn` (không throw)
+  - [x] 4.1 Implement `getProfile()` — `findUnique({id:"default"})`, nếu chưa có thì `create` 1 dòng mặc định (singleton, không tạo dòng thứ 2)
+  - [x] 4.2 Implement `updateProfile(patch)` dùng `upsert` với `where.id = "default"`, serialize `learningLangs` thành chuỗi CSV
+  - [x] 4.3 Implement `toDto(row)` map `learningLangs: "zh,en"` → `["zh","en"]`, map mức không hợp lệ về `"zero"` + `console.warn` (không throw)
   - [ ] 4.4 Unit test: `getProfile()` gọi 2 lần → DB chỉ có 1 dòng `UserProfile`
   - [ ] 4.5 Unit test: `toDto` map đúng CSV, mức lạ → `"zero"`
 - [ ] 5. Tổng hợp chi phí (bổ sung vào `src/lib/costs.ts`)
-  - [ ] 5.1 Implement `getCostByFeature(range)` dùng `prisma.aiCall.groupBy({by:["feature","model"], _count, _sum})`, sort giảm dần theo cost, tính `share` từ tổng gốc (không làm tròn trước khi chia)
-  - [ ] 5.2 Implement `getCostByDay(range)` bằng `$queryRaw` với `strftime('%Y-%m-%d', datetime(createdAt,'localtime'))`, `GROUP BY day`, `ORDER BY day ASC`
+  - [x] 5.1 Implement `getCostByFeature(range)` dùng `prisma.aiCall.groupBy({by:["feature","model"], _count, _sum})`, sort giảm dần theo cost, tính `share` từ tổng gốc (không làm tròn trước khi chia)
+  - [x] 5.2 Implement `getCostByDay(range)` bằng `$queryRaw` với `strftime('%Y-%m-%d', datetime(createdAt,'localtime'))`, `GROUP BY day`, `ORDER BY day ASC`
   - [ ] 5.3 Ép `Number(...)` cho mọi cột trả về kiểu `bigint` từ `$queryRaw` (tránh lỗi serialize JSON)
-  - [ ] 5.4 Implement `getCostTotals(range)` — `aggregate` tổng token/cost + `count({ok:false})` cho số lượt lỗi + tính `cacheHitRate` + `budget.level` (`ok`/`warn`/`over` theo 80%/100%)
-  - [ ] 5.5 Implement `listAiCalls({page,pageSize,feature})` — `findMany` order `createdAt desc`, `skip/take`, `count` song song, `totalPages = max(ceil(total/pageSize), 1)`
-  - [ ] 5.6 Implement `listAiCallsCsv(args)` — sinh chuỗi CSV có header tiếng Việt, escape dấu `"` và `,`, kết thúc bằng `\r\n`
+  - [x] 5.4 Implement `getCostTotals(range)` — `aggregate` tổng token/cost + `count({ok:false})` cho số lượt lỗi + tính `cacheHitRate` + `budget.level` (`ok`/`warn`/`over` theo 80%/100%)
+  - [x] 5.5 Implement `listAiCalls({page,pageSize,feature})` — `findMany` order `createdAt desc`, `skip/take`, `count` song song, `totalPages = max(ceil(total/pageSize), 1)`
+  - [x] 5.6 Implement `listAiCallsCsv(args)` — sinh chuỗi CSV có header tiếng Việt, escape dấu `"` và `,`, kết thúc bằng `\r\n`
   - [ ] 5.7 Integration test: seed 10 dòng `AiCall` → `getCostByFeature` tổng cost khớp tổng các dòng; `getCostByDay` gom đúng theo ngày local
   - [ ] 5.8 Integration test: `getCostTotals` với `cacheRead = 0` → `cacheHitRate = 0`, không phải `NaN`
   - [ ] 5.9 Integration test: `listAiCalls` page 2 trả đúng dải bản ghi, `totalPages` đúng
   - [ ] 5.10 Thêm helper `toLocalDayString()` vào `src/lib/dates.ts` — cho ra đúng định dạng `yyyy-MM-dd`, **khớp** với `strftime('%Y-%m-%d', datetime(createdAt,'localtime'))` dùng trong `getCostByDay`
   - [ ] 5.11 Integration test: bản ghi lúc 23:59:59 local nằm đúng ngày đó trong `getCostByDay` (không lệch sang hôm sau)
 - [ ] 6. Minh bạch dữ liệu (`src/lib/privacy.ts`)
-  - [ ] 6.1 Implement `listPrivacyLog({page,pageSize,feature})` lọc `NOT [{dataKinds:"[]"},{dataKinds:null}]` — chỉ lấy dòng thực sự đã gửi dữ liệu
-  - [ ] 6.2 Map `dataKinds` từ JSON string → `string[]`, JSON parse lỗi → `[]` (không throw)
+  - [x] 6.1 Implement `listPrivacyLog({page,pageSize,feature})` lọc `NOT [{dataKinds:"[]"},{dataKinds:null}]` — chỉ lấy dòng thực sự đã gửi dữ liệu
+  - [x] 6.2 Map `dataKinds` từ JSON string → `string[]`, JSON parse lỗi → `[]` (không throw)
   - [ ] 6.3 Integration test: dòng có `dataKinds = "[]"` không xuất hiện trong kết quả; dòng có `["journal_text"]` có xuất hiện
 - [ ] 7. Quản trị dữ liệu (`src/lib/data-admin.ts`)
-  - [ ] 7.1 Tạo hằng `EXPORTABLE_TABLES` gồm 14 bảng nghiệp vụ (không gồm `UserProfile` — riêng)
-  - [ ] 7.2 Implement `getDbStats()` — `fs.stat(prisma/dev.db)` (ENOENT → 0) + `count()` cho từng bảng
-  - [ ] 7.3 Implement `wipeAllData()` trong `prisma.$transaction`: xoá theo thứ tự con trước cha sau (`testItems` → `testSessions` → `interviewTurns` → `interviewSessions` → `interviewProfiles` → `reviews` → `evidences` → `reflections` → `planItems` → `dailyStates` → `aiCalls` → `cards` → `activities` → `skills`)
-  - [ ] 7.4 Trong `wipeAllData`, `updateMany` `UserProfile` về mặc định (không xoá dòng hồ sơ)
-  - [ ] 7.5 Trả về `{ deleted: Record<string,number>, dbSizeBytesBefore, dbSizeBytesAfter }`
-  - [ ] 7.6 Implement `exportAllData()` trả `ReadableStream<Uint8Array>` — header `{schemaVersion, exportedAt, app, profile}` rồi `"tables":{...}` theo từng bảng, **không** `JSON.stringify` toàn bộ
-  - [ ] 7.7 Thêm timeout transaction `{ timeout: 20000 }` cho `wipeAllData`
+  - [x] 7.1 Tạo hằng `EXPORTABLE_TABLES` gồm 14 bảng nghiệp vụ (không gồm `UserProfile` — riêng)
+  - [x] 7.2 Implement `getDbStats()` — `fs.stat(prisma/dev.db)` (ENOENT → 0) + `count()` cho từng bảng
+  - [x] 7.3 Implement `wipeAllData()` trong `prisma.$transaction`: xoá theo thứ tự con trước cha sau (`testItems` → `testSessions` → `interviewTurns` → `interviewSessions` → `interviewProfiles` → `reviews` → `evidences` → `reflections` → `planItems` → `dailyStates` → `aiCalls` → `cards` → `activities` → `skills`)
+  - [x] 7.4 Trong `wipeAllData`, `updateMany` `UserProfile` về mặc định (không xoá dòng hồ sơ)
+  - [x] 7.5 Trả về `{ deleted: Record<string,number>, dbSizeBytesBefore, dbSizeBytesAfter }`
+  - [x] 7.6 Implement `exportAllData()` trả `ReadableStream<Uint8Array>` — header `{schemaVersion, exportedAt, app, profile}` rồi `"tables":{...}` theo từng bảng, **không** `JSON.stringify` toàn bộ
+  - [x] 7.7 Thêm timeout transaction `{ timeout: 20000 }` cho `wipeAllData`
   - [ ] 7.8 Integration test: seed quan hệ đầy đủ (Activity + Evidence + Card + Review + AiCall) → `wipeAllData` xoá sạch, mọi bảng = 0, `UserProfile` vẫn tồn tại
   - [ ] 7.9 Integration test: ép lỗi giữa transaction (mock `deleteMany` throw) → rollback, dữ liệu còn nguyên, hàm reject
   - [ ] 7.10 Test `exportAllData`: parse JSON từ stream → `tables` có đủ 14 key, số phần tử khớp `recordCounts`
 - [ ] 8. Ghi log `AiCall` mở rộng (`src/lib/anthropic.ts`)
-  - [ ] 8.1 Định nghĩa type `AiCallOptions` gồm `feature` (10 giá trị) + `dataKinds: string[]` (**bắt buộc**) + `dataPreview?: string | null`
-  - [ ] 8.2 Sửa `logAiCall`/`callAi` để ghi thêm `dataKinds: JSON.stringify(opts.dataKinds)` và `dataPreview`
-  - [ ] 8.3 Tính `estimatedCost` trong wrapper bằng `estimateCost(model, usage)` — dùng `usage.cache_read_input_tokens` và `usage.cache_creation_input_tokens` từ SDK
+  - [x] 8.1 Định nghĩa type `AiCallOptions` gồm `feature` (10 giá trị) + `dataKinds: string[]` (**bắt buộc**) + `dataPreview?: string | null`
+  - [x] 8.2 Sửa `logAiCall`/`callAi` để ghi thêm `dataKinds: JSON.stringify(opts.dataKinds)` và `dataPreview`
+  - [x] 8.3 Tính `estimatedCost` trong wrapper bằng `estimateCost(model, usage)` — dùng `usage.cache_read_input_tokens` và `usage.cache_creation_input_tokens` từ SDK
   - [ ] 8.4 Truyền `dataKinds`/`dataPreview` đúng cho từng call site hiện có (AI-01…AI-16): ví dụ AI-05 journal → `["reflection_prompt","journal_text"]`
   - [ ] 8.5 Unit test: `logAiCall` ghi đúng `estimatedCost` = `estimateCost(...)` và `dataKinds` là JSON hợp lệ
   - [ ] 8.6 Unit test: call lỗi vẫn ghi `AiCall{ok:false, error}` (giữ nguyên hành vi SPEC §5.5)
@@ -86,81 +86,81 @@
 ## 2. API
 
 - [ ] 9. `GET/PUT /api/settings/profile`
-  - [ ] 9.1 Tạo `src/app/api/settings/profile/route.ts`
-  - [ ] 9.2 Định nghĩa Zod schema `ProfileSchema` — `aiTone` enum 3 giá trị, `learningLangs` array enum `["zh","en"]` + `.min(1)`, `goals` `.max(2000)`, `name` `.max(80)`, `zhLevel`/`enLevel` enum 5 mức, `monthlyBudgetUsd` 0–1000
-  - [ ] 9.3 `GET` → `{ ok:true, data:{ profile } }`
-  - [ ] 9.4 `PUT` → validate Zod → `updateProfile` → `{ ok:true, data:{ profile } }`
-  - [ ] 9.5 `PUT` khi invalid → `400` + `{ ok:false, error:{ code:"INVALID_INPUT", message } }`
-  - [ ] 9.6 `PUT` khi body không phải JSON → `400` `INVALID_INPUT` (không 500)
-  - [ ] 9.7 Test: `PUT` với `learningLangs: []` → 400 và DB **không** đổi
-  - [ ] 9.8 Test: `PUT` với `goals` 2001 ký tự → 400
-  - [ ] 9.9 Test: `PUT` hợp lệ → DB đúng, response đúng DTO
+  - [x] 9.1 Tạo `src/app/api/settings/profile/route.ts`
+  - [x] 9.2 Định nghĩa Zod schema `ProfileSchema` — `aiTone` enum 3 giá trị, `learningLangs` array enum `["zh","en"]` + `.min(1)`, `goals` `.max(2000)`, `name` `.max(80)`, `zhLevel`/`enLevel` enum 5 mức, `monthlyBudgetUsd` 0–1000
+  - [x] 9.3 `GET` → `{ ok:true, data:{ profile } }`
+  - [x] 9.4 `PUT` → validate Zod → `updateProfile` → `{ ok:true, data:{ profile } }`
+  - [x] 9.5 `PUT` khi invalid → `400` + `{ ok:false, error:{ code:"INVALID_INPUT", message } }`
+  - [x] 9.6 `PUT` khi body không phải JSON → `400` `INVALID_INPUT` (không 500)
+  - [x] 9.7 Test: `PUT` với `learningLangs: []` → 400 và DB **không** đổi
+  - [x] 9.8 Test: `PUT` với `goals` 2001 ký tự → 400
+  - [x] 9.9 Test: `PUT` hợp lệ → DB đúng, response đúng DTO
 - [ ] 10. `GET/PUT/DELETE /api/settings/key`
-  - [ ] 10.1 Tạo `src/app/api/settings/key/route.ts`
-  - [ ] 10.2 Zod schema `KeySchema` — `apiKey` regex `/^sk-ant-[A-Za-z0-9_-]{10,}$/`
-  - [ ] 10.3 `GET` → `{ ok:true, data: getKeyStatus() }` — **không** có key đầy đủ trong payload
-  - [ ] 10.4 `PUT` → validate → `upsertEnvVar` → set `process.env.ANTHROPIC_API_KEY` → trả `{ masked, requiresRestart:true, writtenTo:".env.local" }`
-  - [ ] 10.5 `PUT` khi sai format → `400` `INVALID_KEY_FORMAT`
-  - [ ] 10.6 `PUT` khi ghi file lỗi (FS chỉ đọc) → `500` `ENV_WRITE_FAILED` + message hướng dẫn
-  - [ ] 10.7 `DELETE` → `removeEnvVar` + `delete process.env.ANTHROPIC_API_KEY` → `{ ok:true, data:{ ok:true } }`
-  - [ ] 10.8 `DELETE` khi ghi file lỗi → `500` `ENV_WRITE_FAILED`
-  - [ ] 10.9 Không `console.log` giá trị key ở bất kỳ nhánh nào — chỉ log `maskKey(key)`
+  - [x] 10.1 Tạo `src/app/api/settings/key/route.ts`
+  - [x] 10.2 Zod schema `KeySchema` — `apiKey` regex `/^sk-ant-[A-Za-z0-9_-]{10,}$/`
+  - [x] 10.3 `GET` → `{ ok:true, data: getKeyStatus() }` — **không** có key đầy đủ trong payload
+  - [x] 10.4 `PUT` → validate → `upsertEnvVar` → set `process.env.ANTHROPIC_API_KEY` → trả `{ masked, requiresRestart:true, writtenTo:".env.local" }`
+  - [x] 10.5 `PUT` khi sai format → `400` `INVALID_KEY_FORMAT`
+  - [x] 10.6 `PUT` khi ghi file lỗi (FS chỉ đọc) → `500` `ENV_WRITE_FAILED` + message hướng dẫn
+  - [x] 10.7 `DELETE` → `removeEnvVar` + `delete process.env.ANTHROPIC_API_KEY` → `{ ok:true, data:{ ok:true } }`
+  - [x] 10.8 `DELETE` khi ghi file lỗi → `500` `ENV_WRITE_FAILED`
+  - [x] 10.9 Không `console.log` giá trị key ở bất kỳ nhánh nào — chỉ log `maskKey(key)`
   - [ ] 10.10 Test: `PUT` rồi đọc file `.env.local` → có đúng 1 dòng `ANTHROPIC_API_KEY=…`, quyền file `0o600`
   - [ ] 10.11 Test: `PUT` 2 lần → file chỉ có 1 dòng `ANTHROPIC_API_KEY` (không nhân bản)
-  - [ ] 10.12 Test: `GET` response không chứa chuỗi `sk-ant-` dạng đầy đủ (chỉ có dạng mask)
+  - [x] 10.12 Test: `GET` response không chứa chuỗi `sk-ant-` dạng đầy đủ (chỉ có dạng mask)
 - [ ] 11. `POST /api/settings/key/test`
-  - [ ] 11.1 Tạo `src/app/api/settings/key/test/route.ts`
-  - [ ] 11.2 Nếu thiếu key → `400` `KEY_NOT_CONFIGURED`
-  - [ ] 11.3 Gọi `claude-haiku-4-5` với `max_tokens: 1`, đo `latencyMs`
-  - [ ] 11.4 Thành công → `{ ok:true, data:{ status:"ok", latencyMs, model, checkedAt } }`; wrapper ghi đúng 1 dòng `AiCall` với `feature = "key_test"`
-  - [ ] 11.5 `Anthropic.AuthenticationError` → `401` `KEY_INVALID`
-  - [ ] 11.6 `Anthropic.RateLimitError` → `429` `RATE_LIMITED` + `retryAfterSec`
-  - [ ] 11.7 `Anthropic.APIConnectionError` → `503` `API_UNREACHABLE`
-  - [ ] 11.8 Lỗi khác → `500` `PING_FAILED`
-  - [ ] 11.9 Timeout 10s cho request ping
+  - [x] 11.1 Tạo `src/app/api/settings/key/test/route.ts`
+  - [x] 11.2 Nếu thiếu key → `400` `KEY_NOT_CONFIGURED`
+  - [x] 11.3 Gọi `claude-haiku-4-5` với `max_tokens: 1`, đo `latencyMs`
+  - [x] 11.4 Thành công → `{ ok:true, data:{ status:"ok", latencyMs, model, checkedAt } }`; wrapper ghi đúng 1 dòng `AiCall` với `feature = "key_test"`
+  - [x] 11.5 `Anthropic.AuthenticationError` → `401` `KEY_INVALID`
+  - [x] 11.6 `Anthropic.RateLimitError` → `429` `RATE_LIMITED` + `retryAfterSec`
+  - [x] 11.7 `Anthropic.APIConnectionError` → `503` `API_UNREACHABLE`
+  - [x] 11.8 Lỗi khác → `500` `PING_FAILED`
+  - [x] 11.9 Timeout 10s cho request ping
   - [ ] 11.10 Test (mock SDK): mỗi nhánh lỗi trả đúng `code`; nhánh 401/429 **không** tạo dòng `AiCall` mới
 - [ ] 12. `GET /api/ai/costs`
-  - [ ] 12.1 Tạo `src/app/api/ai/costs/route.ts`
+  - [x] 12.1 Tạo `src/app/api/ai/costs/route.ts`
   - [ ] 12.2 Parse query `from`, `to` (ISO date), `bucket` (`day`|`feature`) bằng Zod; mặc định `from` = 30 ngày trước, `to` = hôm nay
-  - [ ] 12.3 Query song song `getCostTotals` + `getCostByDay` + `getCostByFeature`
-  - [ ] 12.4 Trả `{ ok:true, data:{ range, totals, byDay, byFeature, budget } }`
-  - [ ] 12.5 Query không hợp lệ → `400` `INVALID_QUERY`
-  - [ ] 12.6 Test: khoảng rỗng → `totals.calls = 0`, `cost = 0`, `cacheHitRate = 0`, mảng rỗng (không `null`)
-  - [ ] 12.7 Test: `budget.level` chuyển `ok` → `warn` ở 80% → `over` ở 100%
+  - [x] 12.3 Query song song `getCostTotals` + `getCostByDay` + `getCostByFeature`
+  - [x] 12.4 Trả `{ ok:true, data:{ range, totals, byDay, byFeature, budget } }`
+  - [x] 12.5 Query không hợp lệ → `400` `INVALID_QUERY`
+  - [x] 12.6 Test: khoảng rỗng → `totals.calls = 0`, `cost = 0`, `cacheHitRate = 0`, mảng rỗng (không `null`)
+  - [x] 12.7 Test: `budget.level` chuyển `ok` → `warn` ở 80% → `over` ở 100%
 - [ ] 13. `GET /api/ai/calls`
   - [ ] 13.1 Tạo `src/app/api/ai/calls/route.ts` với query `page` (≥1), `pageSize` (≤100, mặc định 25), `feature?`, `format` (`json`|`csv`)
-  - [ ] 13.2 `format=json` → `{ ok:true, data:{ rows, total, page, pageSize, totalPages } }`
-  - [ ] 13.3 `format=csv` → `Content-Type: text/csv; charset=utf-8` + `Content-Disposition: attachment; filename="ai-calls-<yyyy-MM-dd>.csv"` + BOM UTF-8 cho Excel
-  - [ ] 13.4 Header CSV tiếng Việt: `Thời gian,Tính năng,Mô hình,Input Token,Cache Read,Cache Write,Output Token,Chi phí (USD),Trạng thái,Lỗi`
-  - [ ] 13.5 Query invalid → `400` `INVALID_QUERY`
-  - [ ] 13.6 Test: `format=csv` trả đúng số dòng dữ liệu + 1 dòng header, mỗi dòng có đúng 10 cột
+  - [x] 13.2 `format=json` → `{ ok:true, data:{ rows, total, page, pageSize, totalPages } }`
+  - [x] 13.3 `format=csv` → `Content-Type: text/csv; charset=utf-8` + `Content-Disposition: attachment; filename="ai-calls-<yyyy-MM-dd>.csv"` + BOM UTF-8 cho Excel
+  - [x] 13.4 Header CSV tiếng Việt: `Thời gian,Tính năng,Mô hình,Input Token,Cache Read,Cache Write,Output Token,Chi phí (USD),Trạng thái,Lỗi`
+  - [x] 13.5 Query invalid → `400` `INVALID_QUERY`
+  - [x] 13.6 Test: `format=csv` trả đúng số dòng dữ liệu + 1 dòng header, mỗi dòng có đúng 10 cột
 - [ ] 14. `GET /api/data/export`
-  - [ ] 14.1 Tạo `src/app/api/data/export/route.ts` — trả `ReadableStream` + `Content-Type: application/json; charset=utf-8`
-  - [ ] 14.2 Set `Content-Disposition: attachment; filename="daily-loop-export-<yyyy-MM-dd>.json"`
-  - [ ] 14.3 Body chứa `schemaVersion`, `exportedAt`, `app`, `profile`, `tables`
-  - [ ] 14.4 Lỗi → `500` `EXPORT_FAILED`
-  - [ ] 14.5 Test: response parse được bằng `JSON.parse`; `tables` có đủ 14 key
+  - [x] 14.1 Tạo `src/app/api/data/export/route.ts` — trả `ReadableStream` + `Content-Type: application/json; charset=utf-8`
+  - [x] 14.2 Set `Content-Disposition: attachment; filename="daily-loop-export-<yyyy-MM-dd>.json"`
+  - [x] 14.3 Body chứa `schemaVersion`, `exportedAt`, `app`, `profile`, `tables`
+  - [x] 14.4 Lỗi → `500` `EXPORT_FAILED`
+  - [x] 14.5 Test: response parse được bằng `JSON.parse`; `tables` có đủ 14 key
 - [ ] 15. `DELETE /api/data`
-  - [ ] 15.1 Tạo `src/app/api/data/route.ts` với Zod `z.object({ confirm: z.literal("XOA") })`
-  - [ ] 15.2 Body thiếu/sai `confirm` → `400` `CONFIRMATION_REQUIRED` + message nói rõ **không** xoá gì
-  - [ ] 15.3 `confirm === "XOA"` → `wipeAllData()` → `200` `{ ok:true, data:{ deleted, dbSizeBytesBefore, dbSizeBytesAfter } }`
-  - [ ] 15.4 Lỗi transaction → `500` `DELETE_FAILED` + message "dữ liệu vẫn nguyên vẹn"
-  - [ ] 15.5 Test: `DELETE` với `{}` → 400 và đếm bản ghi không đổi
-  - [ ] 15.6 Test: `DELETE` với `{confirm:"XOA"}` → 200, mọi bảng nghiệp vụ = 0, `UserProfile` còn 1 dòng
+  - [x] 15.1 Tạo `src/app/api/data/route.ts` với Zod `z.object({ confirm: z.literal("XOA") })`
+  - [x] 15.2 Body thiếu/sai `confirm` → `400` `CONFIRMATION_REQUIRED` + message nói rõ **không** xoá gì
+  - [x] 15.3 `confirm === "XOA"` → `wipeAllData()` → `200` `{ ok:true, data:{ deleted, dbSizeBytesBefore, dbSizeBytesAfter } }`
+  - [x] 15.4 Lỗi transaction → `500` `DELETE_FAILED` + message "dữ liệu vẫn nguyên vẹn"
+  - [x] 15.5 Test: `DELETE` với `{}` → 400 và đếm bản ghi không đổi
+  - [x] 15.6 Test: `DELETE` với `{confirm:"XOA"}` → 200, mọi bảng nghiệp vụ = 0, `UserProfile` còn 1 dòng
 - [ ] 16. `GET /api/data/privacy-log` và `GET /api/data/stats`
-  - [ ] 16.1 Tạo `src/app/api/data/privacy-log/route.ts` — query `page`, `pageSize`, `feature?` → `{ rows, total, page, pageSize, totalPages }`
-  - [ ] 16.2 Tạo `src/app/api/data/stats/route.ts` → `{ dbSizeBytes, dbPath, recordCounts }`
-  - [ ] 16.3 Query invalid → `400` `INVALID_QUERY`
-  - [ ] 16.4 Test: privacy-log không trả dòng có `dataKinds = "[]"`
+  - [x] 16.1 Tạo `src/app/api/data/privacy-log/route.ts` — query `page`, `pageSize`, `feature?` → `{ rows, total, page, pageSize, totalPages }`
+  - [x] 16.2 Tạo `src/app/api/data/stats/route.ts` → `{ dbSizeBytes, dbPath, recordCounts }`
+  - [x] 16.3 Query invalid → `400` `INVALID_QUERY`
+  - [x] 16.4 Test: privacy-log không trả dòng có `dataKinds = "[]"`
 
 ## 3. UI — trang & thành phần
 
 - [ ] 17. Khung trang `src/app/settings/page.tsx`
-  - [ ] 17.1 Tạo Server Component, `export const dynamic = "force-dynamic"`, metadata "Cài đặt & Chi phí AI"
+  - [x] 17.1 Tạo Server Component, `export const dynamic = "force-dynamic"`, metadata "Cài đặt & Chi phí AI"
   - [ ] 17.2 Đọc `searchParams.tab` hợp lệ theo `SettingsTab = "profile" | "key" | "cost" | "data"`; giá trị lạ → fallback `"profile"`
-  - [ ] 17.3 Gọi 6 service bằng `Promise.all`: `getProfile`, `getKeyStatus`, `getCostSummary`, `listAiCalls`, `getDbStats`, `listPrivacyLog`
-  - [ ] 17.4 Render `SettingsHeader` + `OfflineBanner` + `SettingsTabs` + section tương ứng tab
-  - [ ] 17.5 Bọc trong `main` với class `w-full max-w-[1520px] mx-auto px-margin-lg py-gutter-lg space-y-gutter-lg`
+  - [x] 17.3 Gọi 6 service bằng `Promise.all`: `getProfile`, `getKeyStatus`, `getCostSummary`, `listAiCalls`, `getDbStats`, `listPrivacyLog`
+  - [x] 17.4 Render `SettingsHeader` + `OfflineBanner` + `SettingsTabs` + section tương ứng tab
+  - [x] 17.5 Bọc trong `main` với class `w-full max-w-[1520px] mx-auto px-margin-lg py-gutter-lg space-y-gutter-lg`
   - [ ] 17.6 Test render: tab lạ trong URL → render section Hồ sơ, không lỗi
 - [ ] 18. `src/components/settings/settings-header.tsx`
   - [ ] 18.1 Eyebrow chip "DAILY LOOP OS · HỆ THỐNG & CẤU HÌNH CỤC BỘ" (`font-label-sm uppercase tracking-wider bg-surface-container-highest text-primary`)
@@ -175,65 +175,65 @@
   - [ ] 19.4 `role="status"` + `aria-live="polite"`
   - [ ] 19.5 Style `bg-tertiary/10 border border-tertiary/30 text-tertiary rounded-xl p-gutter`
 - [ ] 20. `src/components/settings/settings-tabs.tsx`
-  - [ ] 20.1 Client Component với `useRouter` + `useSearchParams`; `router.push("?tab=…")`
-  - [ ] 20.2 4 nút với icon `badge` / `key` / `insights` / `database`
+  - [x] 20.1 Client Component với `useRouter` + `useSearchParams`; `router.push("?tab=…")`
+  - [x] 20.2 4 nút với icon `badge` / `key` / `insights` / `database`
   - [ ] 20.3 Tab active: `bg-primary/10 text-primary font-semibold shadow-inner`; tab không active: `text-on-surface-variant hover:bg-surface-container`
   - [ ] 20.4 Badge "TỐI ƯU" trên tab Chi phí (`bg-primary text-on-primary font-label-sm text-[10px]`)
-  - [ ] 20.5 `role="tablist"` + `role="tab"` + `aria-selected`
-  - [ ] 20.6 Cuộn ngang được ở 390px (wrapper `overflow-x-auto`) — không làm tràn trang
+  - [x] 20.5 `role="tablist"` + `role="tab"` + `aria-selected`
+  - [x] 20.6 Cuộn ngang được ở 390px (wrapper `overflow-x-auto`) — không làm tràn trang
 - [ ] 21. `src/components/settings/profile-section.tsx`
-  - [ ] 21.1 Input "TÊN HIỂN THỊ" (`bg-surface-container-lowest rounded-lg`, label `font-label-sm uppercase`)
-  - [ ] 21.2 Textarea "MỤC TIÊU DÀI HẠN" (2000 ký tự) kèm bộ đếm ký tự
-  - [ ] 21.3 Segmented control giọng văn AI 3 lựa chọn: Trực tiếp (`direct`) · Huấn luyện (`coach`) · Nhẹ nhàng (`gentle`)
-  - [ ] 21.4 Switch "NGÔN NGỮ ĐANG HỌC" cho `zh` / `en`; khi tắt hết hiện lỗi ngay dưới nhóm và disable nút Lưu
-  - [ ] 21.5 Select "MỨC HIỆN TẠI" cho zh và en từ `LANGUAGE_LEVELS` (kèm nhãn CEFR)
-  - [ ] 21.6 Segmented "NGÔN NGỮ PHỎNG VẤN": English (`en`) · Tiếng Việt (`vi`)
-  - [ ] 21.7 Nút "Lưu thay đổi" → `PUT /api/settings/profile`; disable khi đang gọi; toast khi thành công, hiện lỗi khi `INVALID_INPUT`
+  - [x] 21.1 Input "TÊN HIỂN THỊ" (`bg-surface-container-lowest rounded-lg`, label `font-label-sm uppercase`)
+  - [x] 21.2 Textarea "MỤC TIÊU DÀI HẠN" (2000 ký tự) kèm bộ đếm ký tự
+  - [x] 21.3 Segmented control giọng văn AI 3 lựa chọn: Trực tiếp (`direct`) · Huấn luyện (`coach`) · Nhẹ nhàng (`gentle`)
+  - [x] 21.4 Switch "NGÔN NGỮ ĐANG HỌC" cho `zh` / `en`; khi tắt hết hiện lỗi ngay dưới nhóm và disable nút Lưu
+  - [x] 21.5 Select "MỨC HIỆN TẠI" cho zh và en từ `LANGUAGE_LEVELS` (kèm nhãn CEFR)
+  - [x] 21.6 Segmented "NGÔN NGỮ PHỎNG VẤN": English (`en`) · Tiếng Việt (`vi`)
+  - [x] 21.7 Nút "Lưu thay đổi" → `PUT /api/settings/profile`; disable khi đang gọi; toast khi thành công, hiện lỗi khi `INVALID_INPUT`
   - [ ] 21.8 Không unmount section khi đổi tab (giữ dữ liệu đang gõ)
-  - [ ] 21.9 Tất cả input có `htmlFor`/`id` và `focus-visible:ring-2 focus-visible:ring-primary`
+  - [x] 21.9 Tất cả input có `htmlFor`/`id` và `focus-visible:ring-2 focus-visible:ring-primary`
 - [ ] 22. `src/components/settings/api-key-section.tsx`
-  - [ ] 22.1 Hiển thị key dạng che trong input `type="password"` `readOnly` — chỉ có `masked` từ server
-  - [ ] 22.2 Nút mắt (`visibility_off`/`visibility`) bật/tắt hiển thị 4 ký tự cuối, có `aria-label`
-  - [ ] 22.3 Nút "Đổi khóa API" mở ô nhập (input `type="password"` có thể gõ) + nút "Lưu khóa" / "Huỷ"
-  - [ ] 22.4 Chip trạng thái theo 6 trạng thái: chưa có key · đang ping · OK (kèm latency) · 401 · 429 (kèm countdown) · không gọi được
-  - [ ] 22.5 Nút "Chạy kiểm tra Ping Anthropic Endpoint" → `POST /api/settings/key/test`; disabled khi chưa có key hoặc đang ping; khi đang ping hiện icon `progress_activity animate-spin`
-  - [ ] 22.6 Banner "Đã ghi .env.local — khởi động lại `npm run dev` để có hiệu lực" + nút "Tôi đã khởi động lại — kiểm tra lại" (gọi lại `GET /api/settings/key`)
+  - [x] 22.1 Hiển thị key dạng che trong input `type="password"` `readOnly` — chỉ có `masked` từ server
+  - [x] 22.2 Nút mắt (`visibility_off`/`visibility`) bật/tắt hiển thị 4 ký tự cuối, có `aria-label`
+  - [x] 22.3 Nút "Đổi khóa API" mở ô nhập (input `type="password"` có thể gõ) + nút "Lưu khóa" / "Huỷ"
+  - [x] 22.4 Chip trạng thái theo 6 trạng thái: chưa có key · đang ping · OK (kèm latency) · 401 · 429 (kèm countdown) · không gọi được
+  - [x] 22.5 Nút "Chạy kiểm tra Ping Anthropic Endpoint" → `POST /api/settings/key/test`; disabled khi chưa có key hoặc đang ping; khi đang ping hiện icon `progress_activity animate-spin`
+  - [x] 22.6 Banner "Đã ghi .env.local — khởi động lại `npm run dev` để có hiệu lực" + nút "Tôi đã khởi động lại — kiểm tra lại" (gọi lại `GET /api/settings/key`)
   - [ ] 22.7 Notice "NGUYÊN TẮC BẢO MẬT P6 STRICT" (`bg-surface-container`, tiêu đề `text-tertiary`, code `.env.local` trong `bg-surface-container-highest text-primary`)
   - [ ] 22.8 Toggle "Chế độ khẩn cấp tiết kiệm" (`peer-checked:bg-primary`, knob `after:bg-on-primary-container`)
-  - [ ] 22.9 Mọi trạng thái dùng `aria-live="polite"`
+  - [x] 22.9 Mọi trạng thái dùng `aria-live="polite"`
 - [ ] 23. `src/components/settings/cost-section.tsx`
-  - [ ] 23.1 Bento 3 ô: Ngân sách tháng · Cache hit rate (+ sparkline 12 cột) · Tổng số lượt gọi (kèm số lượt lỗi)
-  - [ ] 23.2 Ô ngân sách: fill `bg-primary`, ≥80% → `bg-tertiary`, ≥100% → `bg-error`; hiện chip cảnh báo
-  - [ ] 23.3 Panel "Phân Bổ Chi Phí Theo Tính Năng": thanh phân bổ `h-3 rounded-full` với segment theo màu token + `title` tooltip "feature: $x (y%)"
-  - [ ] 23.4 Chú giải dưới thanh (`w-2.5 h-2.5 rounded-xs` + nhãn `font-label-sm`)
+  - [x] 23.1 Bento 3 ô: Ngân sách tháng · Cache hit rate (+ sparkline 12 cột) · Tổng số lượt gọi (kèm số lượt lỗi)
+  - [x] 23.2 Ô ngân sách: fill `bg-primary`, ≥80% → `bg-tertiary`, ≥100% → `bg-error`; hiện chip cảnh báo
+  - [x] 23.3 Panel "Phân Bổ Chi Phí Theo Tính Năng": thanh phân bổ `h-3 rounded-full` với segment theo màu token + `title` tooltip "feature: $x (y%)"
+  - [x] 23.4 Chú giải dưới thanh (`w-2.5 h-2.5 rounded-xs` + nhãn `font-label-sm`)
   - [ ] 23.5 Danh sách 5 feature dạng hàng (`p-space-md rounded-lg bg-surface-container`) kèm icon hộp, model, số lượt, USD, % tổng phí
-  - [ ] 23.6 Bộ lọc khoảng thời gian (7/30/90 ngày) → gọi lại `/api/ai/costs`
+  - [x] 23.6 Bộ lọc khoảng thời gian (7/30/90 ngày) → gọi lại `/api/ai/costs`
   - [ ] 23.7 Cảnh báo "cache có thể đang hỏng" khi `cacheHitRate === 0` và có ≥ 2 feature khác nhau trong khoảng
-  - [ ] 23.8 Tooltip "Cách tính" mở rộng công thức + giả định giá (spec.md §6.5)
-  - [ ] 23.9 Empty state khi `totals.calls === 0` có CTA về S01
+  - [x] 23.8 Tooltip "Cách tính" mở rộng công thức + giả định giá (spec.md §6.5)
+  - [x] 23.9 Empty state khi `totals.calls === 0` có CTA về S01
 - [ ] 24. `src/components/settings/ai-call-table.tsx`
-  - [ ] 24.1 Bảng 8 cột đúng thứ tự: Thời gian · Tính năng · Mô hình · Input Token · Cache Read · Output Token · Chi phí (USD) · Trạng thái
-  - [ ] 24.2 Header `bg-surface-container text-outline font-label-sm uppercase tracking-wider`; body `font-code-md tabular-nums`
-  - [ ] 24.3 Vỏ bảng `overflow-x-auto rounded-lg bg-surface-container-lowest` — cuộn ngang ở 390px
-  - [ ] 24.4 Cột Cache Read tô `text-primary font-semibold` + suffix "(Hit)" khi > 0
+  - [x] 24.1 Bảng 8 cột đúng thứ tự: Thời gian · Tính năng · Mô hình · Input Token · Cache Read · Output Token · Chi phí (USD) · Trạng thái
+  - [x] 24.2 Header `bg-surface-container text-outline font-label-sm uppercase tracking-wider`; body `font-code-md tabular-nums`
+  - [x] 24.3 Vỏ bảng `overflow-x-auto rounded-lg bg-surface-container-lowest` — cuộn ngang ở 390px
+  - [x] 24.4 Cột Cache Read tô `text-primary font-semibold` + suffix "(Hit)" khi > 0
   - [ ] 24.5 Chip tính năng tô màu theo `FEATURE_LABELS` tone
   - [ ] 24.6 Chip trạng thái: OK `bg-primary/10 text-primary` + dot; lỗi `bg-error-container/20 text-error` + `title={error}`
   - [ ] 24.7 Phân trang: "Trang trước" / "Trang X/Y" / "Trang kế"; disable khi vượt biên; footer "Hiển thị X–Y trong tổng số N bản ghi"
-  - [ ] 24.8 Nút "Xuất AiCall CSV" (`file_download`) → tải `/api/ai/calls?format=csv`
-  - [ ] 24.9 Tiền hiển thị `$` + `toFixed(4)`
+  - [x] 24.8 Nút "Xuất AiCall CSV" (`file_download`) → tải `/api/ai/calls?format=csv`
+  - [x] 24.9 Tiền hiển thị `$` + `toFixed(4)`
 - [ ] 25. `src/components/settings/data-governance.tsx`
-  - [ ] 25.1 Card "Backup & Sao Lưu Hệ Thống": nút "Xuất toàn bộ cơ sở dữ liệu (JSON)" (`bg-primary-container text-on-primary`, icon `download`) → tải `/api/data/export`
-  - [ ] 25.2 Hiển thị dung lượng DB (KB/MB) + số bản ghi từng bảng
-  - [ ] 25.3 Vùng nguy hiểm `bg-error-container/20`, tiêu đề `text-error font-label-sm uppercase`
-  - [ ] 25.4 Nút "Xóa trắng dữ liệu (2-Step Confirm)" (`bg-error-container text-on-error-container`, icon `delete_forever`) → mở hộp thoại, **không** gọi API
+  - [x] 25.1 Card "Backup & Sao Lưu Hệ Thống": nút "Xuất toàn bộ cơ sở dữ liệu (JSON)" (`bg-primary-container text-on-primary`, icon `download`) → tải `/api/data/export`
+  - [x] 25.2 Hiển thị dung lượng DB (KB/MB) + số bản ghi từng bảng
+  - [x] 25.3 Vùng nguy hiểm `bg-error-container/20`, tiêu đề `text-error font-label-sm uppercase`
+  - [x] 25.4 Nút "Xóa trắng dữ liệu (2-Step Confirm)" (`bg-error-container text-on-error-container`, icon `delete_forever`) → mở hộp thoại, **không** gọi API
   - [ ] 25.5 Hộp thoại bước 1 liệt kê đúng các bảng sẽ bị xoá + nhắc 140 thẻ seed + lệnh `npm run db:seed`
-  - [ ] 25.6 Ô nhập xác nhận: chỉ enable nút "Xóa vĩnh viễn" khi gõ đúng `XOA`; gõ sai → viền `border-error` + hint "Phải gõ đúng: XOA"
-  - [ ] 25.7 Gọi `DELETE /api/data` với `{confirm:"XOA"}`; thành công → đóng hộp thoại + reload + thông báo có lệnh seed
+  - [x] 25.6 Ô nhập xác nhận: chỉ enable nút "Xóa vĩnh viễn" khi gõ đúng `XOA`; gõ sai → viền `border-error` + hint "Phải gõ đúng: XOA"
+  - [x] 25.7 Gọi `DELETE /api/data` với `{confirm:"XOA"}`; thành công → đóng hộp thoại + reload + thông báo có lệnh seed
   - [ ] 25.8 Lỗi xoá → giữ hộp thoại mở, hiện lỗi, dữ liệu nguyên vẹn
   - [ ] 25.9 Hộp thoại có focus trap + `Esc` đóng + focus trả về nút mở
-  - [ ] 25.10 Card "Minh bạch dữ liệu đã gửi lên API" (FR-PS-07): mỗi hàng hiện thời gian · feature · chip loại dữ liệu · xem trước ≤ 280 ký tự
+  - [x] 25.10 Card "Minh bạch dữ liệu đã gửi lên API" (FR-PS-07): mỗi hàng hiện thời gian · feature · chip loại dữ liệu · xem trước ≤ 280 ký tự
   - [ ] 25.11 Bộ lọc theo tính năng cho privacy log
-  - [ ] 25.12 Dòng cũ không có `dataKinds` hiển thị "chưa ghi nhận" (không bịa dữ liệu)
+  - [x] 25.12 Dòng cũ không có `dataKinds` hiển thị "chưa ghi nhận" (không bịa dữ liệu)
 - [ ] 26. Component UI dùng chung
   - [ ] 26.1 Tạo `src/components/ui/toast.tsx` — `bg-surface-container-high text-on-surface rounded-lg shadow-md`, `aria-live="polite"`, tự tắt sau 3s
   - [ ] 26.2 Tạo `src/components/ui/confirm-dialog.tsx` — `bg-surface-container backdrop-blur-md`, focus trap, `Esc` đóng
@@ -242,10 +242,10 @@
   - [ ] 26.5 Tạo `src/components/ui/metric-tile.tsx` — pattern metric tile (§7.3 design-system)
   - [ ] 26.6 Không dùng `rounded-2xl`/`rounded-3xl`, không hardcode hex, không `shadow-xl` — kiểm tra bằng grep
 - [ ] 27. Toast/feedback
-  - [ ] 27.1 Lưu hồ sơ → toast "Đã lưu hồ sơ"
-  - [ ] 27.2 Lưu khóa → toast "Đã ghi khóa vào .env.local" + kèm banner restart
+  - [x] 27.1 Lưu hồ sơ → toast "Đã lưu hồ sơ"
+  - [x] 27.2 Lưu khóa → toast "Đã ghi khóa vào .env.local" + kèm banner restart
   - [ ] 27.3 Export → toast "Đã tải file export"
-  - [ ] 27.4 Xoá dữ liệu → toast "Đã xoá toàn bộ dữ liệu. Chạy `npm run db:seed` để nạp lại dữ liệu mẫu."
+  - [x] 27.4 Xoá dữ liệu → toast "Đã xoá toàn bộ dữ liệu. Chạy `npm run db:seed` để nạp lại dữ liệu mẫu."
 
 ## 4. Kiểm thử & nghiệm thu
 
@@ -264,37 +264,37 @@
   - [ ] 29.5 `exportAllData` parse được, `tables` đủ 14 key, số phần tử khớp `recordCounts`
   - [ ] 29.6 `PUT /api/settings/key` → file `.env.local` có đúng 1 dòng, quyền `0o600`, `DATABASE_URL` trong `.env` không bị đụng
 - [ ] 30. E2E theo AC (Playwright) — 1 test cho mỗi AC trong spec.md §8
-  - [ ] 30.1 AC-SC-01 lưu hồ sơ + chặn `learningLangs` rỗng
-  - [ ] 30.2 AC-SC-02 mức ngôn ngữ + ngôn ngữ phỏng vấn
-  - [ ] 30.3 AC-SC-03 lưu key: file `.env.local` tồn tại, `chmod 600`, HTML **không** chứa key đầy đủ
+  - [x] 30.1 AC-SC-01 lưu hồ sơ + chặn `learningLangs` rỗng
+  - [x] 30.2 AC-SC-02 mức ngôn ngữ + ngôn ngữ phỏng vấn
+  - [x] 30.3 AC-SC-03 lưu key: file `.env.local` tồn tại, `chmod 600`, HTML **không** chứa key đầy đủ
   - [ ] 30.4 AC-SC-04 ping thành công (mock 200)
   - [ ] 30.5 AC-SC-05 key sai (mock 401)
   - [ ] 30.6 AC-SC-06 rate limit (mock 429)
-  - [ ] 30.7 AC-SC-07 offline mode — banner hiện, bảng chi phí vẫn render
-  - [ ] 30.8 AC-SC-08 privacy log hiện loại dữ liệu + xem trước ≤ 280 ký tự
-  - [ ] 30.9 AC-SC-09 tổng chi phí khớp bảng + thanh phân bổ
+  - [x] 30.7 AC-SC-07 offline mode — banner hiện, bảng chi phí vẫn render
+  - [x] 30.8 AC-SC-08 privacy log hiện loại dữ liệu + xem trước ≤ 280 ký tự
+  - [x] 30.9 AC-SC-09 tổng chi phí khớp bảng + thanh phân bổ
   - [ ] 30.10 AC-SC-10 cache read > 0 ở call thứ 2; cảnh báo khi hit rate = 0
   - [ ] 30.11 AC-SC-11 giá trị `$0.0292` đúng công thức
   - [ ] 30.12 AC-SC-12 phân trang + CSV đủ 142 dòng
-  - [ ] 30.13 AC-SC-13 export JSON hợp lệ, số phần tử khớp số bản ghi
-  - [ ] 30.14 AC-SC-14 xoá 2 bước — bước 1 không xoá gì; bước 2 xoá hết; API thiếu `confirm` bị từ chối
-  - [ ] 30.15 AC-SC-15 dung lượng DB khớp truy vấn trực tiếp
-  - [ ] 30.16 AC-SC-16 cảnh báo ngân sách ở 84%
+  - [x] 30.13 AC-SC-13 export JSON hợp lệ, số phần tử khớp số bản ghi
+  - [x] 30.14 AC-SC-14 xoá 2 bước — bước 1 không xoá gì; bước 2 xoá hết; API thiếu `confirm` bị từ chối
+  - [x] 30.15 AC-SC-15 dung lượng DB khớp truy vấn trực tiếp
+  - [x] 30.16 AC-SC-16 cảnh báo ngân sách ở 84%
   - [ ] 30.17 AC-SC-17 responsive 390px + axe không có vi phạm `serious`
 - [ ] 31. Kiểm tra an toàn key
-  - [ ] 31.1 Grep toàn repo (trừ `.env.local`) không có chuỗi `sk-ant-` dạng đầy đủ
-  - [ ] 31.2 Grep source không có `console.log` nhận biến chứa `apiKey`/`ANTHROPIC_API_KEY`
-  - [ ] 31.3 Test: response của `GET /api/settings/key` và `PUT /api/settings/key` không chứa key đầy đủ
+  - [x] 31.1 Grep toàn repo (trừ `.env.local`) không có chuỗi `sk-ant-` dạng đầy đủ
+  - [x] 31.2 Grep source không có `console.log` nhận biến chứa `apiKey`/`ANTHROPIC_API_KEY`
+  - [x] 31.3 Test: response của `GET /api/settings/key` và `PUT /api/settings/key` không chứa key đầy đủ
   - [ ] 31.4 Test: file export JSON **không** chứa key
-  - [ ] 31.5 Xác nhận `.env.local` nằm trong `.gitignore` và `git status` không hiện file này
+  - [x] 31.5 Xác nhận `.env.local` nằm trong `.gitignore` và `git status` không hiện file này
 - [ ] 32. Kiểm tra hiệu năng
   - [ ] 32.1 Seed 100.000 dòng `AiCall` → `GET /api/ai/costs` < 500ms
   - [ ] 32.2 `GET /api/ai/calls?page=50` < 200ms
   - [ ] 32.3 Render `/settings` < 500ms với 10.000 dòng `AiCall` (NFR-02)
 - [ ] 33. Kiểm tra offline mode (không API key)
-  - [ ] 33.1 Chạy app không có `ANTHROPIC_API_KEY` → `/settings` render đầy đủ, không lỗi
-  - [ ] 33.2 Banner offline hiện đúng nội dung; nút Ping disabled
-  - [ ] 33.3 Bảng chi phí và thống kê DB vẫn đọc được từ SQLite
+  - [x] 33.1 Chạy app không có `ANTHROPIC_API_KEY` → `/settings` render đầy đủ, không lỗi
+  - [x] 33.2 Banner offline hiện đúng nội dung; nút Ping disabled
+  - [x] 33.3 Bảng chi phí và thống kê DB vẫn đọc được từ SQLite
   - [ ] 33.4 Lưu key qua UI → sau khi ghi `process.env`, request kế tiếp dùng key mới (không cần restart) — kiểm chứng bằng test tích hợp
 - [ ] 34. Nghiệm thu Phase 0
   - [ ] 34.1 Chạy toàn bộ test (`npm run test`) xanh
@@ -305,17 +305,17 @@
 
 ## 35. Hồ sơ người dùng — 3 ngôn ngữ, CEFR, mục tiêu sắp tới (Q2·Q3·Q7·Q8)
 
-- [ ] 35.1 Thêm `UserProfile.viLevel` (String, mặc định `"B2"`) — Registry `C29`
-- [ ] 35.2 Thêm `UserProfile.languageStandard` (String, mặc định `"cefr"`) — Registry `C32`
-- [ ] 35.3 Đổi enum level sang CEFR đầy đủ: `zero·A1·A2·B1·B2·C1·C2` (bỏ `beginner`/`elementary`/`intermediate`/`upper_intermediate`)
-- [ ] 35.4 Tạo `src/lib/levels.ts` export `LEVELS`, `LEVEL_LABELS` (vi + cefr + hsk), `LEVEL_ORDER` — nguồn chân lý duy nhất cho cả app
+- [x] 35.1 Thêm `UserProfile.viLevel` (String, mặc định `"B2"`) — Registry `C29`
+- [x] 35.2 Thêm `UserProfile.languageStandard` (String, mặc định `"cefr"`) — Registry `C32`
+- [x] 35.3 Đổi enum level sang CEFR đầy đủ: `zero·A1·A2·B1·B2·C1·C2` (bỏ `beginner`/`elementary`/`intermediate`/`upper_intermediate`)
+- [x] 35.4 Tạo `src/lib/levels.ts` export `LEVELS`, `LEVEL_LABELS` (vi + cefr + hsk), `LEVEL_ORDER` — nguồn chân lý duy nhất cho cả app
 - [ ] 35.5 Hiển thị cột HSK cạnh CEFR khi ngôn ngữ = `zh`; chỉ CEFR khi = `en`/`vi`
 - [ ] 35.6 Cho phép chọn `en`/`zh`/`vi` trong toggle ngôn ngữ; chặn tắt `en` (Zod refine) và chặn tắt hết
 - [ ] 35.7 Thêm `interviewLang` nhận `zh` (ngoài `en`/`vi`) — Q2
 - [ ] 35.8 Tạo model `UpcomingGoal` (Registry `M11`) hoặc JSON trong `UserProfile.goals` nếu chưa duyệt
 - [ ] 35.9 UI khu vực "Mục tiêu sắp tới" trong tab Hồ sơ: list + thêm/sửa/xoá, hiện tiêu đề · chuẩn · mức đích · ngày · trạng thái · priority
 - [ ] 35.10 Nút "AI đề xuất mục tiêu" → gọi endpoint gợi ý, hiển thị kết quả để người dùng duyệt trước khi lưu
-- [ ] 35.11 Hiện mức hiện tại của `vi` (B2) kèm ghi chú "bản ngữ — không cần học ngữ pháp"
+- [x] 35.11 Hiện mức hiện tại của `vi` (B2) kèm ghi chú "bản ngữ — không cần học ngữ pháp"
 - [ ] 35.12 Test: `PUT /api/settings/profile` với `enLevel: "B2"` → trả về đúng; với `enLevel: "beginner"` → 400
 - [ ] 35.13 Test: toggle tắt hết ngôn ngữ → 400; tắt `en` → 400
 - [ ] 35.14 Test: thêm 1 `UpcomingGoal` → hiển thị đúng; `targetDate = null` → hiện "chưa chốt ngày"
