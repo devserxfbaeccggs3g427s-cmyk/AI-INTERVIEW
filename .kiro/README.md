@@ -52,20 +52,20 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 
 12 feature · 21 màn hình · 9 nhóm yêu cầu chức năng · 15 model dữ liệu · 16 hàm AI · 13 tiêu chí nghiệm thu.
 
-| Feature | Màn hình | Route | Phase | Spec |
-|---|---|---|---|---|
-| **`app-foundation`** | *(cross-cutting)* | — | **-1** | [spec](specs/app-foundation/spec.md) |
-| `ai-foundation` | *(cross-cutting)* | — | 0 | [spec](specs/ai-foundation/spec.md) |
-| `daily-loop-core` | S01 Daily Loop · S02 Sinh kế hoạch AI | `/` · `/plan` | 0 | [spec](specs/daily-loop-core/spec.md) |
-| `skill-tree-evidence` | S03 Cây kỹ năng · S04 Chi tiết kỹ năng | `/skills` · `/skills/[id]` | 0 | [spec](specs/skill-tree-evidence/spec.md) |
-| `quick-log` | S05 Quick-log + lịch sử | `/log` · `/log/history` | 0 | [spec](specs/quick-log/spec.md) |
-| `personal-state-journal` | S06 Nhật ký · S12 Đánh giá chính | `/journal` · `/state` | 0 | [spec](specs/personal-state-journal/spec.md) |
-| `srs-language-review` | S09 Ôn SRS · S10 Phiên ôn 1 thẻ | `/language` · `/language/session` | 1 | [spec](specs/srs-language-review/spec.md) |
-| `settings-cost` | S15 Cài đặt & chi phí AI | `/settings` | 0 | [spec](specs/settings-cost/spec.md) |
-| `communication-training` | S07 Viết · S08 Nói · S11 Luyện ngoại ngữ chủ động | `/speak/write` · `/speak/talk` · `/language/practice` | 1–2 | [spec](specs/communication-training/spec.md) |
-| `mock-interview` | S16 Cấu hình · S17 Phiên · S18 Kết quả | `/interview/*` | 1 | [spec](specs/mock-interview/spec.md) |
-| `language-test` | S19 Danh sách · S20 Làm bài · S21 Kết quả | `/test/*` | 1 | [spec](specs/language-test/spec.md) |
-| `weekly-progress-report` | S13 Báo cáo tuần · S14 Báo cáo tiến bộ | `/review` · `/progress` | 1 | [spec](specs/weekly-progress-report/spec.md) |
+| Feature | Màn hình | Route | Phase | Trạng thái | Spec |
+|---|---|---|---|---|---|
+| **`app-foundation`** | *(cross-cutting)* | — | **-1** | ✅ xong — commit `2e3119e` | [spec](specs/app-foundation/spec.md) |
+| `ai-foundation` | *(cross-cutting)* | — | 0 | ✅ xong — lớp AI dùng chung | [spec](specs/ai-foundation/spec.md) |
+| **`daily-loop-core`** | S01 Daily Loop · S02 Sinh kế hoạch AI | `/` · `/plan` | 0 | ✅ xong — commit `f969d2e` | [spec](specs/daily-loop-core/spec.md) |
+| ⬜ `skill-tree-evidence` | S03 Cây kỹ năng · S04 Chi tiết kỹ năng | `/skills` · `/skills/[id]` | 0 | [spec](specs/skill-tree-evidence/spec.md) |
+| ⬜ `quick-log` | S05 Quick-log + lịch sử | `/log` · `/log/history` | 0 | [spec](specs/quick-log/spec.md) |
+| ⬜ `personal-state-journal` | S06 Nhật ký · S12 Đánh giá chính | `/journal` · `/state` | 0 | [spec](specs/personal-state-journal/spec.md) |
+| ⬜ `srs-language-review` | S09 Ôn SRS · S10 Phiên ôn 1 thẻ | `/language` · `/language/session` | 1 | [spec](specs/srs-language-review/spec.md) |
+| ⬜ `settings-cost` | S15 Cài đặt & chi phí AI | `/settings` | 0 | [spec](specs/settings-cost/spec.md) |
+| ⬜ `communication-training` | S07 Viết · S08 Nói · S11 Luyện ngoại ngữ chủ động | `/speak/write` · `/speak/talk` · `/language/practice` | 1–2 | [spec](specs/communication-training/spec.md) |
+| ⬜ `mock-interview` | S16 Cấu hình · S17 Phiên · S18 Kết quả | `/interview/*` | 1 | [spec](specs/mock-interview/spec.md) |
+| ⬜ `language-test` | S19 Danh sách · S20 Làm bài · S21 Kết quả | `/test/*` | 1 | [spec](specs/language-test/spec.md) |
+| ⬜ `weekly-progress-report` | S13 Báo cáo tuần · S14 Báo cáo tiến bộ | `/review` · `/progress` | 1 | [spec](specs/weekly-progress-report/spec.md) |
 
 ## 3. Lộ trình triển khai
 
@@ -80,6 +80,23 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 > **Ưu tiên cứng 1:** Không bắt đầu Phase 0 trước khi **Phase -1** xong (khung dự án phải chạy được).
 > **Ưu tiên cứng 2:** Không bắt đầu Phase 1 trước khi Phase 0 dùng được hằng ngày 7 ngày liên tiếp.
 > Nếu không dùng hằng ngày thì vấn đề là friction, không phải thiếu tính năng.
+
+### Tiến độ triển khai (cập nhật 2026-10-31)
+
+| Mốc | Trạng thái |
+|---|---|
+| Phase -1 `app-foundation` | ✅ 12/12 AC · 152/152 task · commit `2e3119e` |
+| Phase 0 `ai-foundation` | ✅ lớp AI dùng chung (`src/lib/anthropic.ts`) |
+| Phase 0 `daily-loop-core` | ✅ 10/10 AC · commit `f969d2e` · 135 unit+integration · 90 E2E |
+| Phase 0 còn lại | ⬜ `skill-tree-evidence` → `quick-log` → `personal-state-journal` → `settings-cost` |
+
+**Feature kế tiếp: `skill-tree-evidence`** (S03 Cây kỹ năng · S04 Chi tiết kỹ năng).
+Lý do chọn thứ tự này: cây kỹ năng là nơi **bằng chứng** từ mọi hoạt động đổ về,
+và `daily-loop-core` đã tạo `Evidence` — dựng cây kỹ năng tiếp sẽ khép vòng
+"P3 — tiến độ là bằng chứng" thay vì để số liệu nằm rải rác.
+
+⚠️ Route `/skills` và `/skills/[id]` hiện là **placeholder `ComingSoon`** — sẽ được
+thay bằng màn hình thật khi feature này được implement.
 
 ## 4. Bản đồ màn hình → feature
 

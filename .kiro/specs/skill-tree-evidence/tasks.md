@@ -6,11 +6,11 @@
 ## 0. Nền tảng dữ liệu
 
 - [ ] 1. Mô hình Prisma — cây kỹ năng 3 tầng
-  - [ ] 1.1 Thêm `@@index([parentId])` và `@@index([domain])` cho model `Skill` trong `prisma/schema.prisma`
-  - [ ] 1.2 Đổi quan hệ tự tham chiếu `Skill.parent` sang `onDelete: SetNull` (giữ `children` mặc định)
-  - [ ] 1.3 Thêm `@@index([skillId, createdAt])` cho model `Evidence`
-  - [ ] 1.4 Thêm `@@unique([activityId, skillId])` cho model `Evidence` (ràng buộc C6)
-  - [ ] 1.5 Thêm `@@index([skillId])` cho model `Activity` (nếu chưa có)
+  - [x] 1.1 Thêm `@@index([parentId])` và `@@index([domain])` cho model `Skill` trong `prisma/schema.prisma`
+  - [x] 1.2 Đổi quan hệ tự tham chiếu `Skill.parent` sang `onDelete: SetNull` (giữ `children` mặc định)
+  - [x] 1.3 Thêm `@@index([skillId, createdAt])` cho model `Evidence`
+  - [x] 1.4 Thêm `@@unique([activityId, skillId])` cho model `Evidence` (ràng buộc C6)
+  - [x] 1.5 Thêm `@@index([skillId])` cho model `Activity` (nếu chưa có)
   - [ ] 1.6 Thêm trường `focusSkillId String?` + quan hệ `focusSkill` (`onDelete: SetNull`) cho model `UserProfile`
   - [ ] 1.7 Viết migration dedupe: xoá bằng chứng trùng cặp (activityId, skillId) giữ bản `createdAt` sớm nhất, **trước** khi tạo unique constraint
   - [ ] 1.8 Chạy `npx prisma migrate dev` và xác nhận migration không làm mất dữ liệu seed
@@ -19,27 +19,27 @@
   - [ ] 2.2 Thêm `DOMAIN_KEYS = ["professional", "communication", "language", "personal"] as const` và nhãn tiếng Việt tương ứng
   - [ ] 2.3 Unit test: `DOMAIN_KEYS` đúng 4 phần tử, đúng thứ tự P5
 - [ ] 3. Lớp nghiệp vụ `src/lib/skills.ts` — đọc cây
-  - [ ] 3.1 Khai báo type `SkillDepth = 0 | 1 | 2`, `DomainKey`, `SkillNodeDTO`, `SkillTreeDTO`, `RecentEvidenceDTO`
-  - [ ] 3.2 Khai báo type `SkillDetailDTO`, `EvidenceRowDTO` (tách `avgRating` thang 1–4 và `avgScore` thang 0–5)
-  - [ ] 3.3 `getSkillTree()` — `skill.findMany({ where: { parentId: null }, include: { children: { include: { children: true } } } })`
-  - [ ] 3.4 Đếm bằng chứng bằng **1 query duy nhất** (`prisma.$queryRaw` group by `skillId`) trả cả `COUNT(*)`, `SUM(CASE WHEN rating >= 3)`, `AVG(rating)` — SQL nằm trong `src/lib/skills.ts`
-  - [ ] 3.5 `getSkillTree()` tổng phút bằng `activity.groupBy({ by: ["skillId"], where: { skillId: { not: null } }, _sum: { minutes: true } })`
-  - [ ] 3.6 `getSkillTree()` feed gần đây — `evidence.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { activity: { select: { title, type, skill: { select: { id, name } } } } })`
-  - [ ] 3.7 `buildTree()` gắn `evidenceCount` / `qualifiedCount` / `avgRating` / `totalMinutes` / `isFocus` vào từng node; tính `totals` (`domainCount`, `evidenceCount`, `qualifiedCount`, `pendingSkills`)
-  - [ ] 3.8 `getSkillDetail(id, { page, limit })` — skill + breadcrumb `path` + metrics + `evidence` phân trang
-  - [ ] 3.9 `levelTimeline(id)` — group `Evidence.createdAt` theo tuần, tính `level` tích luỹ từ đầu chu kỳ (52 tuần gần nhất)
-  - [ ] 3.10 `byType(id)` — group `Activity.type` chỉ gồm loại **có** bằng chứng, kèm `AVG(rating)`
-  - [ ] 3.11 `evidenceHash(id)` — 6 ký tự đầu, ổn định
+  - [x] 3.1 Khai báo type `SkillDepth = 0 | 1 | 2`, `DomainKey`, `SkillNodeDTO`, `SkillTreeDTO`, `RecentEvidenceDTO`
+  - [x] 3.2 Khai báo type `SkillDetailDTO`, `EvidenceRowDTO` (tách `avgRating` thang 1–4 và `avgScore` thang 0–5)
+  - [x] 3.3 `getSkillTree()` — `skill.findMany({ where: { parentId: null }, include: { children: { include: { children: true } } } })`
+  - [x] 3.4 Đếm bằng chứng bằng **1 query duy nhất** (`prisma.$queryRaw` group by `skillId`) trả cả `COUNT(*)`, `SUM(CASE WHEN rating >= 3)`, `AVG(rating)` — SQL nằm trong `src/lib/skills.ts`
+  - [x] 3.5 `getSkillTree()` tổng phút bằng `activity.groupBy({ by: ["skillId"], where: { skillId: { not: null } }, _sum: { minutes: true } })`
+  - [x] 3.6 `getSkillTree()` feed gần đây — `evidence.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { activity: { select: { title, type, skill: { select: { id, name } } } } })`
+  - [x] 3.7 `buildTree()` gắn `evidenceCount` / `qualifiedCount` / `avgRating` / `totalMinutes` / `isFocus` vào từng node; tính `totals` (`domainCount`, `evidenceCount`, `qualifiedCount`, `pendingSkills`)
+  - [x] 3.8 `getSkillDetail(id, { page, limit })` — skill + breadcrumb `path` + metrics + `evidence` phân trang
+  - [x] 3.9 `levelTimeline(id)` — group `Evidence.createdAt` theo tuần, tính `level` tích luỹ từ đầu chu kỳ (52 tuần gần nhất)
+  - [x] 3.10 `byType(id)` — group `Activity.type` chỉ gồm loại **có** bằng chứng, kèm `AVG(rating)`
+  - [x] 3.11 `evidenceHash(id)` — 6 ký tự đầu, ổn định
   - [ ] 3.12 Unit test: `buildTree` gắn đúng số liệu; `levelTimeline` gom đúng tuần theo giờ local
 - [ ] 4. Lớp nghiệp vụ — ghi & tính level (nguồn sự thật duy nhất)
-  - [ ] 4.1 `recomputeSkillLevel(tx, skillId)` — `qualifiedCount = count(rating >= EVIDENCE_RATING_MIN)`, `level = MIN(5, FLOOR(qualified / EVIDENCE_THRESHOLD))`, ghi `Skill.level`
-  - [ ] 4.2 `recomputeAncestors(tx, skillId)` — node tầng 1 có `level = MAX(level)` của TOÀN BỘ hậu duệ (tầng 2 + tầng 3, lấy bằng `include` lồng 2 cấp); đệ quy lên ông bà
-  - [ ] 4.3 `createEvidence(input)` — `prisma.$transaction`: tạo/cập nhật `Activity` → tạo `Evidence` → `recomputeSkillLevel` → `recomputeAncestors`
-  - [ ] 4.4 `createEvidence` trả `skill.levelUp` / `skill.levelDown` để UI báo trước khi level giảm
-  - [ ] 4.5 `createSkill(input)` — `resolveDepth()` kiểm tra tầng, ném `DepthExceededError` khi vượt tầng 3
-  - [ ] 4.6 `createSkill` ném `DuplicateNameError` (cùng cha, không phân biệt hoa thường) và `DomainRootExistsError` (domain đã có node gốc)
+  - [x] 4.1 `recomputeSkillLevel(tx, skillId)` — `qualifiedCount = count(rating >= EVIDENCE_RATING_MIN)`, `level = MIN(5, FLOOR(qualified / EVIDENCE_THRESHOLD))`, ghi `Skill.level`
+  - [x] 4.2 `recomputeAncestors(tx, skillId)` — node tầng 1 có `level = MAX(level)` của TOÀN BỘ hậu duệ (tầng 2 + tầng 3, lấy bằng `include` lồng 2 cấp); đệ quy lên ông bà
+  - [x] 4.3 `createEvidence(input)` — `prisma.$transaction`: tạo/cập nhật `Activity` → tạo `Evidence` → `recomputeSkillLevel` → `recomputeAncestors`
+  - [x] 4.4 `createEvidence` trả `skill.levelUp` / `skill.levelDown` để UI báo trước khi level giảm
+  - [x] 4.5 `createSkill(input)` — `resolveDepth()` kiểm tra tầng, ném `DepthExceededError` khi vượt tầng 3
+  - [x] 4.6 `createSkill` ném `DuplicateNameError` (cùng cha, không phân biệt hoa thường) và `DomainRootExistsError` (domain đã có node gốc)
   - [ ] 4.7 `updateSkill(skillId, patch)` — chỉ cho sửa `name` / `targetLevel` / `parentId`; **không** cho sửa `level`
-  - [ ] 4.8 `deleteSkill(skillId, { cascade })` — chuyển node con lên **ông bà** (`parentId = node.parentId`), xoá node, tính lại level nhánh bị ảnh hưởng
+  - [x] 4.8 `deleteSkill(skillId, { cascade })` — chuyển node con lên **ông bà** (`parentId = node.parentId`), xoá node, tính lại level nhánh bị ảnh hưởng
   - [ ] 4.9 `deleteSkill` ném `SkillHasChildrenError` khi có con và `cascade=false`
   - [ ] 4.10 `setFocusSkill(skillId | null)` — ghi `UserProfile.focusSkillId`
   - [ ] 4.11 `computeNextLevel(input)` — `required = (level+1) * threshold`, `missing`, `pct`, 3 `checks` (`evidence_count`, `avg_rating`, `cadence` 14 ngày)
@@ -59,26 +59,26 @@
 ## 1. API
 
 - [ ] 6. `GET /api/skills` — cây 3 tầng
-  - [ ] 6.1 Handler gọi `getSkillTree()` → `{ ok: true, data }`
-  - [ ] 6.2 Trả `nodes` (4 domain), `totals`, `focusSkillId`, `recentEvidence`
+  - [x] 6.1 Handler gọi `getSkillTree()` → `{ ok: true, data }`
+  - [x] 6.2 Trả `nodes` (4 domain), `totals`, `focusSkillId`, `recentEvidence`
   - [ ] 6.3 Test: fixture rỗng → `nodes = []`, `totals.evidenceCount = 0` (không lỗi)
   - [ ] 6.4 Test: fixture 4 domain × 2 kỹ năng × 2 mục con → cây đúng 3 tầng, đếm bằng chứng đúng từng node
 - [ ] 7. `POST /api/skills` — tạo node (FR-SK-04)
-  - [ ] 7.1 Validate body bằng Zod `CreateSkillSchema`: `name` 2–80, `domain` ∈ 4 domain, `parentId` nullable, `targetLevel` 1–5, `kind` ∈ domain|skill|child
-  - [ ] 7.2 Handler gọi `createSkill()` → `201 { ok: true, data: { skill } }`
-  - [ ] 7.3 Error mapping: `DepthExceededError` → 400 `depth_exceeded` · `DuplicateNameError` → 409 `duplicate_name` · `DomainRootExistsError` → 409 `domain_root_exists`
+  - [x] 7.1 Validate body bằng Zod `CreateSkillSchema`: `name` 2–80, `domain` ∈ 4 domain, `parentId` nullable, `targetLevel` 1–5, `kind` ∈ domain|skill|child
+  - [x] 7.2 Handler gọi `createSkill()` → `201 { ok: true, data: { skill } }`
+  - [x] 7.3 Error mapping: `DepthExceededError` → 400 `depth_exceeded` · `DuplicateNameError` → 409 `duplicate_name` · `DomainRootExistsError` → 409 `domain_root_exists`
   - [ ] 7.4 Test: thiếu tên → 400 `validation`; `targetLevel = 0` → 400; `targetLevel = 6` → 400
   - [ ] 7.5 Test: tạo node tầng 4 → 400 `depth_exceeded` (AC-SK-2)
 - [ ] 8. `GET /api/skills/[id]` — chi tiết kỹ năng
-  - [ ] 8.1 Handler gọi `getSkillDetail(id, { page, limit })` → `{ ok: true, data }`
-  - [ ] 8.2 Validate `page ≥ 1`, `limit` ∈ [1, 100]; sai → 400 `validation`
+  - [x] 8.1 Handler gọi `getSkillDetail(id, { page, limit })` → `{ ok: true, data }`
+  - [x] 8.2 Validate `page ≥ 1`, `limit` ∈ [1, 100]; sai → 400 `validation`
   - [ ] 8.3 `id` không tồn tại → 404 `not_found`
   - [ ] 8.4 Test: `metrics.totalMinutes` bằng `SUM(Activity.minutes)` qua `evidences.some({ skillId })`
   - [ ] 8.5 Test: `nextLevel.required/missing/pct` đúng công thức (AC-SK-11)
 - [ ] 9. `PATCH /api/skills/[id]` — sửa node
-  - [ ] 9.1 Validate bằng Zod: chỉ `name`, `targetLevel`, `parentId` — **không** có `level`
-  - [ ] 9.2 Handler gọi `updateSkill()` → `{ ok: true, data: { skill } }`
-  - [ ] 9.3 `404` khi không tồn tại; `400` khi đổi cha làm vượt tầng 3
+  - [x] 9.1 Validate bằng Zod: chỉ `name`, `targetLevel`, `parentId` — **không** có `level`
+  - [x] 9.2 Handler gọi `updateSkill()` → `{ ok: true, data: { skill } }`
+  - [x] 9.3 `404` khi không tồn tại; `400` khi đổi cha làm vượt tầng 3
   - [ ] 9.4 Test: PATCH `targetLevel` → `level` **không đổi** (điều kiện K4)
 - [ ] 10. `DELETE /api/skills/[id]` — xoá node
   - [ ] 10.1 Query `?cascade=true|false`; mặc định `false`
@@ -100,8 +100,8 @@
   - [ ] 12.2 Trả `{ items[], total, page, limit }`, sắp `createdAt` giảm dần
   - [ ] 12.3 Test: `total` khớp `count({ skillId })`, `items.length ≤ limit`
 - [ ] 13. `POST /api/skills/focus` — đặt trọng tâm
-  - [ ] 13.1 Validate body: `{ skillId: string | null }`
-  - [ ] 13.2 Handler gọi `setFocusSkill()` → `{ ok: true, data: { focusSkillId } }`
+  - [x] 13.1 Validate body: `{ skillId: string | null }`
+  - [x] 13.2 Handler gọi `setFocusSkill()` → `{ ok: true, data: { focusSkillId } }`
   - [ ] 13.3 `404` khi `skillId` không tồn tại
   - [ ] 13.4 Test: đặt trọng tâm → `GET /api/skills` trả `isFocus = true` đúng node đó
 - [ ] 14. Error envelope thống nhất
@@ -111,16 +111,16 @@
 ## 2. UI — S03 Cây kỹ năng
 
 - [ ] 15. Route `src/app/skills/page.tsx` (Server Component)
-  - [ ] 15.1 Gọi `getSkillTree()` và render server-side (không chờ client JS)
-  - [ ] 15.2 Render thanh metric 4 ô: Tổng domain · Tổng bằng chứng · Trọng tâm hôm nay · Kỹ năng chờ luyện
+  - [x] 15.1 Gọi `getSkillTree()` và render server-side (không chờ client JS)
+  - [x] 15.2 Render thanh metric 4 ô: Tổng domain · Tổng bằng chứng · Trọng tâm hôm nay · Kỹ năng chờ luyện
   - [ ] 15.3 Render 4 khối domain theo thứ tự cố định `professional → communication → language → personal`
   - [ ] 15.4 Empty state khi `nodes = []`: "Chưa có cây kỹ năng" + nút `[+ Tạo domain đầu tiên]`
   - [ ] 15.5 Nút "Luyện tập đo lường ngay" → điều hướng `/skills/{id node lá level = 0}`; khi chưa có node lá → vô hiệu hoá + tooltip
   - [ ] 15.6 Không hardcode số liệu trong JSX (mọi số từ `tree.totals`)
 - [ ] 16. Component `src/components/skills/skill-tree.tsx`
-  - [ ] 16.1 Render cây bằng `<ul role="tree">` / `<li role="treeitem" aria-level={depth+1}>`
-  - [ ] 16.2 Render node tầng 1 (domain) với icon theo màu domain + "Domain n/4" + tên + thang + số BC
-  - [ ] 16.3 Render node tầng 2 (kỹ năng) trong lưới `grid-cols-1 md:grid-cols-3`
+  - [x] 16.1 Render cây bằng `<ul role="tree">` / `<li role="treeitem" aria-level={depth+1}>`
+  - [x] 16.2 Render node tầng 1 (domain) với icon theo màu domain + "Domain n/4" + tên + thang + số BC
+  - [x] 16.3 Render node tầng 2 (kỹ năng) trong lưới `grid-cols-1 md:grid-cols-3`
   - [ ] 16.4 Render node tầng 3 (mục con) dưới node tầng 2 tương ứng
   - [ ] 16.5 Vẽ đường nối dashed bằng pseudo-element `::before` (`border-dashed border-outline-variant`) — dọc cho tầng 2, ngang cho tầng 3
   - [ ] 16.6 Đổi connector sang `border-primary` **solid** khi node cha đã đạt `targetLevel`
@@ -128,15 +128,15 @@
   - [ ] 16.8 Node tầng 2 có nút "+ Thêm mục con" → mở `AddChildDialog` với `parentId` prefilled
   - [ ] 16.9 Click vào node → điều hướng `/skills/[id]`
 - [ ] 17. Component `src/components/skills/skill-node.tsx`
-  - [ ] 17.1 Render 3 biến thể theo `depth` (0 domain / 1 kỹ năng / 2 mục con) theo bảng token trong spec §6.3
-  - [ ] 17.2 Node tầng 3: badge trạng thái (trọng tâm / cần luyện tập / chưa đạt chuẩn ≥3★ / kiến trúc vững)
-  - [ ] 17.3 Node tầng 3: dòng "N bằng chứng" + "Rating TB x.x" khi có `avgRating`
-  - [ ] 17.4 Node tầng 3: nút "+ Bắt đầu" khi `evidenceCount = 0` → điều hướng S04
+  - [x] 17.1 Render 3 biến thể theo `depth` (0 domain / 1 kỹ năng / 2 mục con) theo bảng token trong spec §6.3
+  - [x] 17.2 Node tầng 3: badge trạng thái (trọng tâm / cần luyện tập / chưa đạt chuẩn ≥3★ / kiến trúc vững)
+  - [x] 17.3 Node tầng 3: dòng "N bằng chứng" + "Rating TB x.x" khi có `avgRating`
+  - [x] 17.4 Node tầng 3: nút "+ Bắt đầu" khi `evidenceCount = 0` → điều hướng S04
   - [ ] 17.5 Tên node dài → `truncate` + `title` đầy đủ; `min-w-0` để connector không lệch
 - [ ] 18. Component `src/components/skills/level-scale.tsx`
-  - [ ] 18.1 Thanh segmented 5 ô; ô đạt `bg-primary` (hoặc tone theo domain), ô chưa đạt `bg-surface-variant`
-  - [ ] 18.2 3 kích thước: `sm` (`h-1 flex-1`) · `md` (`w-4 h-1.5`) · `lg` (`w-6 h-2`)
-  - [ ] 18.3 `role="img"` + `aria-label="Cấp {level} trên 5"`
+  - [x] 18.1 Thanh segmented 5 ô; ô đạt `bg-primary` (hoặc tone theo domain), ô chưa đạt `bg-surface-variant`
+  - [x] 18.2 3 kích thước: `sm` (`h-1 flex-1`) · `md` (`w-4 h-1.5`) · `lg` (`w-6 h-2`)
+  - [x] 18.3 `role="img"` + `aria-label="Cấp {level} trên 5"`
   - [ ] 18.4 Unit test render: `level = 0` → 0 ô đạt; `level = 5` → 5 ô đạt
 - [ ] 19. Component `src/components/skills/evidence-feed.tsx`
   - [ ] 19.1 Panel "Bằng Chứng Gần Đây" — danh sách 8 bản ghi mới nhất toàn hệ thống
@@ -159,13 +159,13 @@
 ## 3. UI — S04 Chi tiết kỹ năng
 
 - [ ] 22. Route `src/app/skills/[id]/page.tsx` (Server Component)
-  - [ ] 22.1 Đọc `params.id`, gọi `getSkillDetail(id)`
-  - [ ] 22.2 `detail = null` → `notFound()` với trang 404 tiếng Việt + nút "Về Cây kỹ năng"
+  - [x] 22.1 Đọc `params.id`, gọi `getSkillDetail(id)`
+  - [x] 22.2 `detail = null` → `notFound()` với trang 404 tiếng Việt + nút "Về Cây kỹ năng"
   - [ ] 22.3 Render server-side: header, 4 metric tile, biểu đồ, phân bổ, nhật ký bằng chứng
   - [ ] 22.4 Truyền `searchParams.page` vào `getSkillDetail` cho phân trang
 - [ ] 23. Component `src/components/skills/skill-detail.tsx`
-  - [ ] 23.1 Breadcrumb "Cây kỹ năng › domain › kỹ năng › mục con" — mỗi cấp click được, phần cuối `text-on-surface font-semibold`
-  - [ ] 23.2 Chip trạng thái: "Đang là trọng tâm hôm nay" + mã kỹ năng + ghi chú P3
+  - [x] 23.1 Breadcrumb "Cây kỹ năng › domain › kỹ năng › mục con" — mỗi cấp click được, phần cuối `text-on-surface font-semibold`
+  - [x] 23.2 Chip trạng thái: "Đang là trọng tâm hôm nay" + mã kỹ năng + ghi chú P3
   - [ ] 23.3 Tên kỹ năng `font-headline-lg` + mô tả `font-body-md text-on-surface-variant`
   - [ ] 23.4 4 metric tile: Cấp độ hiện tại (`x / 5` + mục tiêu) · Bằng chứng (N bản ghi + N đạt chuẩn) · Thời gian tích lũy (giờ + ~phút/phiên) · Điểm trung bình
   - [ ] 23.5 Metric "Điểm trung bình" dùng `avgScore` (thang 0–5); nếu `null` → hiện "—" (không dùng `avgRating` đắp chỗ)
@@ -175,21 +175,21 @@
   - [ ] 23.9 Nút "Tạo slot luyện tập ngày mai" → tạo `PlanItem` ngày mai `source: "manual"` (gọi API của `daily-loop-core` hoặc `POST /api/plan` nếu có)
   - [ ] 23.10 Nút "+ Ghi bằng chứng (≤10s)" → mở sheet Quick-log với `skillId` prefilled
 - [ ] 24. Component `src/components/skills/level-timeline-chart.tsx`
-  - [ ] 24.1 SVG tay `viewBox="0 0 400 120"`: 3 đường lưới `stroke-surface-container-high` dashed 3 3
-  - [ ] 24.2 Đường ngưỡng level kế tiếp `stroke-tertiary` dashed 4 4 + nhãn "Ngưỡng Cấp {n}"
+  - [x] 24.1 SVG tay `viewBox="0 0 400 120"`: 3 đường lưới `stroke-surface-container-high` dashed 3 3
+  - [x] 24.2 Đường ngưỡng level kế tiếp `stroke-tertiary` dashed 4 4 + nhãn "Ngưỡng Cấp {n}"
   - [ ] 24.3 Vùng đầy `<polygon>` gradient `primary` 25% → 0%
   - [ ] 24.4 Đường chính `<polyline stroke-primary stroke-width="2.5">` + chấm dữ liệu `r="3.5"`, điểm cuối `r="4.5"` viền `surface`
   - [ ] 24.5 Nhãn trục X: tuần đầu → "Hiện tại ({current}/{required})"
   - [ ] 24.6 `< 2` tuần có dữ liệu → **không** render chart, hiện danh sách dạng text
   - [ ] 24.7 `aria-label` mô tả nội dung chart + `<title>` trong SVG
 - [ ] 25. Component `src/components/skills/activity-distribution.tsx`
-  - [ ] 25.1 Danh sách loại hoạt động: tên + "N bản ghi (x.x★)" + thanh `h-1.5 rounded-full`
-  - [ ] 25.2 Màu thanh theo domain: `bg-primary` · `bg-secondary` · `bg-tertiary` · `bg-outline`
+  - [x] 25.1 Danh sách loại hoạt động: tên + "N bản ghi (x.x★)" + thanh `h-1.5 rounded-full`
+  - [x] 25.2 Màu thanh theo domain: `bg-primary` · `bg-secondary` · `bg-tertiary` · `bg-outline`
   - [ ] 25.3 Chỉ hiện loại **có** bằng chứng (không hiện loại 0 bản ghi)
   - [ ] 25.4 Dòng footer "Tỷ lệ bằng chứng đạt chuẩn: {pct}%" bằng `font-code-md text-primary`
 - [ ] 26. Component `src/components/skills/evidence-log.tsx`
-  - [ ] 26.1 Bảng `<table>` semantic đúng **6 cột** theo thứ tự: Ngày · Loại hoạt động · Tiêu đề hoạt động & Nội dung chứng minh · Đánh giá · SQLite State · Thao tác
-  - [ ] 26.2 `thead.font-label-sm text-outline uppercase tracking-wider bg-surface-container/60`; `tr.hover:bg-surface-container/40`
+  - [x] 26.1 Bảng `<table>` semantic đúng **6 cột** theo thứ tự: Ngày · Loại hoạt động · Tiêu đề hoạt động & Nội dung chứng minh · Đánh giá · SQLite State · Thao tác
+  - [x] 26.2 `thead.font-label-sm text-outline uppercase tracking-wider bg-surface-container/60`; `tr.hover:bg-surface-container/40`
   - [ ] 26.3 Cột Ngày: `font-code-md text-label-sm text-on-surface-variant` dạng `dd/MM/yyyy`
   - [ ] 26.4 Cột Loại hoạt động: chip màu theo `Activity.type`
   - [ ] 26.5 Cột 3: dòng 1 `Activity.title` (`font-body-md font-medium truncate`) + dòng 2 `Activity.content` (`font-label-sm text-outline truncate`)
@@ -201,16 +201,16 @@
   - [ ] 26.11 Empty state: "Chưa có bằng chứng nào cho kỹ năng này" + hướng dẫn tạo bằng chứng đầu tiên + CTA
   - [ ] 26.12 Bọc bảng trong `overflow-x-auto` để cuộn ngang ở 390px
 - [ ] 27. Component `src/components/skills/log-evidence-button.tsx` (Client)
-  - [ ] 27.1 Mở sheet Quick-log với `skillId` prefilled (dùng component của `daily-loop-core`)
-  - [ ] 27.2 Submit → `POST /api/skills/[id]/evidence` → hiện toast kết quả (kèm "Lên 1 cấp" nếu `levelUp`)
-  - [ ] 27.3 Lỗi → giữ nguyên nội dung form + nút "Thử lại"
-  - [ ] 27.4 Nút ở trạng thái disabled + `aria-busy="true"` khi đang gửi
+  - [x] 27.1 Mở sheet Quick-log với `skillId` prefilled (dùng component của `daily-loop-core`)
+  - [x] 27.2 Submit → `POST /api/skills/[id]/evidence` → hiện toast kết quả (kèm "Lên 1 cấp" nếu `levelUp`)
+  - [x] 27.3 Lỗi → giữ nguyên nội dung form + nút "Thử lại"
+  - [x] 27.4 Nút ở trạng thái disabled + `aria-busy="true"` khi đang gửi
 
 ## 4. Kiểm thử & nghiệm thu
 
 - [ ] 28. Unit test
-  - [ ] 28.1 `recomputeSkillLevel` theo bảng 0/2/**3**/5/**6**/9/12/**15**/99
-  - [ ] 28.2 `computeNextLevel`: required/missing/pct + 3 checks + case `evidenceCount < 3`
+  - [x] 28.1 `recomputeSkillLevel` theo bảng 0/2/**3**/5/**6**/9/12/**15**/99
+  - [x] 28.2 `computeNextLevel`: required/missing/pct + 3 checks + case `evidenceCount < 3`
   - [ ] 28.3 `resolveDepth`: depth 0/1/2 OK, depth 3 → `DepthExceededError`
   - [ ] 28.4 `evidenceHash`: 6 ký tự, ổn định giữa 2 lần gọi
   - [ ] 28.5 `levelTimeline`: gom đúng tuần theo giờ local, `level` tích luỹ đúng
@@ -218,8 +218,8 @@
   - [ ] 28.7 `LevelScale` render: số ô đạt = `level`
   - [ ] 28.8 `recomputeAncestors`: domain lấy MAX của **hậu duệ 2 cấp** (node tầng 3 có level cao hơn node tầng 2 thì domain phải lấy level của node tầng 3)
 - [ ] 29. Integration test (SQLite test DB)
-  - [ ] 29.1 2 BC rating 3 + 1 BC rating 4 → `level` 0→1 (AC-3)
-  - [ ] 29.2 3 BC rating 2 → `level` = 0, `evidenceCount` = 3, `qualifiedCount` = 0 (AC-SK-6)
+  - [x] 29.1 2 BC rating 3 + 1 BC rating 4 → `level` 0→1 (AC-3)
+  - [x] 29.2 3 BC rating 2 → `level` = 0, `evidenceCount` = 3, `qualifiedCount` = 0 (AC-SK-6)
   - [ ] 29.3 `Activity` không `skillId` → không sinh bằng chứng, `level` không đổi
   - [ ] 29.4 Ghi trùng cặp → 409, `level` không đổi
   - [ ] 29.5 Xoá 1 bằng chứng → `level` giảm tương ứng
@@ -230,17 +230,17 @@
   - [ ] 29.10 Đếm số query bằng counter → cây 3 tầng vẫn ≤ 5 query (không N+1)
   - [ ] 29.11 Fixture rỗng → `nodes = []`, `totals` = 0, không lỗi
 - [ ] 30. E2E (Playwright)
-  - [ ] 30.1 `/skills` hiện 4 khối domain + cây 3 tầng; click node tầng 3 → S04 đúng skill
-  - [ ] 30.2 "+ Thêm mục con" → điền form → node mới xuất hiện dưới cha (AC-SK-2)
-  - [ ] 30.3 Ghi 3 bằng chứng rating 3 → thanh thang đổi 0→1 ngay, không reload trang (AC-3)
-  - [ ] 30.4 `/skills/[id]` có bảng 6 cột đúng thứ tự + tổng thời gian khớp `SUM(minutes)` (AC-SK-4)
+  - [x] 30.1 `/skills` hiện 4 khối domain + cây 3 tầng; click node tầng 3 → S04 đúng skill
+  - [x] 30.2 "+ Thêm mục con" → điền form → node mới xuất hiện dưới cha (AC-SK-2)
+  - [x] 30.3 Ghi 3 bằng chứng rating 3 → thanh thang đổi 0→1 ngay, không reload trang (AC-3)
+  - [x] 30.4 `/skills/[id]` có bảng 6 cột đúng thứ tự + tổng thời gian khớp `SUM(minutes)` (AC-SK-4)
   - [ ] 30.5 `/skills` không có API key → mọi số liệu hiển thị (AC-SK-9)
   - [ ] 30.6 `/skills/khong-ton-tai` → trang 404 tiếng Việt, không crash
   - [ ] 30.7 Xoá node cha → banner "Đã chuyển {n} mục con lên {tên ông bà}" (AC-SK-7)
   - [ ] 30.8 Skill chưa có bằng chứng → hiện hướng dẫn tạo bằng chứng đầu tiên (AC-SK-8)
 - [ ] 31. A11y & responsive
-  - [ ] 31.1 Cây dùng `role="tree"` / `role="treeitem"` + `aria-level` + `aria-expanded`
-  - [ ] 31.2 Thanh thang có `role="img"` + `aria-label="Cấp {n} trên 5"`
+  - [x] 31.1 Cây dùng `role="tree"` / `role="treeitem"` + `aria-level` + `aria-expanded`
+  - [x] 31.2 Thanh thang có `role="img"` + `aria-label="Cấp {n} trên 5"`
   - [ ] 31.3 Bảng dùng `<table>`/`<thead>`/`<tbody>` semantic + `<caption class="sr-only">`
   - [ ] 31.4 Mọi icon-only button có `aria-label`; focus ring `focus-visible:ring-2 focus-visible:ring-primary`
   - [ ] 31.5 Kiểm tra 390px: cây 1 cột, giữ indent, bảng cuộn ngang trong `overflow-x-auto`, không tràn viewport (AC-SK-10)
@@ -255,12 +255,12 @@
 
 ## 27. Cây kỹ năng seed — Java Backend Developer (Q1)
 
-- [ ] 27.1 Tạo file `prisma/seed/skills.ts` với 4 node domain · 16 node tầng 2 · 33 node tầng 3 theo đúng cây tại `.kiro/steering/user-profile-decisions.md` §2
-- [ ] 27.2 Gắn `domain` đúng cho từng node: `professional` (29 node: 1 domain + 7 nhánh + 21 mục con) · `communication` (6) · `language` (9) · `personal` (9) — **tất cả 4 domain đều có node domain-root**
-- [ ] 27.3 Đặt `parentId` đúng 3 tầng; node domain-root có `parentId = null`; node tầng 3 trỏ về node tầng 2 tương ứng
-- [ ] 27.4 Gắn `targetLevel` mặc định: node tầng 2 = 3, node tầng 3 = 4, node tầng 1 = 3
+- [x] 27.1 Tạo file `prisma/seed/skills.ts` với 4 node domain · 16 node tầng 2 · 33 node tầng 3 theo đúng cây tại `.kiro/steering/user-profile-decisions.md` §2
+- [x] 27.2 Gắn `domain` đúng cho từng node: `professional` (29 node: 1 domain + 7 nhánh + 21 mục con) · `communication` (6) · `language` (9) · `personal` (9) — **tất cả 4 domain đều có node domain-root**
+- [x] 27.3 Đặt `parentId` đúng 3 tầng; node domain-root có `parentId = null`; node tầng 3 trỏ về node tầng 2 tương ứng
+- [x] 27.4 Gắn `targetLevel` mặc định: node tầng 2 = 3, node tầng 3 = 4, node tầng 1 = 3
 - [ ] 27.5 Tạo node `Tiếng Việt (giao tiếp công sở)` trong domain `language` — **không** có SRS deck (Q2)
 - [ ] 27.6 Đánh dấu 2 node trọng tâm: `Phân tích yêu cầu & use case` · `Lựa chọn giải pháp & đánh đổi`
-- [ ] 27.7 Seed `level = 0` cho mọi node (level chỉ tăng qua Evidence, không seed sẵn)
+- [x] 27.7 Seed `level = 0` cho mọi node (level chỉ tăng qua Evidence, không seed sẵn)
 - [ ] 27.8 Test: `prisma db seed` xong → cây có đúng 53 node, đúng 4 domain, mọi node tầng 3 có `parentId` hợp lệ
 - [ ] 27.9 Test: truy vấn `Skill.groupBy(domain)` → `professional` nhiều nhất, không có domain ngoài 4 (P5)
