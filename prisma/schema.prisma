@@ -45,6 +45,7 @@ model Activity {
   content    String?
   quality    Int? // 1..5 tự đánh giá
   aiScore    Float? // điểm AI nếu có (rubric trung bình)
+  language   String? // en|zh|vi — hoạt động ngoại ngữ (Registry C34)
   createdAt  DateTime @default(now())
   evidences  Evidence[]
   reflection Reflection?

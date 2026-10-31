@@ -218,3 +218,42 @@ HỢP ĐỒNG NỘI DUNG TỪNG SLOT:
 - Slot 4 · personal — Nhật ký & tự phản tư — 5–10 phút
 - Slot 5 · personal — Chăm sóc thể chất & tinh thần — 15–30 phút
 `.trim();
+
+/* ══ AI-02 — Quick-log autofill (FR-QL-04) ═══════════════════════════════ */
+
+/**
+ * Schema kết quả autofill — **structured output** của AI-02.
+ *
+ * ⚠️ `skillId` phải là id có thật trong cây kỹ năng ⇒ AI được cấp danh sách
+ * id hợp lệ trong `messages` (dữ liệu biến động), không nằm trong system.
+ */
+export const AutofillSchema = z.object({
+  domain: z.enum(["professional", "communication", "language", "personal"]),
+  skillId: z.string().nullable(),
+  minutes: z.number().int().min(1).max(240),
+  difficulty: z.number().int().min(1).max(4),
+  language: z.enum(["en", "zh", "vi"]).nullable(),
+});
+
+export type AutofillResult = z.infer<typeof AutofillSchema>;
+
+/**
+ * Prompt cho AI-02.
+ *
+ * ⚠️ Không có dữ liệu biến động ở đây — mọi thứ (mô tả, danh sách kỹ năng)
+ * nằm trong `messages` để không phá prompt caching (FR-AI-01, FR-AI-09).
+ */
+export const AUTOFILL_INSTRUCTION = `
+Bạn phân loại hoạt động người dùng vừa ghi.
+
+Trả về:
+- domain: 1 trong professional | communication | language | personal
+- skillId: id kỹ năng phù hợp nhất trong danh sách được cung cấp, hoặc null nếu
+  không có kỹ năng nào phù hợp (chỉ dùng id có thật trong danh sách).
+- minutes: thời lượng phù hợp (5–120 phút).
+- difficulty: 1 (rất dễ) → 4 (khó).
+- language: en | zh | vi nếu là hoạt động ngoại ngữ; null nếu không phải.
+  Lưu ý: tiếng Việt là bản ngữ, không phải hoạt động luyện ngoại ngữ.
+
+Nếu mô tả quá ngắn hoặc mơ hồ, chọn giá trị mặc định hợp lý.
+`.trim();

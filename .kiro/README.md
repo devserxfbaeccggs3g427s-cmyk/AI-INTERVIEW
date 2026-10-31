@@ -57,7 +57,7 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 | **`app-foundation`** | *(cross-cutting)* | — | **-1** | ✅ xong — commit `2e3119e` | [spec](specs/app-foundation/spec.md) |
 | `ai-foundation` | *(cross-cutting)* | — | 0 | ✅ xong — lớp AI dùng chung | [spec](specs/ai-foundation/spec.md) |
 | **`daily-loop-core`** | S01 Daily Loop · S02 Sinh kế hoạch AI | `/` · `/plan` | 0 | ✅ xong — commit `f969d2e` | [spec](specs/daily-loop-core/spec.md) |
-| ⬜ `skill-tree-evidence` | S03 Cây kỹ năng · S04 Chi tiết kỹ năng | `/skills` · `/skills/[id]` | 0 | [spec](specs/skill-tree-evidence/spec.md) |
+| **`skill-tree-evidence`** | S03 Cây kỹ năng · S04 Chi tiết kỹ năng | `/skills` · `/skills/[id]` | 0 | ✅ xong — commit `a797f69` | [spec](specs/skill-tree-evidence/spec.md) |
 | ⬜ `quick-log` | S05 Quick-log + lịch sử | `/log` · `/log/history` | 0 | [spec](specs/quick-log/spec.md) |
 | ⬜ `personal-state-journal` | S06 Nhật ký · S12 Đánh giá chính | `/journal` · `/state` | 0 | [spec](specs/personal-state-journal/spec.md) |
 | ⬜ `srs-language-review` | S09 Ôn SRS · S10 Phiên ôn 1 thẻ | `/language` · `/language/session` | 1 | [spec](specs/srs-language-review/spec.md) |
@@ -88,15 +88,16 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 | Phase -1 `app-foundation` | ✅ 12/12 AC · 152/152 task · commit `2e3119e` |
 | Phase 0 `ai-foundation` | ✅ lớp AI dùng chung (`src/lib/anthropic.ts`) |
 | Phase 0 `daily-loop-core` | ✅ 10/10 AC · commit `f969d2e` · 135 unit+integration · 90 E2E |
-| Phase 0 còn lại | ⬜ `skill-tree-evidence` → `quick-log` → `personal-state-journal` → `settings-cost` |
+| Phase 0 `skill-tree-evidence` | ✅ S03 + S04 · commit `a797f69` · 169 unit+integration · 120 E2E |
+| Phase 0 còn lại | ⬜ `quick-log` → `personal-state-journal` → `settings-cost` |
 
-**Feature kế tiếp: `skill-tree-evidence`** (S03 Cây kỹ năng · S04 Chi tiết kỹ năng).
-Lý do chọn thứ tự này: cây kỹ năng là nơi **bằng chứng** từ mọi hoạt động đổ về,
-và `daily-loop-core` đã tạo `Evidence` — dựng cây kỹ năng tiếp sẽ khép vòng
-"P3 — tiến độ là bằng chứng" thay vì để số liệu nằm rải rác.
+**Feature kế tiếp: `quick-log`** (S05 Quick-log + lịch sử).
+Lý do chọn thứ tự này: `daily-loop-core` đã dựng **trigger** mở Quick-log
+(`quick-log-trigger.tsx` + hotkey Ctrl/Cmd+K) nhưng chưa có sheet thật — đây là
+một đường vào đã nối sẵn nhưng bấm vào chưa làm gì ⇒ dangling affordance, ảnh
+hưởng P2 (ghi nhập dưới 10 giây) ngay trên trang chủ.
 
-⚠️ Route `/skills` và `/skills/[id]` hiện là **placeholder `ComingSoon`** — sẽ được
-thay bằng màn hình thật khi feature này được implement.
+⚠️ Route `/skills` và `/skills/[id]` **đã** thay placeholder bằng màn hình thật.
 
 ## 4. Bản đồ màn hình → feature
 

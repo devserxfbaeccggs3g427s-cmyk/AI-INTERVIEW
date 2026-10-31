@@ -32,7 +32,17 @@ async function warmUp(): Promise<void> {
   // ⚠️ Phải warm-up **cả API route** — Next.js compile route lazy, nên lần
   // gọi đầu tiên tới route đó có thể trả HTML (trang lỗi) thay vì JSON ⇒
   // `res.json()` ném "Unexpected token '<'", hoặc body request bị mất.
-  const routes = ["/", "/plan", "/api/plan", "/api/plan/generate"];
+  const routes = [
+    "/",
+    "/plan",
+    "/log",
+    "/log/history",
+    "/skills",
+    "/api/plan",
+    "/api/plan/generate",
+    "/api/skills",
+    "/api/log/history",
+  ];
 
   for (const route of routes) {
     try {
@@ -50,6 +60,52 @@ async function warmUp(): Promise<void> {
   }
 
   await warmUpMutatingRoutes(baseURL);
+  await warmUpLogRoutes(baseURL);
+}
+
+/**
+ * Warm-up route **ghi dữ liệu** của quick-log.
+ *
+ * ⚠️ Dùng text có timestamp ⇒ mỗi lần warm-up tạo 1 Activity riêng, không ảnh
+ * hưởng test khác (test tự seed lại trước khi assert).
+ */
+async function warmUpLogRoutes(baseURL: string): Promise<void> {
+  const json = { "Content-Type": "application/json" };
+  const marker = `warmup-${Date.now()}`;
+
+  const calls: Array<{ url: string; method: string; body?: string }> = [
+    {
+      url: `${baseURL}/api/log`,
+      method: "POST",
+      body: JSON.stringify({
+        text: marker,
+        domain: "personal",
+        type: "journal",
+        minutes: 5,
+        skillId: null,
+        difficulty: null,
+        createEvidence: false,
+      }),
+    },
+    {
+      url: `${baseURL}/api/log/autofill`,
+      method: "POST",
+      body: JSON.stringify({ text: "học kiến thức mới", domain: "professional" }),
+    },
+  ];
+
+  for (const call of calls) {
+    try {
+      await fetch(call.url, {
+        method: call.method,
+        headers: json,
+        body: call.body,
+        signal: AbortSignal.timeout(120_000),
+      });
+    } catch {
+      // Bỏ qua — server sẽ compile ở request thật.
+    }
+  }
 }
 
 /**

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
-import { QuickLogTrigger } from "@/components/daily-loop/quick-log-trigger";
+import { QuickLogLauncher } from "@/components/quick-log/quick-log-launcher";
 import { ReplanModal } from "@/components/daily-loop/replan-modal";
 import type { PlanSlotDTO } from "@/lib/daily-loop";
 
@@ -62,7 +62,8 @@ export function DailyActions({
   return (
     <>
       <div className="flex flex-wrap items-center gap-space-sm">
-        <QuickLogTrigger date={date} />
+        {/* FR-QL-01 — mở sheet ngay lập tức, không chờ request nào. */}
+        <QuickLogLauncher date={date} />
 
         <button
           type="button"

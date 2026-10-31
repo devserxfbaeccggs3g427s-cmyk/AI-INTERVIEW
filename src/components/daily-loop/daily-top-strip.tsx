@@ -29,7 +29,7 @@ export function DailyTopStrip({
       aria-label="Thanh trạng thái"
       className="flex flex-wrap items-center justify-between gap-space-md"
     >
-      <div className="flex items-center gap-space-sm">
+      <div className="flex min-w-0 flex-wrap items-center gap-space-sm">
         <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">
           Daily Loop OS
         </span>
@@ -41,28 +41,36 @@ export function DailyTopStrip({
         )}
       </div>
 
-      <div className="flex items-center gap-space-md">
-        <span className="inline-flex items-center gap-1 font-code-md text-code-md text-primary tabular">
+      {/* ⚠️ `flex-wrap` + `min-w-0` — nhóm chip phải xuống dòng được ở
+          viewport hẹp, nếu không sẽ tràn ngang (NFR-02). */}
+      <div className="flex min-w-0 flex-wrap items-center gap-space-md">
+        <span className="inline-flex shrink-0 items-center gap-1 font-code-md text-code-md text-primary tabular">
           <Icon name="local_fire_department" size={16} />
           {streak}
           <span className="font-label-sm text-label-sm text-outline">ngày</span>
         </span>
 
-        <span className="inline-flex items-center gap-1 font-code-md text-code-md text-secondary tabular">
+        <span className="inline-flex shrink-0 items-center gap-1 font-code-md text-code-md text-secondary tabular">
           <Icon name="electric_bolt" size={16} />
           {weeklyEnergy.hasData ? `${weeklyEnergy.pct}%` : "—"}
           <span className="font-label-sm text-label-sm text-outline">năng lượng tuần</span>
         </span>
 
-        {/* Lộ trình 3 giai đoạn (FR-DL-09) — tiêu chí đo được, không deadline. */}
+        {/* Lộ trình 3 giai đoạn (FR-DL-09) — tiêu chí đo được, không deadline.
+            ⚠️ `min-w-0` + `truncate` — chip dài sẽ tràn ngang ở viewport 320px
+            (NFR-02 responsive). */}
         {stage && (
           <span
             title={`${stage.stage.criteria.condition} — ${stage.stage.criteria.criteria}`}
-            className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm text-on-surface-variant"
+            className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-full bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm text-on-surface-variant"
           >
-            <Icon name="flag" size={12} className="text-primary" />
-            Giai đoạn {stage.stage.id} · {stage.stage.name}
-            <span className="font-code-md text-code-md text-primary tabular">{stage.pct}%</span>
+            <Icon name="flag" size={12} className="shrink-0 text-primary" />
+            <span className="truncate">
+              Giai đoạn {stage.stage.id} · {stage.stage.name}
+            </span>
+            <span className="shrink-0 font-code-md text-code-md text-primary tabular">
+              {stage.pct}%
+            </span>
           </span>
         )}
       </div>

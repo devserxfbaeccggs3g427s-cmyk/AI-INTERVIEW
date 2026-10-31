@@ -117,10 +117,32 @@ test.describe("responsive — không tràn ngang (AC-AF-9)", () => {
     const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
     await expect(nav.getByRole("link")).toHaveCount(4);
 
-    const scrollWidth = await page.evaluate(
-      () => document.documentElement.scrollWidth,
-    );
-    expect(scrollWidth).toBeLessThanOrEqual(320);
+    const { scrollWidth, offenders } = await page.evaluate(() => {
+      const list: Array<{ tag: string; cls: string; right: number; text: string }> = [];
+
+      document.querySelectorAll<HTMLElement>("*").forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.right > window.innerWidth + 0.5) {
+          list.push({
+            tag: el.tagName,
+            cls: (el.className || "").toString().slice(0, 100),
+            right: Math.round(rect.right),
+            text: (el.textContent || "").trim().slice(0, 60),
+          });
+        }
+      });
+
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        offenders: list.slice(0, 8),
+      };
+    });
+
+    // Diagnostic: cho biết element nào tràn ngang khi fail.
+    expect(
+      scrollWidth,
+      `scrollWidth=${scrollWidth}; tràn: ${JSON.stringify(offenders)}`,
+    ).toBeLessThanOrEqual(320);
   });
 
   test("container giữ max-width 1520px ở viewport rộng", async ({ page }) => {
