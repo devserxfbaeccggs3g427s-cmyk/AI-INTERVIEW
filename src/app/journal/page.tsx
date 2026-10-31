@@ -1,19 +1,36 @@
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { env } from "@/lib/env";
+import { getContextQuestions, getDraft, resolveJournalContext } from "@/lib/journal";
+import { toDateKey } from "@/lib/dates";
+
+import { JournalSheet } from "@/components/journal/journal-sheet";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder — màn hình `Nhật ký & phản hồi AI` thuộc feature `personal-state-journal`.
+ * S06 — Nhật ký & phản hồi AI (`/journal`).
  *
- * ⚠️ Trang này tồn tại để (1) bottom nav / overflow menu không prefetch 404
- * và (2) người dùng thấy màn hình "sắp có" thay vì lỗi.
+ * ⚠️ FR-PS-07 — nhật ký lưu cục bộ. Chỉ khi bấm "Gửi AI phản hồi" thì nội
+ * dung mới rời máy (qua `POST /api/journal/feedback-ai`).
  */
-export default function Page() {
+export default async function JournalPage() {
+  const now = new Date();
+  const context = resolveJournalContext(now);
+  const questions = getContextQuestions(context).map((text) => ({ text }));
+
+  // ⚠️ FR-PSJ-01 — khôi phục bản nháp đang mở sau khi tải lại trang.
+  const draft = await getDraft();
+
   return (
-    <ComingSoon
-      title="Nhật ký & phản hồi AI"
-      description="Ghi nhật nhanh và nhận phản hồi có cấu trúc từ AI."
-      feature="personal-state-journal"
+    <JournalSheet
+      date={toDateKey(now)}
+      context={context}
+      questions={questions}
+      aiEnabled={!env.isOffline}
+      initialId={draft?.id ?? null}
+      initialContent={draft?.answer ?? ""}
+      initialAiSummary={draft?.aiSummary ?? null}
+      initialAiQuestion={draft?.aiQuestion ?? null}
+      initialStatus={draft?.status ?? "draft"}
     />
   );
 }

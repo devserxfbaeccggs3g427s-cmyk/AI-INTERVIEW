@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | "not_found"
   | "conflict"
   | "no_api_key"
+  | "consent_required"
   | "ai_error"
   | "db_error"
   | "unknown";
@@ -30,6 +31,7 @@ const STATUS_BY_ERROR: Record<ApiErrorCode, number> = {
   not_found: 404,
   conflict: 409,
   no_api_key: 503,
+  consent_required: 401,
   ai_error: 502,
   db_error: 500,
   unknown: 500,

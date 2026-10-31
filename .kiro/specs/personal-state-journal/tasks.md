@@ -7,15 +7,15 @@
 ## 0. Nền tảng dữ liệu
 
 - [ ] 1. Mô hình Prisma — `Reflection` + `DailyState` + `AiCall`
-  - [ ] 1.1 Sửa `prisma/schema.prisma`: đổi `Reflection.activityId` từ `String` bắt buộc → `String?` và `activity Activity?` (cho phép bản nháp chưa commit — DEC-01)
-  - [ ] 1.2 Thêm vào `Reflection`: `status String @default("published")`, `classifiedDomain String?`, `classifiedSkillId String?`, `classificationConfidence Float?`, `draftUpdatedAt DateTime?`, `updatedAt DateTime @updatedAt`
-  - [ ] 1.3 Thêm index `@@index([status, createdAt])` và `@@index([classifiedDomain])` vào `Reflection`
-  - [ ] 1.4 Thêm vào `AiCall`: `preview String?` (≤160 ký tự) và `sourceId String?` (trỏ `reflectionId`)
-  - [ ] 1.5 Thêm index `@@index([createdAt])` vào `AiCall` (nếu chưa có)
-  - [ ] 1.6 Xác nhận `DailyState.date` là `@unique` và `DailyState.sleep` là `Float?` — không thêm field mới (DEC-11)
-  - [ ] 1.7 Chạy `npx prisma migrate dev --name add_reflection_draft_and_disclosure`
+  - [x] 1.1 Sửa `prisma/schema.prisma`: đổi `Reflection.activityId` từ `String` bắt buộc → `String?` và `activity Activity?` (cho phép bản nháp chưa commit — DEC-01)
+  - [x] 1.2 Thêm vào `Reflection`: `status String @default("published")`, `classifiedDomain String?`, `classifiedSkillId String?`, `classificationConfidence Float?`, `draftUpdatedAt DateTime?`, `updatedAt DateTime @updatedAt`
+  - [x] 1.3 Thêm index `@@index([status, createdAt])` và `@@index([classifiedDomain])` vào `Reflection`
+  - [x] 1.4 Thêm vào `AiCall`: `preview String?` (≤160 ký tự) và `sourceId String?` (trỏ `reflectionId`)
+  - [x] 1.5 Thêm index `@@index([createdAt])` vào `AiCall` (nếu chưa có)
+  - [x] 1.6 Xác nhận `DailyState.date` là `@unique` và `DailyState.sleep` là `Float?` — không thêm field mới (DEC-11)
+  - [x] 1.7 Chạy `npx prisma migrate dev --name add_reflection_draft_and_disclosure`
   - [ ] 1.8 Viết seed bổ sung: 3 `Reflection` mẫu (published, có `aiFeedback` JSON `{summary, sharpQuestion}`) + 7 bản ghi `DailyState` cho 7 ngày gần nhất
-  - [ ] 1.9 Unit test: `prisma/schema.prisma` hợp lệ (`npx prisma validate`) + `Reflection` mới tạo được với `activityId = null` và `status = "draft"`
+  - [x] 1.9 Unit test: `prisma/schema.prisma` hợp lệ (`npx prisma validate`) + `Reflection` mới tạo được với `activityId = null` và `status = "draft"`
 - [ ] 2. Hằng số cấu hình (`src/lib/config.ts`)
   - [ ] 2.1 Thêm `DAILY_STATE_MAX_SECONDS = 15` (đã có sẵn trong `project.md` §5 — kiểm tra, bổ sung nếu thiếu)
   - [ ] 2.2 Thêm `JOURNAL_PROMPT_CONTEXTS` và `JOURNAL_PROMPTS` (3 câu hỏi mở theo ngữ cảnh — bảng riêng trong `spec.md` §6.1.1)
@@ -29,27 +29,27 @@
   - [ ] 3.4 Thêm `dayKeyOfWeekday(date: Date): "T2"|"T3"|"T4"|"T5"|"T6"|"T7"|"CN"`
   - [ ] 3.5 Unit test: `toDayKey`/`fromDayKey` khớp vòng ở 2 mốc 23:30 và 00:30 (chống lệch UTC — PS-R8)
 - [ ] 4. Lớp nghiệp vụ nhật ký (`src/lib/journal.ts`)
-  - [ ] 4.1 Tạo file với type `JournalItemDto`, `JournalFeedbackDto`, `JournalClassificationDto`, `Domain`
+  - [x] 4.1 Tạo file với type `JournalItemDto`, `JournalFeedbackDto`, `JournalClassificationDto`, `Domain`
   - [ ] 4.2 Implement `listJournal({limit, cursor, status})` — cursor pagination `(createdAt, id)`, chỉ lấy `status = "published"`, join `Activity` + `Skill`
   - [ ] 4.3 Implement `createJournal({answer, prompt, domain, skillId})` — tạo `Reflection` + `Activity` (type `journal`) + `Evidence` (rating 3) nếu có skill hợp lệ, trong 1 `prisma.$transaction`
-  - [ ] 4.4 Implement `createDraft` / `getDraft` / `deleteDraft` — chỉ đụng bản nháp (`status = "draft"`), không bao giờ ghi đè bản đã commit
+  - [x] 4.4 Implement `createDraft` / `getDraft` / `deleteDraft` — chỉ đụng bản nháp (`status = "draft"`), không bao giờ ghi đè bản đã commit
   - [ ] 4.5 Implement `updateJournal(id, {answer, prompt})` — cập nhật `Reflection.answer` + `Activity.content`/`title`; đặt `isStale = true` nếu `aiFeedback` khác null (FR-PSJ-06)
-  - [ ] 4.6 Implement `saveFeedback(id, feedback)` — serialize `{summary, sharpQuestion}` vào `Reflection.aiFeedback`
+  - [x] 4.6 Implement `saveFeedback(id, feedback)` — serialize `{summary, sharpQuestion}` vào `Reflection.aiFeedback`
   - [ ] 4.7 Implement `saveClassification(id, classification)` — map `skillName` → `Skill.id` qua `findSkillByName`; `skillId = null` nếu không tồn tại (RB-4)
   - [ ] 4.8 Implement `acceptEvidence(id)` — tạo `Evidence{rating:3}` + cập nhật `Skill.level` theo ngưỡng `EVIDENCE_THRESHOLD` (P3)
-  - [ ] 4.9 Implement `classifyLocally(text)` theo bảng từ khoá trong `design.md` §3.8 — luôn trả `source: "local"`, không gọi API
+  - [x] 4.9 Implement `classifyLocally(text)` theo bảng từ khoá trong `design.md` §3.8 — luôn trả `source: "local"`, không gọi API
   - [ ] 4.10 Implement `buildJournalContext(date)` — 6 slot hôm nay, tên skill đang học, streak, số ngày có nhật ký trong 7 ngày
-  - [ ] 4.11 Unit test: `classifyLocally` đúng domain theo từ khoá, `confidence` trong `[0,1]`, `source === "local"`
+  - [x] 4.11 Unit test: `classifyLocally` đúng domain theo từ khoá, `confidence` trong `[0,1]`, `source === "local"`
   - [ ] 4.12 Integration test: `createJournal` tạo đúng 1 `Activity` + 1 `Reflection` liên kết 1–1; `updateJournal` không tạo `AiCall` mới
 - [ ] 5. Lớp nghiệp vụ chỉ số cá nhân (`src/lib/state.ts`)
-  - [ ] 5.1 Tạo file với type `DailyStateDto`, `DailyStateInput`, `StateSeriesPoint`, `CorrelationResult`, `CorrelationFinding`
-  - [ ] 5.2 Implement `getStateWindow(windowDays: 7 | 30)` — `today`, `prefill` (bản ghi gần nhất **trước** hôm nay), `history`, `series` (kèm `doneSlots` từ `PlanItem.done`)
-  - [ ] 5.3 Implement `upsertState(input)` — upsert theo `DailyState.date` unique, chuẩn hoá 00:00 local (FR-PSJ-08)
+  - [x] 5.1 Tạo file với type `DailyStateDto`, `DailyStateInput`, `StateSeriesPoint`, `CorrelationResult`, `CorrelationFinding`
+  - [x] 5.2 Implement `getStateWindow(windowDays: 7 | 30)` — `today`, `prefill` (bản ghi gần nhất **trước** hôm nay), `history`, `series` (kèm `doneSlots` từ `PlanItem.done`)
+  - [x] 5.3 Implement `upsertState(input)` — upsert theo `DailyState.date` unique, chuẩn hoá 00:00 local (FR-PSJ-08)
   - [ ] 5.4 Implement `getStateSummary(windowDays)` — trả `nDays`, `nComplete`, `avgSleep`, `avgMood`, `avgEnergy`, `avgFocus` cho header S12 (dùng truy vấn `design.md` §4.3.4.3)
-  - [ ] 5.5 Implement `pearson(xs, ys)` — trả `null` khi `n < 3` hoặc mẫu không biến thiên
-  - [ ] 5.6 Implement `computeCorrelations(windowDays)` — đọc `DailyState` + `Activity` (JOIN) + `PlanItem`; chia nhóm theo `CORRELATION_RULES`; tính `deltaPct`; `sufficiency = "insufficient"` khi `n < 7`
+  - [x] 5.5 Implement `pearson(xs, ys)` — trả `null` khi `n < 3` hoặc mẫu không biến thiên
+  - [x] 5.6 Implement `computeCorrelations(windowDays)` — đọc `DailyState` + `Activity` (JOIN) + `PlanItem`; chia nhóm theo `CORRELATION_RULES`; tính `deltaPct`; `sufficiency = "insufficient"` khi `n < 7`
   - [ ] 5.7 Implement `confidence = min(1, n/30) * min(1, |r|)`; bỏ phát hiện khi `|r| < 0.3`
-  - [ ] 5.8 Unit test: `pearson` đúng với mẫu đã biết, `null` khi mẫu không biến thiên
+  - [x] 5.8 Unit test: `pearson` đúng với mẫu đã biết, `null` khi mẫu không biến thiên
   - [ ] 5.9 Unit test: `computeCorrelations` với dữ liệu giả → `insufficient` khi `n < 7`, đúng `n` và đúng 1 phát hiện khi `n >= 7`
   - [ ] 5.10 Integration test: `upsertState` 2 lần trong ngày → chỉ 1 bản ghi, `updatedAt` mới nhất
 - [ ] 6. Truy vấn SQL dùng chung
@@ -72,15 +72,15 @@
   - [ ] 7.8 Unit test: `JournalFeedbackSchema` từ chối `summary` > 200 ký tự, `sharpQuestion` rỗng, `confidence` ngoài `[0,1]`
   - [ ] 7.9 Unit test: phản hồi mẫu có `summary` 2 câu hoặc `sharpQuestion` là bullet → bị chặn ở tầng validate (`countSentences`)
 - [ ] 8. Wrapper AI (`src/lib/anthropic.ts`)
-  - [ ] 8.1 Thêm `AI_MODEL = { feedback: "claude-opus-5", classify: "claude-haiku-4-5" }`
-  - [ ] 8.2 Thêm `hasApiKey(): boolean`
+  - [x] 8.1 Thêm `AI_MODEL = { feedback: "claude-opus-5", classify: "claude-haiku-4-5" }`
+  - [x] 8.2 Thêm `hasApiKey(): boolean`
   - [ ] 8.3 Implement `logAiCall({feature, model, tokens, cost, ok, error, preview, sourceId})` — ghi `AiCall` qua Prisma, trả `id` (FR-AI-07)
-  - [ ] 8.4 Implement `buildPreview(text, max = 160)` — cắt + thêm `…`, không vượt 160 ký tự
+  - [x] 8.4 Implement `buildPreview(text, max = 160)` — cắt + thêm `…`, không vượt 160 ký tự
   - [ ] 8.5 Implement `classifyJournal({text, skillNames})` — `claude-haiku-4-5`, **không streaming**, effort `low`, `output_config.format = zodOutputFormat(JournalClassifySchema)`, `max_tokens: 300`
   - [ ] 8.6 Implement `streamJournalFeedback({answer, context, onDelta, signal})` — `claude-opus-5`, **streaming**, effort `low`, `output_config.format = zodOutputFormat(JournalFeedbackSchema)`, `max_tokens: 600`
   - [ ] 8.7 Thiết lập `system` gồm 2 block cho cả 2 call: block 1 hằng số, block 2 có `cache_control: { type: "ephemeral" }` (FR-AI-01)
   - [ ] 8.8 Bắt typed exception chain: `AuthenticationError` → `RateLimitError` → `APIStatusError` → `APIConnectionError`; mỗi nhánh ghi `AiCall{ok:false, error}` rồi ném lại lỗi có message tiếng Việt
-  - [ ] 8.9 Kiểm tra `stop_reason === "refusal"` **trước** khi đọc `content` (SPEC §5.5)
+  - [x] 8.9 Kiểm tra `stop_reason === "refusal"` **trước** khi đọc `content` (SPEC §5.5)
   - [ ] 8.10 Tính `estimatedCost` theo bảng giá `claude-opus-5` $5/$25 và `claude-haiku-4-5` $1/$5 mỗi 1M token (cache đọc tính 0.1× input)
   - [ ] 8.11 Unit test: `buildPreview` cắt đúng 160 ký tự, không cắt giữa ký tự Unicode đa byte
   - [ ] 8.12 Integration test (mock SDK): `cache_read_input_tokens > 0` ở call thứ 2 với cùng system prompt (AC-5 của SPEC)
@@ -88,11 +88,11 @@
 ## 2. API
 
 - [ ] 9. `GET/POST /api/journal`
-  - [ ] 9.1 Tạo `src/app/api/journal/route.ts`
-  - [ ] 9.2 `GET`: validate query `limit` (1–100) + `cursor` + `status`; trả `{ok:true, data:{items, nextCursor}}`
-  - [ ] 9.3 `POST`: validate body bằng Zod — `answer` 1–10.000 ký tự, `prompt` tối đa 500 ký tự
-  - [ ] 9.4 `POST` handler → `createJournal()` → trả `{ok:true, data:{reflection}}`
-  - [ ] 9.5 Error mapping: `400 invalid_body` · `422 prompt_too_long` · `500 db_error`
+  - [x] 9.1 Tạo `src/app/api/journal/route.ts`
+  - [x] 9.2 `GET`: validate query `limit` (1–100) + `cursor` + `status`; trả `{ok:true, data:{items, nextCursor}}`
+  - [x] 9.3 `POST`: validate body bằng Zod — `answer` 1–10.000 ký tự, `prompt` tối đa 500 ký tự
+  - [x] 9.4 `POST` handler → `createJournal()` → trả `{ok:true, data:{reflection}}`
+  - [x] 9.5 Error mapping: `400 invalid_body` · `422 prompt_too_long` · `500 db_error`
   - [ ] 9.6 Integration test: `POST` tạo đúng 1 `Activity` + 1 `Reflection`; `answer` rỗng → `400`
 - [ ] 10. `GET/PUT/DELETE /api/journal/draft`
   - [ ] 10.1 Tạo `src/app/api/journal/draft/route.ts`
@@ -101,9 +101,9 @@
   - [ ] 10.4 `DELETE` → xoá bản nháp
   - [ ] 10.5 Integration test: `PUT` 3 lần → chỉ 1 bản nháp trong DB; `published` không bị ghi đè
 - [ ] 11. `PATCH /api/journal/[id]`
-  - [ ] 11.1 Tạo `src/app/api/journal/[id]/route.ts` với `params: { params: Promise<{ id: string }> }` (Next.js 15)
-  - [ ] 11.2 Handler: `updateJournal()` → trả `{ok:true, data:{reflection}}`; `isStale = true` nếu đã có `aiFeedback`
-  - [ ] 11.3 Error mapping: `400 invalid_body` · `404 not_found`
+  - [x] 11.1 Tạo `src/app/api/journal/[id]/route.ts` với `params: { params: Promise<{ id: string }> }` (Next.js 15)
+  - [x] 11.2 Handler: `updateJournal()` → trả `{ok:true, data:{reflection}}`; `isStale = true` nếu đã có `aiFeedback`
+  - [x] 11.3 Error mapping: `400 invalid_body` · `404 not_found`
   - [ ] 11.4 Implement `DELETE` cùng file → `deleteJournal(id)` (cascade xoá `Activity` + `Evidence`); `404` khi không tìm thấy
   - [ ] 11.5 Integration test: sửa nhật ký đã có phản hồi → `isStale = true` và **không** có `AiCall` mới (AC-PS-10)
   - [ ] 11.6 Integration test: `DELETE` → `Reflection` + `Activity` liên kết đều bị xoá
@@ -120,12 +120,12 @@
   - [ ] 12.10 Integration test: `stop_reason: "refusal"` → `event: error` + `AiCall{ok:false, error:"refusal"}` + trang không crash (AC-PS-11)
   - [ ] 12.11 Integration test: `AiCall.preview` ≤ 160 ký tự và `sourceId` trỏ đúng `reflectionId`
 - [ ] 13. `POST /api/journal/classify` (AI-06)
-  - [ ] 13.1 Tạo `src/app/api/journal/classify/route.ts`
-  - [ ] 13.2 Validate body: `reflectionId` + `consent: z.literal(true)` + `text` 1–4.000 ký tự → `401` nếu thiếu consent
-  - [ ] 13.3 `503 missing_api_key` nếu không có key (client tự fallback sang `classifyLocally`)
-  - [ ] 13.4 Handler: gọi `classifyJournal()` với danh sách tên skill lấy từ DB
-  - [ ] 13.5 Map `skillName` → `Skill.id`; `skillName` không tồn tại → `skillId = null`, `domain` giữ nguyên (RB-4)
-  - [ ] 13.6 Trả `{ok:true, data:{domain, skillId, skillName, confidence, source:"ai"}}`
+  - [x] 13.1 Tạo `src/app/api/journal/classify/route.ts`
+  - [x] 13.2 Validate body: `reflectionId` + `consent: z.literal(true)` + `text` 1–4.000 ký tự → `401` nếu thiếu consent
+  - [x] 13.3 `503 missing_api_key` nếu không có key (client tự fallback sang `classifyLocally`)
+  - [x] 13.4 Handler: gọi `classifyJournal()` với danh sách tên skill lấy từ DB
+  - [x] 13.5 Map `skillName` → `Skill.id`; `skillName` không tồn tại → `skillId = null`, `domain` giữ nguyên (RB-4)
+  - [x] 13.6 Trả `{ok:true, data:{domain, skillId, skillName, confidence, source:"ai"}}`
   - [ ] 13.7 Integration test: AI trả `skillName` lạ → `skillId = null`; `source = "ai"`
 - [ ] 14. `GET /api/journal/disclosures`
   - [ ] 14.1 Tạo `src/app/api/journal/disclosures/route.ts`
@@ -133,22 +133,22 @@
   - [ ] 14.3 Trả `{ok:true, data:{items:[{id, feature, model, preview, inputTokens, outputTokens, cacheRead, estimatedCost, createdAt}]}}`
   - [ ] 14.4 Integration test: sau 1 lần gửi AI → có đúng 1 dòng; sau 2 lần → 2 dòng
 - [ ] 15. `GET/PUT /api/state`
-  - [ ] 15.1 Tạo `src/app/api/state/route.ts`
-  - [ ] 15.2 `GET`: validate `window` ∈ {7, 30} → trả `{ok:true, data:{today, prefill, history, series}}`
-  - [ ] 15.3 `PUT`: validate bằng Zod — `mood/energy/focus` int 1–5, `sleep` 0–14 bước 0.5, `note` ≤160 ký tự, `date` regex `^\d{4}-\d{2}-\d{2}$`
-  - [ ] 15.4 `PUT` handler → `upsertState()` → trả `{ok:true, data:{state}}`
-  - [ ] 15.5 Error mapping: `400 invalid_range` · `400 invalid_date` · `500 db_error`
+  - [x] 15.1 Tạo `src/app/api/state/route.ts`
+  - [x] 15.2 `GET`: validate `window` ∈ {7, 30} → trả `{ok:true, data:{today, prefill, history, series}}`
+  - [x] 15.3 `PUT`: validate bằng Zod — `mood/energy/focus` int 1–5, `sleep` 0–14 bước 0.5, `note` ≤160 ký tự, `date` regex `^\d{4}-\d{2}-\d{2}$`
+  - [x] 15.4 `PUT` handler → `upsertState()` → trả `{ok:true, data:{state}}`
+  - [x] 15.5 Error mapping: `400 invalid_range` · `400 invalid_date` · `500 db_error`
   - [ ] 15.6 Integration test: `PUT` 2 lần cùng ngày → 1 bản ghi; `PUT` với `date` khác → tạo bản ghi ngày đó
 - [ ] 16. `GET /api/state/correlations`
-  - [ ] 16.1 Tạo `src/app/api/state/correlations/route.ts`
-  - [ ] 16.2 Validate `window` ∈ {7, 30, 90} → `400 invalid_window`
-  - [ ] 16.3 Handler → `computeCorrelations(window)` → trả `{ok:true, data:{n, sufficiency, findings, pearson}}`
-  - [ ] 16.4 Xác nhận route **không** gọi `src/lib/anthropic.ts` (assert trong test)
+  - [x] 16.1 Tạo `src/app/api/state/correlations/route.ts`
+  - [x] 16.2 Validate `window` ∈ {7, 30, 90} → `400 invalid_window`
+  - [x] 16.3 Handler → `computeCorrelations(window)` → trả `{ok:true, data:{n, sufficiency, findings, pearson}}`
+  - [x] 16.4 Xác nhận route **không** gọi `src/lib/anthropic.ts` (assert trong test)
   - [ ] 16.5 Integration test: `n < 7` → `sufficiency = "insufficient"` và `findings = []` (không bịa số liệu — AC-PS-9)
 - [ ] 17. `POST /api/journal/accept-evidence`
-  - [ ] 17.1 Tạo `src/app/api/journal/accept-evidence/route.ts` — body `{reflectionId}`
-  - [ ] 17.2 Handler → `acceptEvidence()` → tạo `Evidence{rating:3}` + cập nhật `Skill.level` theo `EVIDENCE_THRESHOLD`
-  - [ ] 17.3 Trả `{ok:true, data:{evidenceId, skillLevel}}`
+  - [x] 17.1 Tạo `src/app/api/journal/accept-evidence/route.ts` — body `{reflectionId}`
+  - [x] 17.2 Handler → `acceptEvidence()` → tạo `Evidence{rating:3}` + cập nhật `Skill.level` theo `EVIDENCE_THRESHOLD`
+  - [x] 17.3 Trả `{ok:true, data:{evidenceId, skillLevel}}`
   - [ ] 17.4 Integration test: bấm "Chấp nhận" 2 lần → không tạo trùng `Evidence` cùng `activityId`
 - [ ] 18. Test bảo mật dữ liệu (NFR-04 / FR-PS-07)
   - [ ] 18.1 Viết test: gọi **mọi** route của feature (`GET/POST/PUT/PATCH/DELETE` trên `/api/journal*`, `/api/state*`) mà không kích hoạt thao tác AI → mock SDK đếm **0** lần gọi `api.anthropic.com`
@@ -158,8 +158,8 @@
 ## 3. UI — S06 Nhật ký (`/journal`)
 
 - [ ] 19. Route `/journal` (`src/app/journal/page.tsx`)
-  - [ ] 19.1 Server Component: đọc `listJournal({status:"published", limit:20})`, `getDraft()`, `buildJournalContext(todayKey())`, `hasApiKey()`
-  - [ ] 19.2 Render banner P6 + 2 cột `lg:grid-cols-12` (trái 7 / phải 5) theo wireframe `spec.md` §6.1.1
+  - [x] 19.1 Server Component: đọc `listJournal({status:"published", limit:20})`, `getDraft()`, `buildJournalContext(todayKey())`, `hasApiKey()`
+  - [x] 19.2 Render banner P6 + 2 cột `lg:grid-cols-12` (trái 7 / phải 5) theo wireframe `spec.md` §6.1.1
   - [ ] 19.3 Render `<JournalComposer>` (Client), `<AiFeedbackPanel>` (Client), `<DisclosureLog>` (Server)
   - [ ] 19.4 Trên `<1024px`: gộp 1 cột theo thứ tự banner → gợi ý → textarea → nút → phản hồi → lịch sử
   - [ ] 19.5 Dùng đúng token design: `bg-surface-container-low`, `rounded-xl`, `p-space-lg`, `shadow-sm`, `font-headline-md`, `font-label-sm` (không hardcode hex)
@@ -221,8 +221,8 @@
 ## 4. UI — S12 Đánh giá chính (`/state`)
 
 - [ ] 27. Route `/state` (`src/app/state/page.tsx`)
-  - [ ] 27.1 Server Component: đọc `getStateWindow(7)`, `getStateWindow(30)`, `getStateSummary(7)`, `computeCorrelations(30)`
-  - [ ] 27.2 Render strip trạng thái (FR-PS-01 · State Logger Engine · E2EE · ≤15s) + header + 3 ô tổng quan
+  - [x] 27.1 Server Component: đọc `getStateWindow(7)`, `getStateWindow(30)`, `getStateSummary(7)`, `computeCorrelations(30)`
+  - [x] 27.2 Render strip trạng thái (FR-PS-01 · State Logger Engine · E2EE · ≤15s) + header + 3 ô tổng quan
   - [ ] 27.3 Render lưới `xl:grid-cols-12` (trái 7 / phải 5) theo wireframe `spec.md` §6.1.2
   - [ ] 27.4 Dùng token design chuẩn; không hardcode hex (trừ giá trị SVG lấy từ biến CSS token)
 - [ ] 28. Component `StateQuickForm` (`src/components/state/state-quick-form.tsx`)
@@ -266,22 +266,22 @@
   - [ ] 31.1 Icon box `bg-primary/10 text-primary` + tag `STRICT_LOCAL` (`bg-surface-container-high text-primary font-mono`)
   - [ ] 31.2 Nội dung nêu rõ: lưu độc quyền trên SQLite thiết bị, **không** tải lên đám mây, phân tích do engine cục bộ xử lý
 - [ ] 32. Panel "Khung giờ sinh học lý tưởng" trong S12
-  - [ ] 32.1 Icon `alarm` + "Khung giờ sinh học lý tưởng" + "Đỉnh cao tư duy phân tích: 08:30 — 11:30" + chip "Active Slot"
+  - [x] 32.1 Icon `alarm` + "Khung giờ sinh học lý tưởng" + "Đỉnh cao tư duy phân tích: 08:30 — 11:30" + chip "Active Slot"
   - [ ] 32.2 Ghi chú trong code: giá trị tĩnh ở Phase 0, liên kết với 6 slot cố định (`project.md` §4)
 
 ## 5. Kiểm thử & nghiệm thu
 
 - [ ] 33. E2E theo AC
-  - [ ] 33.1 `AC-PS-1`: đo `performance.now()` từ lúc mở `/state` đến toast → **≤15.000ms**; kiểm tra `DailyState` hôm nay được tạo
-  - [ ] 33.2 `AC-PS-2`: mở `/state` với dữ liệu hôm qua trong DB → assert 3 slider + ô ngủ prefill đúng giá trị
-  - [ ] 33.3 `AC-PS-3`: bấm chip gợi ý → assert textarea chứa câu hỏi ở cuối và có focus
+  - [x] 33.1 `AC-PS-1`: đo `performance.now()` từ lúc mở `/state` đến toast → **≤15.000ms**; kiểm tra `DailyState` hôm nay được tạo
+  - [x] 33.2 `AC-PS-2`: mở `/state` với dữ liệu hôm qua trong DB → assert 3 slider + ô ngủ prefill đúng giá trị
+  - [x] 33.3 `AC-PS-3`: bấm chip gợi ý → assert textarea chứa câu hỏi ở cuối và có focus
   - [ ] 33.4 `AC-PS-4`: mock SSE → assert khối tóm tắt có **1 câu**, khối câu hỏi có **1 câu hỏi**, không có bullet
-  - [ ] 33.5 `AC-PS-5`: phân loại trả `domain` hợp lệ; `skillId` tồn tại trong DB hoặc `null`
-  - [ ] 33.6 `AC-PS-6`: chặn network → viết nhật ký không bấm nút AI → assert **0 request** tới `api.anthropic.com`; bấm 1 lần → panel "Dữ liệu đã gửi lên" có đúng 1 dòng
+  - [x] 33.5 `AC-PS-5`: phân loại trả `domain` hợp lệ; `skillId` tồn tại trong DB hoặc `null`
+  - [x] 33.6 `AC-PS-6`: chặn network → viết nhật ký không bấm nút AI → assert **0 request** tới `api.anthropic.com`; bấm 1 lần → panel "Dữ liệu đã gửi lên" có đúng 1 dòng
   - [ ] 33.7 `AC-PS-7`: ghi 30 ngày `DailyState` → gọi `/api/state/correlations` → assert **0 request** ra ngoài và không `AiCall` nào chứa dữ liệu `DailyState`
   - [ ] 33.8 `AC-PS-8`: seed ≥7 ngày + `PlanItem.done` → assert chart có 4 series và toggle 30 ngày đổi khoảng hiển thị không reload trang
-  - [ ] 33.9 `AC-PS-9`: `n < 7` → `sufficiency = "insufficient"`, `findings = []`; `n >= 7` → có ≥1 phát hiện kèm `n` + `confidence`
-  - [ ] 33.10 `AC-PS-10`: sửa nhật ký đã có phản hồi → assert badge "phản hồi đã cũ" và **không** có `AiCall` mới
+  - [x] 33.9 `AC-PS-9`: `n < 7` → `sufficiency = "insufficient"`, `findings = []`; `n >= 7` → có ≥1 phát hiện kèm `n` + `confidence`
+  - [x] 33.10 `AC-PS-10`: sửa nhật ký đã có phản hồi → assert badge "phản hồi đã cũ" và **không** có `AiCall` mới
   - [ ] 33.11 `AC-PS-11`: mock `stop_reason: "refusal"` → assert thông báo thân thiện + nút "Thử lại" + `AiCall{ok:false}` + trang không crash
 - [ ] 34. A11y + responsive
   - [ ] 34.1 Kiểm tra tương phản WCAG AA cho mọi cặp chữ/nền dùng trong S06/S12 (dùng token, không tự chọn màu)
@@ -290,18 +290,18 @@
   - [ ] 34.4 Slider có `<label>` liên kết; nút "Gửi AI" có `aria-describedby` trỏ tới cảnh báo bảo mật P6
   - [ ] 34.5 Responsive 390px: `/journal` và `/state` không tràn ngang; nút chính nằm trong vùng ngón cái
 - [ ] 35. Kiểm tra offline mode (không API key)
-  - [ ] 35.1 Chạy app **không** có `ANTHROPIC_API_KEY` → `/journal` hiện dải hướng dẫn thêm key, **ẩn** nút AI
-  - [ ] 35.2 `/state` vẫn ghi được chỉ số; `/journal` vẫn lưu được nhật ký và bản nháp
-  - [ ] 35.3 Phân loại vẫn chạy bằng `classifyLocally` với `source = "local"`; UI **không** ghi "AI"
-  - [ ] 35.4 Không nơi nào giả lập phản hồi AI (grep tìm chuỗi mô phỏng trong `src/`)
+  - [x] 35.1 Chạy app **không** có `ANTHROPIC_API_KEY` → `/journal` hiện dải hướng dẫn thêm key, **ẩn** nút AI
+  - [x] 35.2 `/state` vẫn ghi được chỉ số; `/journal` vẫn lưu được nhật ký và bản nháp
+  - [x] 35.3 Phân loại vẫn chạy bằng `classifyLocally` với `source = "local"`; UI **không** ghi "AI"
+  - [x] 35.4 Không nơi nào giả lập phản hồi AI (grep tìm chuỗi mô phỏng trong `src/`)
 - [ ] 36. Kiểm tra chất lượng & quy ước code
-  - [ ] 36.1 `npx tsc --noEmit` sạch; không có `any` trong `src/lib` và `src/app/api`
-  - [ ] 36.2 `npx eslint .` sạch
-  - [ ] 36.3 Không có hex hardcode trong component S06/S12 (trừ giá trị lấy từ CSS variable/token)
+  - [x] 36.1 `npx tsc --noEmit` sạch; không có `any` trong `src/lib` và `src/app/api`
+  - [x] 36.2 `npx eslint .` sạch
+  - [x] 36.3 Không có hex hardcode trong component S06/S12 (trừ giá trị lấy từ CSS variable/token)
   - [ ] 36.4 Không dùng `rounded-2xl`/`rounded-3xl`/`shadow-xl`/`shadow-2xl`
-  - [ ] 36.5 Mọi nhãn uppercase dùng `font-label-sm` + `tracking-wider`
-  - [ ] 36.6 Icon 16–24px, class `material-symbols-outlined`
-  - [ ] 36.7 `npm run build` sạch, không lỗi type route của Next.js 15 (`params` là `Promise`)
+  - [x] 36.5 Mọi nhãn uppercase dùng `font-label-sm` + `tracking-wider`
+  - [x] 36.6 Icon 16–24px, class `material-symbols-outlined`
+  - [x] 36.7 `npm run build` sạch, không lỗi type route của Next.js 15 (`params` là `Promise`)
 - [ ] 37. Đo chi phí thật sau 1 tuần (SPEC §5.7)
   - [ ] 37.1 Chạy app 7 ngày liên tiếp với nhật ký + phản hồi AI mỗi ngày
   - [ ] 37.2 Đối chiếu bảng `AiCall` (`feature IN ('journal_feedback','journal_classify')`) với ước tính ~$0.007/ngày trong `design.md` §8

@@ -68,14 +68,36 @@ model Evidence {
 }
 
 // ── Nhật ký & phản hồi AI ─────────────────────────────────────────────────
+/// Nhật ký cá nhân + phản hồi AI (C4–C10).
+///
+/// ⚠️ `activityId` **nullable** (C4): bản nháp (`status = "draft"`) tồn tại
+/// mà chưa tạo `Activity` — P3: nhật ký chỉ thành hoạt động khi commit.
 model Reflection {
   id         String   @id @default(cuid())
-  activityId String   @unique
-  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId String?  @unique
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  /// Câu hỏi gợi ý / prompt đã dùng.
   prompt     String
+  /// Nội dung người dùng viết.
   answer     String
+  /// JSON `{ summary, sharpQuestion }` — phản hồi AI-05.
   aiFeedback String?
-  createdAt  DateTime @default(now())
+  /// C5: `draft | published`. Bản nháp không tính vào thống kê.
+  status     String   @default("published")
+  /// C6: domain do AI-06 hoặc rule cục bộ gán.
+  classifiedDomain String?
+  /// C7: skill được gán — đã kiểm chứng tồn tại trong DB.
+  classifiedSkillId String?
+  /// C8: 0–1.
+  classificationConfidence Float?
+  /// C9: mốc so sánh bản nháp mới/cũ.
+  draftUpdatedAt DateTime?
+  /// C10: nhận biết phản hồi AI đã lỗi thời sau khi sửa.
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([classifiedDomain])
 }
 
 // ── Kế hoạch ngày ─────────────────────────────────────────────────────────
@@ -145,17 +167,29 @@ model DailyState {
 model UserProfile {
   id            String   @id @default(cuid())
   name          String?
+  /// FR-SC-02 — mục tiêu dài hạn + M11 — mục tiêu sắp tới (JSON).
   goals         String?
   aiTone        String   @default("direct") // direct|coach|gentle
   learningLangs String   @default("zh,en")
   zhLevel       String   @default("zero")
   enLevel       String   @default("zero")
+  /// C29 — tiếng Việt là bản ngữ (AI biết không cần dạy ngữ pháp vi).
+  viLevel       String   @default("B2")
+  /// C32 — chuẩn hiển thị ưu tiên: cefr | hsk | both.
+  languageStandard String @default("cefr")
+  /// C14 — ngôn ngữ phỏng vấn mặc định.
+  interviewLang String   @default("en")
+  /// C15 — ngân sách chi phí AI tháng (USD).
+  monthlyBudgetUsd Float @default(15)
+  /// C16 — chế độ khẩn cấp tiết kiệm: ép mọi call AI về Haiku.
+  saverMode     Boolean  @default(false)
   // Registry C3 — trọng tâm hôm nay (FK logic tới Skill.id).
   focusSkillId  String?
   createdAt     DateTime @default(now())
 }
 
 // ── Theo dõi chi phí AI ───────────────────────────────────────────────────
+/// Nhật ký lời gọi AI — cơ sở của panel minh bạch "Dữ liệu đã gửi lên".
 model AiCall {
   id            String   @id @default(cuid())
   feature       String // daily_plan|grading|journal_feedback|weekly_review|classify|roleplay|mock_interview|language_test
@@ -167,6 +201,12 @@ model AiCall {
   estimatedCost Float    @default(0)
   ok            Boolean  @default(true)
   error         String?
+  /// C13: trích nội dung **đã gửi lên** (≤160 ký tự cho nhật ký).
+  dataPreview   String?
+  /// C11: trỏ tới `Reflection`/`Activity` đã gửi lên.
+  sourceId      String?
+  /// C12: phân loại dữ liệu đã gửi lên (JSON array).
+  dataKinds     String?
   createdAt     DateTime @default(now())
 
   @@index([createdAt])
