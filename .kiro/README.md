@@ -59,9 +59,9 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 | **`daily-loop-core`** | S01 Daily Loop · S02 Sinh kế hoạch AI | `/` · `/plan` | 0 | ✅ xong — commit `f969d2e` | [spec](specs/daily-loop-core/spec.md) |
 | **`skill-tree-evidence`** | S03 Cây kỹ năng · S04 Chi tiết kỹ năng | `/skills` · `/skills/[id]` | 0 | ✅ xong — commit `a797f69` | [spec](specs/skill-tree-evidence/spec.md) |
 | **`quick-log`** | S05 Quick-log + lịch sử | `/log` · `/log/history` | 0 | ✅ xong — commit `175a9f0` | [spec](specs/quick-log/spec.md) |
-| ⬜ `personal-state-journal` | S06 Nhật ký · S12 Đánh giá chính | `/journal` · `/state` | 0 | [spec](specs/personal-state-journal/spec.md) |
+| **`personal-state-journal`** | S06 Nhật ký · S12 Đánh giá chính | `/journal` · `/state` |0 | ✅ xong — commit `bb1a880` |
 | ⬜ `srs-language-review` | S09 Ôn SRS · S10 Phiên ôn 1 thẻ | `/language` · `/language/session` | 1 | [spec](specs/srs-language-review/spec.md) |
-| ⬜ `settings-cost` | S15 Cài đặt & chi phí AI | `/settings` | 0 | [spec](specs/settings-cost/spec.md) |
+| **`settings-cost`** | S15 Cài đặt & chi phí AI | `/settings` |0 | ✅ xong — commit `532b6d3` |
 | ⬜ `communication-training` | S07 Viết · S08 Nói · S11 Luyện ngoại ngữ chủ động | `/speak/write` · `/speak/talk` · `/language/practice` | 1–2 | [spec](specs/communication-training/spec.md) |
 | ⬜ `mock-interview` | S16 Cấu hình · S17 Phiên · S18 Kết quả | `/interview/*` | 1 | [spec](specs/mock-interview/spec.md) |
 | ⬜ `language-test` | S19 Danh sách · S20 Làm bài · S21 Kết quả | `/test/*` | 1 | [spec](specs/language-test/spec.md) |
@@ -90,13 +90,15 @@ Trạng thái hiện tại: **PASS — 0 lỗi**.
 | Phase 0 `daily-loop-core` | ✅ 10/10 AC · commit `f969d2e` · 135 unit+integration · 90 E2E |
 | Phase 0 `skill-tree-evidence` | ✅ S03 + S04 · commit `a797f69` · 169 unit+integration · 120 E2E |
 | Phase 0 `quick-log` | ✅ S05 + lịch sử · commit `175a9f0` · 189 unit+integration · 146 E2E |
-| Phase 0 còn lại | ⬜ `personal-state-journal` → `settings-cost` |
+| Phase 0 `personal-state-journal` | ✅ S06 + S12 · commit `bb1a880` · 231 unit+integration · 11 E2E journal |
+| Phase 0 `settings-cost` | ✅ S15 · commit `532b6d3` · 166/298 task tick · 14 E2E settings |
+| Phase 0 còn lại | ⬜ 4 feature đang triển khai song song |
 
-**Feature kế tiếp: `personal-state-journal`** (S06 Nhật ký & phản hồi AI · S12 Đánh giá chính).
-Lý do chọn thứ tự này: `quick-log` đã tạo `Activity` + `Evidence` nhưng chưa có
-chỗ để **ghi chú suy nghĩ** và nhận phản hồi AI (AI-05) — mà không có phản hồi
-thì bằng chứng chỉ là số đếm, chưa tạo được vòng lặp "học → chấm → ghi → đo"
-(P3/P4) mà spec mô tả ở §5.
+**4 feature đang triển khai song song** (mỗi feature một phạm vi file riêng):
+- `srs-language-review` — S07 SRS ôn tập thẻ + S08 phiên ôn tập
+- `communication-training` — S09 luyện nói + S10 luyện viết + chấm điểm AI
+- `mock-interview` — S11 AI Interview Studio (nhiều phiên, rubric chi tiết)
+- `language-test` + `weekly-progress-report` — S13/S14 thi + S16/S17 báo cáo tuần
 
 ⚠️ Route `/skills` và `/skills/[id]` **đã** thay placeholder bằng màn hình thật.
 
