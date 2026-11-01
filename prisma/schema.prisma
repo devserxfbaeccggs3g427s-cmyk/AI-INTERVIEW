@@ -231,7 +231,7 @@ model InterviewProfile {
   label         String // "Backend Engineer"
   jobTitle      String
   seniority     String   @default("mid") // junior|mid|senior|lead
-  language      String   @default("en") // en|vi
+  language      String   @default("en") // en|zh|vi
   questionKinds String   @default("concept,design") // concept|design|debug|tradeoff|behavioral
   focusSkills   String   @default("[]") // JSON: [skillId]
   /// C35 — FR-MI-07: phương thức trả lời `text | voice`.

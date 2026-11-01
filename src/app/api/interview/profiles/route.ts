@@ -9,7 +9,7 @@ const ProfileSchema = z.object({
   label: z.string().min(1).max(80),
   jobTitle: z.string().min(1).max(120),
   seniority: z.enum(["junior", "mid", "senior", "lead"]).default("mid"),
-  language: z.enum(["en", "vi"]).default("en"),
+  language: z.enum(["en", "zh", "vi"]).default("en"),
   questionKinds: z
     .array(z.enum(["concept", "design", "debug", "tradeoff", "behavioral"]))
     .min(1)

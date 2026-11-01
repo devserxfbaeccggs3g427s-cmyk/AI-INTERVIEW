@@ -310,8 +310,8 @@
 - [x] 35.3 Đổi enum level sang CEFR đầy đủ: `zero·A1·A2·B1·B2·C1·C2` (bỏ `beginner`/`elementary`/`intermediate`/`upper_intermediate`)
 - [x] 35.4 Tạo `src/lib/levels.ts` export `LEVELS`, `LEVEL_LABELS` (vi + cefr + hsk), `LEVEL_ORDER` — nguồn chân lý duy nhất cho cả app
 - [ ] 35.5 Hiển thị cột HSK cạnh CEFR khi ngôn ngữ = `zh`; chỉ CEFR khi = `en`/`vi`
-- [ ] 35.6 Cho phép chọn `en`/`zh`/`vi` trong toggle ngôn ngữ; chặn tắt `en` (Zod refine) và chặn tắt hết
-- [ ] 35.7 Thêm `interviewLang` nhận `zh` (ngoài `en`/`vi`) — Q2
+- [x] 35.6 Cho phép chọn `en`/`zh`/`vi` trong toggle ngôn ngữ; chặn tắt `en` (Zod refine) và chặn tắt hết
+- [x] 35.7 Thêm `interviewLang` nhận `zh` (ngoài `en`/`vi`) — Q2
 - [ ] 35.8 Tạo model `UpcomingGoal` (Registry `M11`) hoặc JSON trong `UserProfile.goals` nếu chưa duyệt
 - [ ] 35.9 UI khu vực "Mục tiêu sắp tới" trong tab Hồ sơ: list + thêm/sửa/xoá, hiện tiêu đề · chuẩn · mức đích · ngày · trạng thái · priority
 - [ ] 35.10 Nút "AI đề xuất mục tiêu" → gọi endpoint gợi ý, hiển thị kết quả để người dùng duyệt trước khi lưu

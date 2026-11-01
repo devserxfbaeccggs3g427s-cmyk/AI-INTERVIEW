@@ -9,7 +9,7 @@ const PatchSchema = z.object({
   label: z.string().min(1).max(80).optional(),
   jobTitle: z.string().min(1).max(120).optional(),
   seniority: z.enum(["junior", "mid", "senior", "lead"]).optional(),
-  language: z.enum(["en", "vi"]).optional(),
+  language: z.enum(["en", "zh", "vi"]).optional(),
   questionKinds: z
     .array(z.enum(["concept", "design", "debug", "tradeoff", "behavioral"]))
     .min(1)

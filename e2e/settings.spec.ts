@@ -54,6 +54,69 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
     ).toBeVisible();
   });
 
+  test("bỏ tiếng Anh nhưng còn ngôn ngữ khác ⇒ vẫn chặn (task 35.6)", async ({
+    page,
+  }) => {
+    await page.goto("/settings");
+
+    const group = page.getByRole("group", { name: "Ngôn ngữ đang học" });
+    const en = group.getByRole("button", { name: "Tiếng Anh", exact: true });
+
+    // Bỏ `en` nhưng giữ lại ít nhất 1 ngôn ngữ khác.
+    if ((await en.getAttribute("aria-pressed")) === "true") {
+      await en.click();
+    }
+
+    await expect(
+      page.getByText("Không thể tắt tiếng Anh — đây là ngôn ngữ dùng chung của app").first(),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Lưu thay đổi" }).click();
+    await expect(
+      page.getByText("Không thể tắt tiếng Anh — đây là ngôn ngữ dùng chung của app").first(),
+    ).toBeVisible();
+  });
+
+  test("API tắt `en` ⇒ 400, không lưu (task 35.6)", async ({ request }) => {
+    const before = await (await request.get("/api/settings/profile")).json();
+
+    const res = await request.post("/api/settings/profile", {
+      data: { learningLangs: ["zh", "vi"] },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.ok).toBe(false);
+
+    // Hồ sơ không bị đổi.
+    const after = await (await request.get("/api/settings/profile")).json();
+    expect(after.data.learningLangs).toEqual(before.data.learningLangs);
+  });
+
+  test("ngôn ngữ phỏng vấn có 3 lựa chọn en/zh/vi (task 35.7)", async ({ page }) => {
+    await page.goto("/settings");
+
+    const group = page.getByRole("group", { name: "Ngôn ngữ phỏng vấn" });
+
+    for (const label of ["Tiếng Anh", "Tiếng Trung", "Tiếng Việt"]) {
+      await expect(group.getByRole("button", { name: label, exact: true })).toBeVisible();
+    }
+  });
+
+  test("API lưu interviewLang = zh ⇒ 200 (task 35.7)", async ({ request }) => {
+    const res = await request.post("/api/settings/profile", {
+      data: { interviewLang: "zh" },
+    });
+
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.data.interviewLang).toBe("zh");
+
+    // Trả lại `en` để không ảnh hưởng test khác.
+    await request.post("/api/settings/profile", { data: { interviewLang: "en" } });
+  });
+
   test("chuyển tab sang API key / Chi phí / Dữ liệu", async ({ page }, _testInfo) => {
     await page.goto("/settings");
 

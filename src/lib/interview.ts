@@ -50,11 +50,12 @@ export const SENIORITY_LABELS: Record<Seniority, string> = {
 };
 
 /** Ngôn ngữ phỏng vấn (FR-MI-01). */
-export const INTERVIEW_LANGUAGES = ["en", "vi"] as const;
+export const INTERVIEW_LANGUAGES = ["en", "zh", "vi"] as const;
 export type InterviewLanguage = (typeof INTERVIEW_LANGUAGES)[number];
 
 export const INTERVIEW_LANGUAGE_LABELS: Record<InterviewLanguage, string> = {
   en: "Tiếng Anh",
+  zh: "Tiếng Trung",
   vi: "Tiếng Việt",
 };
 

@@ -26,7 +26,7 @@ export interface ProfileFormProps {
     enLevel: string;
     viLevel: string;
     languageStandard: "cefr" | "hsk" | "both";
-    interviewLang: "en" | "vi";
+    interviewLang: "en" | "zh" | "vi";
     monthlyBudgetUsd: number;
     saverMode: boolean;
   };
@@ -80,6 +80,16 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     // ⚠️ FR-SC-04 — ≥ 1 ngôn ngữ.
     if (learningLangs.length === 0) {
       setError("Phải chọn ít nhất 1 ngôn ngữ đang học");
+      return;
+    }
+
+    // ⚠️ Task 35.6 — không được tắt `en`.
+    //
+    // Tiếng Anh là ngôn ngữ dùng chung cho kế hoạch AI, giao tiếp và phỏng
+    // vấn. Tắt nó đi thì app mất hẳn nhánh chính mà người dùng không hề hay
+    // biết — nên chặn ngay tại đây chứ không đợi tới server.
+    if (!learningLangs.includes("en")) {
+      setError("Không thể tắt tiếng Anh — đây là ngôn ngữ dùng chung của app");
       return;
     }
 
@@ -316,6 +326,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
             {(
               [
                 { value: "en" as const, label: "Tiếng Anh" },
+                { value: "zh" as const, label: "Tiếng Trung" },
                 { value: "vi" as const, label: "Tiếng Việt" },
               ]
             ).map((option) => (

@@ -30,8 +30,13 @@ export const HSK_LEVELS = ["zero", "1", "2", "3", "4", "5", "6"] as const;
 
 export type LanguageCode = "en" | "zh" | "vi";
 
-/** Ngôn ngữ phỏng vấn — FR-SC-06 chỉ cho phép en | vi. */
-export type InterviewLang = "en" | "vi";
+/**
+ * Ngôn ngữ phỏng vấn.
+ *
+ * ⚠️ Task 35.7 — nhận `zh` ngoài `en`/`vi` (Q2 trong OPEN-QUESTIONS đã chốt:
+ * người dùng học 3 ngôn ngữ, phỏng vấn có thể bằng cả 3).
+ */
+export type InterviewLang = "en" | "zh" | "vi";
 
 export interface UserProfileDTO {
   name: string | null;
