@@ -363,31 +363,37 @@ export async function listAttempts(options?: {
     createdAt: string;
   }>
 > {
-  const rows = await prisma.activity.findMany({
+  // ⚠️ P3 — chỉ lượt luyện **thật** của người dùng mới được tính là lịch sử.
+  //
+  // Query `Activity` trần sẽ lấy cả 12 `Activity` seed (type `speak` /
+  // `roleplay`) vốn chỉ là đề bài mẫu ⇒ hiển thị như lượt luyện đã chấm,
+  // tức bằng chứng giả. Lọc qua `SpeakAttempt` — bảng chỉ được ghi khi
+  // người dùng thực sự nộp bài.
+  const rows = await prisma.speakAttempt.findMany({
     where: {
-      type: { in: ["speak", "write"] },
-      ...(options?.mode ? { type: options.mode } : {}),
+      ...(options?.mode ? { mode: options.mode } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: Math.min(200, Math.max(1, options?.limit ?? 20)),
     select: {
       id: true,
-      title: true,
+      mode: true,
       content: true,
-      language: true,
-      aiScore: true,
+      totalScore: true,
       createdAt: true,
-      type: true,
+      activity: {
+        select: { title: true, language: true },
+      },
     },
   });
 
   return rows.map((row) => ({
     id: row.id,
-    title: row.title,
-    text: row.content ?? "",
-    mode: row.type,
-    lang: row.language,
-    score: row.aiScore,
+    title: row.activity.title,
+    text: row.content,
+    mode: row.mode,
+    lang: row.activity.language,
+    score: row.totalScore,
     createdAt: row.createdAt.toISOString(),
   }));
 }
