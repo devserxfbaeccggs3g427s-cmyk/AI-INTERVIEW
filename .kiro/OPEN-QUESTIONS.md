@@ -1,7 +1,8 @@
-# Điểm cần người dùng quyết — trước khi code Phase 0
+# Điểm cần người dùng quyết
 
 > **Q5 (8 câu hỏi SPEC §10) đã chốt** → xem [`steering/user-profile-decisions.md`](steering/user-profile-decisions.md).
-> 6 mục dưới đây giữ **mặc định** theo yêu cầu của chủ sở hữu.
+> **Q3 + Q4 đã chốt và đã implement** (xem mục "Trạng thái sau khi chốt" bên dưới).
+> 6 mục còn lại giữ **mặc định** theo yêu cầu của chủ sở hữu.
 
 > Tất cả điểm dưới đây là **quyết định sản phẩm/nghiệp vụ** mà spec không tự quyết được.
 > Mỗi mục có **mặc định đã chọn** trong spec ⇒ nếu không trả lời, hệ thống vẫn build được.
@@ -44,7 +45,7 @@ Task đã có ở `ai-foundation/tasks.md` (§2.x, §17.3) và AC-5.
 
 ---
 
-## Q3 — Model mới: 9 model đề xuất (ngoài 15 model của SPEC §4)
+## Q3 — ~~Model mới: 9 model đề xuất (ngoài 15 model của SPEC §4)~~ → **ĐÃ CHỐT & ĐÃ IMPLEMENT**
 
 **Vấn đề.** Các feature cần model mà SPEC §4 không có. Đã gom đủ trong
 [`steering/data-model-registry.md`](steering/data-model-registry.md) §3:
@@ -69,7 +70,7 @@ Mở rộng từ **19 → 28 model**.
 
 ---
 
-## Q4 — Thêm 28 field vào model có sẵn (không thêm model)
+## Q4 — ~~Thêm 28 field vào model có sẵn (không thêm model)~~ → **ĐÃ CHỐT & ĐÃ IMPLEMENT**
 
 Đã chốt trong [`steering/data-model-registry.md`](steering/data-model-registry.md) §1 — tất cả nullable hoặc có mặc định,
 migration an toàn trên DB có dữ liệu:
@@ -130,9 +131,19 @@ giá niêm yết trước khi code (task 34.5 của `settings-cost/tasks.md`).
 
 ---
 
+## Trạng thái sau khi chốt
+
+| Mục | Quyết định | Đã implement |
+|---|---|---|
+| Q3 — model mới | 11 model `M1–M11` trong registry | `prisma/schema.prisma` hiện **22 model** (15 gốc + 7 đã dùng: `Reflection`, `InterviewSession`, `TestSession`, `Review`, `SrsCard`, `SrsSession`, `UpcomingGoal`) |
+| Q4 — field mới | 34 field `C1–C34` trong registry | `C29–C34` đã thêm vào schema (`UserProfile`, `AiCall`, `Reflection`) |
+| Q5 — 8 câu hỏi SPEC §10 | Java Backend · 3 ngôn ngữ · CEFR đầy đủ · lộ trình 3 giai đoạn | [`steering/user-profile-decisions.md`](steering/user-profile-decisions.md) |
+
+Registry: [`steering/data-model-registry.md`](steering/data-model-registry.md) là nguồn chân lý duy nhất cho field/model mới.
+
 ## Checklist khi chốt
 
 - [ ] Sửa dòng **→ Quyết định** của các mục áp dụng
 - [ ] Chạy `python3 .kiro/scripts/validate_specs.py` → phải PASS
-- [ ] Cập nhật `system-design/SPEC.md` §4 nếu Q3 được duyệt (thêm `SrsSession`, `LanguagePattern`)
+- [x] Cập nhật `system-design/SPEC.md` §4 nếu Q3 được duyệt — **đã làm**: `SrsSession`, `SrsCard`, `TestSession`, `InterviewSession`, `Reflection`, `Review`, `UpcomingGoal` đã vào schema
 - [ ] Bắt đầu Phase 0 theo `specs/ai-foundation/tasks.md` → `daily-loop-core/tasks.md`
