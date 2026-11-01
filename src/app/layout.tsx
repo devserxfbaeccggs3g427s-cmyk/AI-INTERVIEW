@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 
 import { AppShell } from "@/components/shell/app-shell";
 
@@ -16,30 +16,79 @@ const MATERIAL_SYMBOLS_HREF =
   "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap";
 
 /**
- * Font tải qua `next/font/google` — không dùng CDN <link>.
- * Lý do: tự host, không FOUT, không CSP issue, không rò request ra ngoài (P6 local-first).
+ * Font tự host trong `public/fonts/` qua `next/font/local`.
  *
- * `subsets: ["vietnamese"]` là BẮT BUỘC — thiếu nó thì dấu tiếng Việt có thể mất glyph.
+ * ⚠️ Vì sao không dùng `next/font/google`: hàm đó **tải font lúc build**, nên
+ * máy offline (hoặc mạng chập chờn) là build fail với `TypeError: a[d] is not
+ * a function` — app local-first mà không build được thì vô dụng. Tự host còn
+ * giữ đúng lý do đã ghi: không FOUT, không CSP issue, không rò request ra ngoài.
+ *
+ * ⚠️ Phải khai báo **cả 2 subset** (`latin` + `vietnamese`) cho Space Grotesk
+ * và Be Vietnam Pro — thiếu `vietnamese` thì dấu tiếng Việt mất glyph.
+ * JetBrains Mono chỉ có subset `latin` (font mono không có bộ ký tự Việt).
  */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin", "vietnamese"],
-  weight: ["500", "600", "700"],
+const spaceGrotesk = localFont({
   variable: "--font-space-grotesk",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  src: [
+    {
+      path: "../../public/fonts/space-grotesk-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/space-grotesk-600.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/space-grotesk-700.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
-const beVietnamPro = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
+const beVietnamPro = localFont({
   variable: "--font-be-vietnam-pro",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  src: [
+    {
+      path: "../../public/fonts/be-vietnam-pro-400.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/be-vietnam-pro-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/be-vietnam-pro-600.woff2",
+      weight: "600",
+      style: "normal",
+    },
+  ],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600"],
+const jetbrainsMono = localFont({
   variable: "--font-jetbrains-mono",
   display: "swap",
+  fallback: ["ui-monospace", "monospace"],
+  src: [
+    {
+      path: "../../public/fonts/jetbrains-mono-latin-400.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/jetbrains-mono-latin-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+  ],
 });
 
 export const metadata: Metadata = {
