@@ -14,23 +14,31 @@ import { recordEvidence } from "@/lib/skills";
 
 /* ══ Rubric ══════════════════════════════════════════════════════════════ */
 
-/** 5 tiêu chí chấm điểm (AC-CM-1). */
+/**
+ * 5 tiêu chí chấm điểm **giao tiếp** (AC-CM-1).
+ *
+ * ⚠️ Spec §1: "S07/S08 dùng rubric 5 tiêu chí (`RUBRIC_COMMUNICATION`):
+ * Rõ ràng · Cấu trúc · Giọng văn · Tự nhiên · Ngữ pháp".
+ *
+ * ⚠️ Hai rubric **không trộn**: S07/S08 không có "ngữ cảnh" riêng; S11 dùng
+ * 4 nhóm lỗi (grammar/vocab/expression/context) — xem `normalizeErrorGroups`.
+ */
 export const RUBRIC_CRITERIA = [
-  "accuracy",
-  "fluency",
-  "vocabulary",
+  "clarity",
+  "structure",
+  "tone",
+  "naturalness",
   "grammar",
-  "coherence",
 ] as const;
 
 export type RubricCriterion = (typeof RUBRIC_CRITERIA)[number];
 
 export interface RubricScores {
-  accuracy: number;
-  fluency: number;
-  vocabulary: number;
+  clarity: number;
+  structure: number;
+  tone: number;
+  naturalness: number;
   grammar: number;
-  coherence: number;
 }
 
 export interface GradeResult {
@@ -78,11 +86,11 @@ export function normalizeRubric(raw: unknown): RubricScores {
   };
 
   return {
-    accuracy: pick("accuracy", 0),
-    fluency: pick("fluency", 0),
-    vocabulary: pick("vocabulary", 0),
+    clarity: pick("clarity", 0),
+    structure: pick("structure", 0),
+    tone: pick("tone", 0),
+    naturalness: pick("naturalness", 0),
     grammar: pick("grammar", 0),
-    coherence: pick("coherence", 0),
   };
 }
 
@@ -119,22 +127,23 @@ export function gradeLocally(text: string): GradeResult {
   const trimmed = text.trim();
   const words = trimmed.length > 0 ? trimmed.split(/\s+/) : [];
 
-  // Độ dài: 20 từ ⇒ đủ 5 điểm fluency.
-  const fluency = Math.min(5, Number((words.length / 4).toFixed(1)));
-  // Độ đa dạng từ: tỉ lệ từ khác nhau.
-  const uniqueRatio = words.length === 0 ? 0 : new Set(words).size / words.length;
-  const vocabulary = Number((uniqueRatio * 5).toFixed(1));
-  // Câu có dấu kết thúc ⇒ coherence tốt hơn.
+  // Độ dài: 20 từ ⇒ đủ 5 điểm "tự nhiên" (nói được).
+  const naturalness = Math.min(5, Number((words.length / 4).toFixed(1)));
+  // Câu có dấu kết thúc ⇒ cấu trúc tốt hơn.
   const sentences = trimmed.split(/[.!?。！？]+/).filter((s) => s.trim().length > 0);
-  const coherence = Math.min(5, Number((sentences.length * 2.5).toFixed(1)));
+  const structure = Math.min(5, Number((sentences.length * 2.5).toFixed(1)));
+  // Độ đa dạng từ ⇒ giọng văn phong phú hơn.
+  const uniqueRatio = words.length === 0 ? 0 : new Set(words).size / words.length;
+  const tone = Number((uniqueRatio * 5).toFixed(1));
 
   const rubric: RubricScores = {
-    // ⚠️ Không có AI ⇒ không thể chấm độ chính xác ⇒ đặt trung tính 2.5.
-    accuracy: 2.5,
-    fluency,
-    vocabulary,
+    // ⚠️ Không có AI ⇒ không thể chấm "rõ ràng" ⇒ đặt trung tính 2.5.
+    clarity: 2.5,
+    structure,
+    tone,
+    naturalness,
+    // ⚠️ Không có AI ⇒ không thể chấm ngữ pháp ⇒ trung tính, KHÔNG bịa.
     grammar: 2.5,
-    coherence,
   };
 
   return {

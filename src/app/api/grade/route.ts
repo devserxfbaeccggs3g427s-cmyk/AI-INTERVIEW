@@ -34,11 +34,11 @@ const GradeRequestSchema = z.object({
  */
 const AiGradeSchema = z.object({
   rubric: z.object({
-    accuracy: z.number().min(0).max(5),
-    fluency: z.number().min(0).max(5),
-    vocabulary: z.number().min(0).max(5),
+    clarity: z.number().min(0).max(5),
+    structure: z.number().min(0).max(5),
+    tone: z.number().min(0).max(5),
+    naturalness: z.number().min(0).max(5),
     grammar: z.number().min(0).max(5),
-    coherence: z.number().min(0).max(5),
   }),
   feedback: z.string().max(2000),
   errorGroups: z.object({
@@ -60,8 +60,8 @@ Bạn chấm điểm bài luyện nói/viết của người học ngôn ngữ.
 
 Trả về:
 - rubric: đúng 5 tiêu chí, mỗi tiêu chí 0–5 (có thể dùng số thập phân):
-  accuracy (độ chính xác), fluency (độ trôi chảy), vocabulary (từ vựng),
-  grammar (ngữ pháp), coherence (mạch lạc).
+  clarity (rõ ràng), structure (cấu trúc), tone (giọng văn),
+  naturalness (tự nhiên), grammar (ngữ pháp).
 - feedback: nhận xét ngắn gọn, cụ thể, bằng tiếng Việt.
 - errorGroups: 4 nhóm lỗi — grammar, vocab, expression, context. Mỗi nhóm là
   mảng các lỗi cụ thể (có thể rỗng nếu không có lỗi).

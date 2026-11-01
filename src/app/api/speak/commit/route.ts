@@ -15,11 +15,11 @@ const CommitSchema = z.object({
   score: z.number().min(0).max(5).nullable().optional(),
   rubric: z
     .object({
-      accuracy: z.number(),
-      fluency: z.number(),
-      vocabulary: z.number(),
+      clarity: z.number(),
+      structure: z.number(),
+      tone: z.number(),
+      naturalness: z.number(),
       grammar: z.number(),
-      coherence: z.number(),
     })
     .nullable()
     .optional(),

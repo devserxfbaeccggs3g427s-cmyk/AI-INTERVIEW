@@ -209,3 +209,82 @@ test.describe("S11 — Hội thoại role-play (AC-CM-6, AC-CM-7, AC-CM-8)", () 
     expect(first.title).toBeTruthy();
   });
 });
+
+
+test.describe("S07/S08 — Luyện giao tiếp viết & nói", () => {
+  test("S07 /speak/write render đề + ô viết (AC-CM-01)", async ({ page }) => {
+    await page.goto("/speak/write");
+
+    await expect(page.getByRole("heading", { name: /Luyện nói/ })).toBeVisible();
+    await expect(page.getByLabel("Đề bài")).toBeVisible();
+    await expect(page.getByLabel("Bài của bạn")).toBeVisible();
+  });
+
+  test("S08 /speak/talk có nút ghi âm + ô transcript (AC-CM-04)", async ({ page }) => {
+    await page.goto("/speak/talk");
+
+    await expect(page.getByRole("heading", { name: "Luyện nói" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Bắt đầu ghi/ })).toBeVisible();
+    await expect(page.getByLabel(/Lời nói/)).toBeVisible();
+  });
+
+  test("rubric giao tiếp có đúng 5 tiêu chí đúng thứ tự (AC-CM-01)", async ({
+    request,
+  }) => {
+    const res = await request.get("/api/grade");
+    const payload = await res.json();
+
+    expect(payload.ok).toBe(true);
+    // ⚠️ Spec §1: Rõ ràng · Cấu trúc · Giọng văn · Tự nhiên · Ngữ pháp.
+    expect(payload.data.criteria).toEqual([
+      "clarity",
+      "structure",
+      "tone",
+      "naturalness",
+      "grammar",
+    ]);
+  });
+
+  test("S07 chấm điểm hiện 5 tiêu chí đúng tên (AC-CM-1)", async ({ page }) => {
+    await page.goto("/speak/write");
+
+    await page.getByLabel("Bài của bạn").fill(
+      "Dear Mr Minh, I am writing to request two days of leave. I have synced with Nam.",
+    );
+    await page.getByRole("button", { name: "Chấm điểm" }).click();
+
+    await expect(page.getByRole("heading", { name: "Điểm" })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    for (const label of ["Rõ ràng", "Cấu trúc", "Giọng văn", "Tự nhiên", "Ngữ pháp"]) {
+      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    }
+  });
+});
+
+test.describe("S18 — Báo cáo kết quả phỏng vấn (FR-MI-09)", () => {
+  test("mở trang báo cáo, thấy tiêu đề + trạng thái chưa có báo cáo", async ({
+    page,
+  }) => {
+    await page.goto("/interview/report");
+
+    await expect(
+      page.getByRole("heading", { name: "Kết quả phỏng vấn" }),
+    ).toBeVisible();
+    await expect(page.getByText(/Chưa có báo cáo/)).toBeVisible();
+  });
+
+  test("API report với session không tồn tại ⇒ 404", async ({ request }) => {
+    const res = await request.post("/api/interview/report", {
+      data: { sessionId: "khong-ton-tai" },
+    });
+
+    expect(res.status()).toBe(404);
+  });
+
+  test("API report thiếu sessionId ⇒ 400", async ({ request }) => {
+    const res = await request.post("/api/interview/report", { data: {} });
+    expect(res.status()).toBe(400);
+  });
+});

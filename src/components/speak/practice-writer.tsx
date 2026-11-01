@@ -49,11 +49,11 @@ export interface PracticeWriterProps {
 }
 
 const CRITERIA_LABELS: Record<string, string> = {
-  accuracy: "Độ chính xác",
-  fluency: "Độ trôi chảy",
-  vocabulary: "Từ vựng",
+  clarity: "Rõ ràng",
+  structure: "Cấu trúc",
+  tone: "Giọng văn",
+  naturalness: "Tự nhiên",
   grammar: "Ngữ pháp",
-  coherence: "Mạch lạc",
 };
 
 const ERROR_GROUP_LABELS: Record<string, string> = {

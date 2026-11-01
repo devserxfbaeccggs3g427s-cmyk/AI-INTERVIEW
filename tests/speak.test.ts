@@ -12,11 +12,11 @@ describe("rubric có đúng 5 tiêu chí (AC-CM-1)", () => {
   it("5 tiêu chí", () => {
     expect(RUBRIC_CRITERIA).toHaveLength(5);
     expect([...RUBRIC_CRITERIA]).toEqual([
-      "accuracy",
-      "fluency",
-      "vocabulary",
+      "clarity",
+      "structure",
+      "tone",
+      "naturalness",
       "grammar",
-      "coherence",
     ]);
   });
 });
@@ -25,22 +25,22 @@ describe("tổng điểm = trung bình 5 tiêu chí (AC-CM-2, NFR-CM-06)", () =>
   it("mọi tiêu chí = 4 ⇒ tổng = 4", () => {
     expect(
       averageRubric({
-        accuracy: 4,
-        fluency: 4,
-        vocabulary: 4,
+        clarity: 4,
+        structure: 4,
+        tone: 4,
+        naturalness: 4,
         grammar: 4,
-        coherence: 4,
       }),
     ).toBe(4);
   });
 
   it("điểm lệch nhau ⇒ trung bình, không phải max", () => {
     const score = averageRubric({
-      accuracy: 5,
-      fluency: 2,
-      vocabulary: 3,
+      clarity: 5,
+      structure: 2,
+      tone: 3,
       grammar: 2,
-      coherence: 3,
+      naturalness: 3,
     });
 
     // (5+2+3+2+3)/5 = 3
@@ -50,11 +50,11 @@ describe("tổng điểm = trung bình 5 tiêu chí (AC-CM-2, NFR-CM-06)", () =>
 
   it("làm tròn 1 chữ số thập phân", () => {
     const score = averageRubric({
-      accuracy: 3.33,
-      fluency: 3.33,
-      vocabulary: 3.33,
+      clarity: 3.33,
+      structure: 3.33,
+      tone: 3.33,
+      naturalness: 3.33,
       grammar: 3.33,
-      coherence: 3.33,
     });
 
     expect(score).toBe(3.3);
@@ -63,30 +63,30 @@ describe("tổng điểm = trung bình 5 tiêu chí (AC-CM-2, NFR-CM-06)", () =>
 
 describe("chuẩn hoá rubric từ AI", () => {
   it("thiếu tiêu chí ⇒ điểm 0, không NaN", () => {
-    const rubric = normalizeRubric({ accuracy: 4 });
+    const rubric = normalizeRubric({ clarity: 4 });
 
-    expect(rubric.accuracy).toBe(4);
-    expect(rubric.fluency).toBe(0);
+    expect(rubric.clarity).toBe(4);
+    expect(rubric.structure).toBe(0);
     expect(Number.isNaN(rubric.grammar)).toBe(false);
   });
 
   it("ép điểm trong 0..5", () => {
     const rubric = normalizeRubric({
-      accuracy: 99,
-      fluency: -5,
-      vocabulary: 3,
+      clarity: 99,
+      structure: -5,
+      tone: 3,
+      naturalness: 3,
       grammar: 3,
-      coherence: 3,
     });
 
-    expect(rubric.accuracy).toBe(5);
-    expect(rubric.fluency).toBe(0);
+    expect(rubric.clarity).toBe(5);
+    expect(rubric.structure).toBe(0);
   });
 
   it("giá trị không phải số ⇒ 0", () => {
-    const rubric = normalizeRubric({ accuracy: "abc" });
+    const rubric = normalizeRubric({ clarity: "abc" });
 
-    expect(rubric.accuracy).toBe(0);
+    expect(rubric.clarity).toBe(0);
   });
 });
 
@@ -123,23 +123,23 @@ describe("chấm cục bộ (AC-CM-11 — KHÔNG giả lập AI)", () => {
     const result = gradeLocally("   ");
 
     expect(result.feedback).toContain("còn trống");
-    expect(result.rubric.fluency).toBe(0);
+    expect(result.rubric.naturalness).toBe(0);
   });
 
-  it("bài dài hơn ⇒ fluency cao hơn", () => {
+  it("bài dài hơn ⇒ naturalness cao hơn", () => {
     const short = gradeLocally("Hello.");
     const long = gradeLocally(
       "This is a much longer piece of text with many more words in it to evaluate fluency properly.",
     );
 
-    expect(long.rubric.fluency).toBeGreaterThan(short.rubric.fluency);
+    expect(long.rubric.naturalness).toBeGreaterThan(short.rubric.naturalness);
   });
 
-  it("accuracy đặt trung tính 2.5 khi không có AI", () => {
+  it("clarity đặt trung tính 2.5 khi không có AI", () => {
     // ⚠️ Không có AI ⇒ không thể chấm độ chính xác ⇒ trung tính, KHÔNG bịa.
     const result = gradeLocally("Some text here.");
 
-    expect(result.rubric.accuracy).toBe(2.5);
+    expect(result.rubric.clarity).toBe(2.5);
     expect(result.rubric.grammar).toBe(2.5);
   });
 });

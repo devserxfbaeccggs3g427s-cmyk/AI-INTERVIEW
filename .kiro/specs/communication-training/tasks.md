@@ -132,12 +132,12 @@
 
 ## 3. UI — S07 Luyện giao tiếp (Viết)
 
-- [ ] 17. Route `src/app/speak/write/page.tsx` (Server Component)
+- [x] 17. Route `src/app/speak/write/page.tsx` (Server Component)
   - [ ] 17.1 Đọc `searchParams.level` (mặc định `B2`), `searchParams.lang` (mặc định `en`), `searchParams.prompt`
   - [ ] 17.2 Gọi song song `listSpeakPrompts(...)` + `findPreviousAttempt({mode:"write"})`
   - [ ] 17.3 Render `<WriteConsole>` với `hasApiKey={!!process.env.ANTHROPIC_API_KEY}` và `skillId` của node "Giao tiếp → Viết"
 - [ ] 18. Component `src/components/speak/write-console.tsx` (Client)
-  - [ ] 18.1 Mode switcher 3 chế độ: Viết / Nói / Hội thoại AI → link `/speak/write` · `/speak/talk` · `/language/practice?tab=roleplay`
+  - [x] 18.1 Mode switcher 3 chế độ: Viết / Nói / Hội thoại AI → link `/speak/write` · `/speak/talk` · `/language/practice?tab=roleplay`
   - [ ] 18.2 Card đề bài: tiêu đề + chip ngôn ngữ + 5 chip CEFR (active `bg-primary-container text-on-primary`)
   - [ ] 18.3 Editor toolbar 4 nút `format_bold` / `format_italic` / `format_quote` / `format_list_bulleted`; `Ctrl+B` / `Ctrl+I`
   - [ ] 18.4 Đếm từ realtime bằng `font-code-md text-primary`; < 20 từ → màu `text-tertiary`
@@ -177,11 +177,11 @@
 
 ## 4. UI — S08 Luyện giao tiếp (Nói)
 
-- [ ] 23. Route `src/app/speak/talk/page.tsx` (Server Component)
+- [x] 23. Route `src/app/speak/talk/page.tsx` (Server Component)
   - [ ] 23.1 Gọi `listSpeakPrompts({mode:"speak"})` + tải 6 `RoleplayScenario` cho kho drill
   - [ ] 23.2 Render `<TalkConsole>` với `hasApiKey` + `skillId` node "Giao tiếp → Nói"
 - [ ] 24. Hook `src/components/speech/use-recorder.ts`
-  - [ ] 24.1 `start()` → `getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}})` → `new MediaRecorder(stream, {mimeType})` với mimeType fallback `audio/webm;codecs=opus` → `audio/webm` → `audio/mp4`
+  - [x] 24.1 `start()` → `getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}})` → `new MediaRecorder(stream, {mimeType})` với mimeType fallback `audio/webm;codecs=opus` → `audio/webm` → `audio/mp4`
   - [ ] 24.2 `rec.start(250)` để có chunk cho waveform
   - [ ] 24.3 `pause()` / `resume()` / `stop()` / `reset()` (reset xoá blob + transcript)
   - [ ] 24.4 `maxDurationSec` → tự `stop()` + `onAutoStop()`
@@ -205,7 +205,7 @@
   - [ ] 27.3 Nút `pause Tạm dừng` / `play_arrow Tiếp tục` / `refresh Thu lại từ đầu`
   - [ ] 27.4 Nút `neurology Gửi AI Chấm & Phân tích âm vị` + chip `Ctrl + ↵`; disable khi chưa có transcript
   - [ ] 27.5 `Ctrl+Enter` kích hoạt chấm
-  - [ ] 27.6 `stt.status === "unsupported"` → hiện `textarea` "Nhập transcript thủ công" + ghi chú, nút chấm dùng giá trị textarea
+  - [x] 27.6 `stt.status === "unsupported"` → hiện `textarea` "Nhập transcript thủ công" + ghi chú, nút chấm dùng giá trị textarea
   - [ ] 27.7 `recorder.state === "denied"` → ẩn nút ghi + nút chấm, hiện card hướng dẫn cấp quyền
   - [ ] 27.8 Transcript rỗng → chặn, hiện "Chưa nhận được giọng nói — hãy thử ghi lại", không gọi API
   - [ ] 27.9 Gọi `POST /api/grade` với `mode:"speak"`, `transcript`, `speechMeta` (dùng `buildSpeechMeta`)
@@ -219,7 +219,7 @@
   - [ ] 28.5 Click thẻ → nạp challenge brief và đặt `maxDurationSec` của recorder
 - [ ] 29. Khối bảng điểm S08
   - [ ] 29.1 Banner tổng điểm `4.2 / 5.0` + delta `+0.3` (dùng chung `RubricPanel`)
-  - [ ] 29.2 5 tiêu chí **cùng key** với S07, hiển thị nhãn tiếng Việt (Rõ ràng & Tốc độ nói · Cấu trúc & Logic · Giọng văn & Sự tự tin · Tự nhiên & Ngữ điệu · Phát âm kỹ thuật) nhưng `key` nội bộ vẫn là 5 key rubric chuẩn
+  - [x] 29.2 5 tiêu chí **cùng key** với S07, hiển thị nhãn tiếng Việt (Rõ ràng & Tốc độ nói · Cấu trúc & Logic · Giọng văn & Sự tự tin · Tự nhiên & Ngữ điệu · Phát âm kỹ thuật) nhưng `key` nội bộ vẫn là 5 key rubric chuẩn
   - [ ] 29.3 Khối `equalizer` đếm filler words + `info` điểm ngắt nhịp + `tips_and_updates` khuyến nghị
 
 ## 5. UI — S11 Luyện ngoại ngữ chủ động
