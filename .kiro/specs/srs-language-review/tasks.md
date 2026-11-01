@@ -15,10 +15,10 @@
   - [ ] 1.4 Ghi `ts-fsrs` vào mục dependency ghi chú trong `docs/dependencies.md` (nếu có) hoặc comment trong `package.json`
 
 - [ ] 2. Thêm hằng số cấu hình vào `src/lib/config.ts`
-  - [ ] 2.1 Thêm `export const SRS_SESSION_MAX_CARDS = 20;` (FR-LG-04, khớp `project.md` §5)
-  - [ ] 2.2 Thêm `export const SRS_MASTERY_STABILITY_DAYS = 21;` (ngưỡng "đã thuộc")
-  - [ ] 2.3 Thêm `export const SRS_HINT_WINDOW_DAYS = 14;` (cửa sổ phiên âm Việt 2 tuần)
-  - [ ] 2.4 Thêm `export const SRS_MAX_PAGE_SIZE = 100;` (trần `pageSize` của API bảng thẻ)
+  - [x] 2.1 Thêm `export const SRS_SESSION_MAX_CARDS = 20;` (FR-LG-04, khớp `project.md` §5)
+  - [x] 2.2 Thêm `export const SRS_MASTERY_STABILITY_DAYS = 21;` (ngưỡng "đã thuộc")
+  - [x] 2.3 Thêm `export const SRS_HINT_WINDOW_DAYS = 14;` (cửa sổ phiên âm Việt 2 tuần)
+  - [x] 2.4 Thêm `export const SRS_MAX_PAGE_SIZE = 100;` (trần `pageSize` của API bảng thẻ)
   - [ ] 2.5 Unit test: mỗi hằng có giá trị đúng như trên
 
 - [ ] 3. Thêm helper ngày vào `src/lib/dates.ts`
@@ -31,7 +31,7 @@
 ## 1. Schema dữ liệu
 
 - [ ] 4. Cập nhật `prisma/schema.prisma`
-  - [ ] 4.1 Giữ nguyên model `Card` và `Review` (đã đúng SPEC §4), **chỉ sửa comment** để ghi rõ `hint` mang 2 nghĩa theo `lang` (zh = gợi ý ngữ cảnh, en = phiên âm kiểu Việt)
+  - [x] 4.1 Giữ nguyên model `Card` và `Review` (đã đúng SPEC §4), **chỉ sửa comment** để ghi rõ `hint` mang 2 nghĩa theo `lang` (zh = gợi ý ngữ cảnh, en = phiên âm kiểu Việt)
   - [ ] 4.2 Thêm `@@unique([lang, front, group])` cho `Card` — chống trùng thẻ (API trả 409)
   - [ ] 4.3 Thêm model `SrsSession` với field: `id`, `lang`, `cardIds Json`, `plannedCount Int`, `reviewedCount Int @default(0)`, `status String @default("active")`, `startedAt DateTime @default(now())`, `endedAt DateTime?`
   - [ ] 4.4 Thêm `@@index([lang, status])` cho `SrsSession`
@@ -45,16 +45,16 @@
 ## 2. Wrapper thuật toán FSRS
 
 - [ ] 5. Tạo `src/lib/fsrs.ts`
-  - [ ] 5.1 Khai báo `export type Lang = 'zh' | 'en';`
-  - [ ] 5.2 Khai báo `export type GradeRating = 1 | 2 | 3 | 4;`
-  - [ ] 5.3 Khai báo `export interface CardState` đúng 11 field: `version`, `due`, `stability`, `difficulty`, `scheduledDays`, `learningSteps`, `reps`, `lapses`, `state`, `lastReview` (design.md §3.1)
-  - [ ] 5.4 Khai báo `export interface RatingPreview` với `rating`, `intervalMinutes`, `label`, `due`, `card`
-  - [ ] 5.5 Khai báo `export const FSRS_CONFIG = generatorParameters({ request_retention: 0.9, maximum_interval: 365, enable_fuzz: false, enable_short_term: true, learning_steps: ['1m','10m'], relearning_steps: ['10m'] })`
-  - [ ] 5.6 Khai báo `export const scheduler = fsrs(FSRS_CONFIG)`
-  - [ ] 5.7 Implement `createNewCardState(now)` → `toCardState(createEmptyCard(now))`
-  - [ ] 5.8 Implement `toCardState(card)` → map `due`/`stability`/`difficulty`/`scheduled_days`/`learning_steps`/`reps`/`lapses`/`state`/`last_review` sang camelCase + `version: 1`
-  - [ ] 5.9 Implement `fromCardState(state)` → map ngược về `Card` của `ts-fsrs` (`state` cast sang `State`)
-  - [ ] 5.10 Implement `toTsfsrsGrade(rating)` → map `1→Rating.Again`, `2→Rating.Hard`, `3→Rating.Good`, `4→Rating.Easy`
+  - [x] 5.1 Khai báo `export type Lang = 'zh' | 'en';`
+  - [x] 5.2 Khai báo `export type GradeRating = 1 | 2 | 3 | 4;`
+  - [x] 5.3 Khai báo `export interface CardState` đúng 11 field: `version`, `due`, `stability`, `difficulty`, `scheduledDays`, `learningSteps`, `reps`, `lapses`, `state`, `lastReview` (design.md §3.1)
+  - [x] 5.4 Khai báo `export interface RatingPreview` với `rating`, `intervalMinutes`, `label`, `due`, `card`
+  - [x] 5.5 Khai báo `export const FSRS_CONFIG = generatorParameters({ request_retention: 0.9, maximum_interval: 365, enable_fuzz: false, enable_short_term: true, learning_steps: ['1m','10m'], relearning_steps: ['10m'] })`
+  - [x] 5.6 Khai báo `export const scheduler = fsrs(FSRS_CONFIG)`
+  - [x] 5.7 Implement `createNewCardState(now)` → `toCardState(createEmptyCard(now))`
+  - [x] 5.8 Implement `toCardState(card)` → map `due`/`stability`/`difficulty`/`scheduled_days`/`learning_steps`/`reps`/`lapses`/`state`/`last_review` sang camelCase + `version: 1`
+  - [x] 5.9 Implement `fromCardState(state)` → map ngược về `Card` của `ts-fsrs` (`state` cast sang `State`)
+  - [x] 5.10 Implement `toTsfsrsGrade(rating)` → map `1→Rating.Again`, `2→Rating.Hard`, `3→Rating.Good`, `4→Rating.Easy`
   - [ ] 5.11 Implement `previewIntervals(state, now)` → gọi `scheduler.next` cho cả 4 mức, tính `intervalMinutes = round((due - now)/60000)`, `label` từ `formatInterval`
   - [ ] 5.12 Implement `applyRating(state, rating, now)` → `{ card: toCardState(...), log: snapshot }`
   - [ ] 5.13 Implement `formatInterval(minutes, rating?)` — biên: `<1` → "Ngay bây giờ", `<60` → "… phút", `<1440` → "… giờ", còn lại → "… ngày"; tiền tố "Lặp lại trong" khi `rating === 1` (Again), "Ôn sau" với các mức khác
@@ -64,12 +64,12 @@
   - [ ] 5.17 Thêm `export function migrateCardState(raw: unknown): CardState` — ném `FsrsStateVersionError` nếu `version !== 1`
 
 - [ ] 6. Unit test `src/lib/fsrs.ts` (Vitest) — `src/lib/__tests__/fsrs.test.ts`
-  - [ ] 6.1 `applyRating` với mọi mức 1–4 × 4 trạng thái (New/Learning/Review/Relearning) **khớp tuyệt đối** `scheduler.next(state, now, grade).card` (AC-4)
-  - [ ] 6.2 `previewIntervals` trả đủ 4 key `1,2,3,4`, `intervalMinutes ≥ 0`, `due` hợp lệ
-  - [ ] 6.3 `formatInterval` đúng ở các biên 0, 1, 59, 60, 1439, 1440, 10080; `rating = 1` dùng tiền tố "Lặp lại trong", các mức khác dùng "Ôn sau"
+  - [x] 6.1 `applyRating` với mọi mức 1–4 × 4 trạng thái (New/Learning/Review/Relearning) **khớp tuyệt đối** `scheduler.next(state, now, grade).card` (AC-4)
+  - [x] 6.2 `previewIntervals` trả đủ 4 key `1,2,3,4`, `intervalMinutes ≥ 0`, `due` hợp lệ
+  - [x] 6.3 `formatInterval` đúng ở các biên 0, 1, 59, 60, 1439, 1440, 10080; `rating = 1` dùng tiền tố "Lặp lại trong", các mức khác dùng "Ôn sau"
   - [ ] 6.4 `toCardState` → `fromCardState` → `toCardState` round-trip giữ nguyên mọi field
-  - [ ] 6.5 `createNewCardState` có `state = 0`, `reps = 0`, `lapses = 0`, `stability = 0`
-  - [ ] 6.6 `migrateCardState` ném `FsrsStateVersionError` khi `version = 0` hoặc `2`
+  - [x] 6.5 `createNewCardState` có `state = 0`, `reps = 0`, `lapses = 0`, `stability = 0`
+  - [x] 6.6 `migrateCardState` ném `FsrsStateVersionError` khi `version = 0` hoặc `2`
   - [ ] 6.7 `migrateCardState` ném `FsrsStateCorruptError` khi JSON không hợp lệ
 
 ---
@@ -78,9 +78,9 @@
 
 - [ ] 7. Tạo `src/lib/srs.ts`
   - [ ] 7.1 Khai báo type `SessionCard`, `SessionPayload`, `LanguageStats`, `GroupStats`
-  - [ ] 7.2 Implement `listDueCards(lang, now, limit)` — `where: { lang, due: { lte: now } }`, `orderBy: [{ due: 'asc' }, { createdAt: 'asc' }]`
-  - [ ] 7.3 Implement `pickNewCards(lang, limit)` — chỉ lấy `reps = 0` **thuộc nhóm chưa học**; ưu tiên nhóm có ít thẻ đã học nhất (thiết kế §4.2)
-  - [ ] 7.4 Implement `buildSession(lang, { maxCards, forceNew })` — resume nếu có `SrsSession` `status = 'active'` cùng `lang`; ngược lại ghép `due` + `new`, cap `SRS_SESSION_MAX_CARDS`
+  - [x] 7.2 Implement `listDueCards(lang, now, limit)` — `where: { lang, due: { lte: now } }`, `orderBy: [{ due: 'asc' }, { createdAt: 'asc' }]`
+  - [x] 7.3 Implement `pickNewCards(lang, limit)` — chỉ lấy `reps = 0` **thuộc nhóm chưa học**; ưu tiên nhóm có ít thẻ đã học nhất (thiết kế §4.2)
+  - [x] 7.4 Implement `buildSession(lang, { maxCards, forceNew })` — resume nếu có `SrsSession` `status = 'active'` cùng `lang`; ngược lại ghép `due` + `new`, cap `SRS_SESSION_MAX_CARDS`
   - [ ] 7.5 Implement `getNextCard(sessionId, index)` → `{ sessionId, card, index, total, startedAt, preview }`; `preview` gọi `previewIntervals`
   - [ ] 7.6 Implement `gradeCard({ cardId, rating, sessionId })` — 1 `prisma.$transaction`: update `Card` + insert `Review` + update `SrsSession`
   - [ ] 7.7 Trong `gradeCard`: chống double-write — tìm `Review` cùng `cardId` trong 3 giây gần nhất → ném lỗi `409 DUPLICATE_GRADE`
@@ -93,11 +93,11 @@
   - [ ] 7.14 Thêm `export class SrsError extends Error` với `code` + `httpStatus` (map sang response API)
 
 - [ ] 8. Unit test `src/lib/srs.ts` — `src/lib/__tests__/srs.test.ts` (SQLite test DB)
-  - [ ] 8.1 `listDueCards` sắp `due` tăng dần, loại thẻ `due > now`
-  - [ ] 8.2 `pickNewCards` chỉ trả thẻ `reps = 0` thuộc **nhóm chưa học**
+  - [x] 8.1 `listDueCards` sắp `due` tăng dần, loại thẻ `due > now`
+  - [x] 8.2 `pickNewCards` chỉ trả thẻ `reps = 0` thuộc **nhóm chưa học**
   - [ ] 8.3 `pickNewCards` ưu tiên nhóm có ít thẻ đã học nhất
-  - [ ] 8.4 `buildSession` không bao giờ vượt 20 thẻ (case 25 đến hạn → 20)
-  - [ ] 8.5 `buildSession` ghép `due` trước `new` (12 đến hạn + 30 mới → 12 + 8)
+  - [x] 8.4 `buildSession` không bao giờ vượt 20 thẻ (case 25 đến hạn → 20)
+  - [x] 8.5 `buildSession` ghép `due` trước `new` (12 đến hạn + 30 mới → 12 + 8)
   - [ ] 8.6 `buildSession` resume phiên `active` cùng `lang` → `resumed: true`, `cardIds` không đổi
   - [ ] 8.7 `buildSession` với `lang` khác → tạo phiên mới, không lẫn id thẻ
   - [ ] 8.8 `gradeCard` tăng `reps`, `lapses` tăng khi rating 1, `due` về hôm nay
