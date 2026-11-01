@@ -51,6 +51,22 @@ field/cột nullable — **không thêm model mới** trừ khi ghi rõ ở §3.
 | C32 | `UserProfile` | `languageStandard` | `String` | `"cefr"` | settings-cost | `cefr \| hsk \| both` — chuẩn hiển thị ưu tiên (Q7). |
 | C33 | `TestSession` | `standard` | `String` | `"cefr"` | language-test | Chuẩn dùng cho đề này, để so sánh giữa các lần (Q7). |
 | C34 | `Activity` | `language` | `String?` | `null` | quick-log | Ngôn ngữ của hoạt động (`en`/`zh`/`vi`) — Q2. `vi` là bản ngữ ⇒ không tạo Evidence SRS. |
+| C35 | `InterviewProfile` | `answerMode` | `String` | `"text"` | mock-interview | Phương thức trả lời `text \| voice` (FR-MI-07). |
+| C36 | `InterviewProfile` | `englishClarity` | `Boolean` | `false` | mock-interview | Bật chấm thêm điểm "clarity of expression" khi trả lời tiếng Anh (FR-MI-14). |
+| C37 | `InterviewSession` | `report` | `Json?` | `null` | mock-interview | Kết quả AI-13 đã chuẩn hoá (3 mạnh / 3 yếu / đề xuất) — blob đọc nhiều lần, tách bảng con sẽ tốn query mà không dùng. |
+| C38 | `InterviewSession` | `questionKinds` | `String` | `"concept,design"` | mock-interview | 5 dạng câu **của phiên này** (CSV) — phiên có thể khác dạng so với hồ sơ. |
+| C39 | `InterviewSession` | `answerMode` | `String` | `"text"` | mock-interview | Phương thức trả lời **của phiên này** (snapshot lúc start). |
+| C40 | `InterviewSession` | `englishClarity` | `Boolean` | `false` | mock-interview | Snapshot cờ đo tiếng Anh **của phiên này**. |
+| C41 | `InterviewSession` | `adaptive` | `Boolean` | `true` | mock-interview | Bật Adaptive Loop (FR-MI-06) — snapshot lúc start. |
+| C42 | `InterviewTurn` | `skillId` | `String?` | `null` | mock-interview | Node kỹ năng câu hỏi nhắm tới (đo tỉ lệ trúng node, chọn skill trọng tâm). |
+| C43 | `InterviewTurn` | `behavioralScores` | `Json?` | `null` | mock-interview | Rubric hành vi 4 tiêu chí cho câu `behavioral` (FR-MI-05) — tách khỏi `scores`. |
+| C44 | `InterviewTurn` | `clarityScore` | `Float?` | `null` | mock-interview | Điểm "clarity of expression" 0–5 khi đo tiếng Anh bằng giọng nói (FR-MI-14). |
+| C45 | `InterviewTurn` | `nextKind` | `String?` | `null` | mock-interview | Dạng của câu kế tiếp — cache đồng bộ với `Turn_{k+1}`. |
+| C46 | `InterviewTurn` | `nextSkillId` | `String?` | `null` | mock-interview | Node của câu kế tiếp — cache đồng bộ với `Turn_{k+1}`. |
+| C47 | `InterviewTurn` | `isFollowUp` | `Boolean` | `false` | mock-interview | Câu này là follow-up của câu trước (AC-9) — không thay thế slot dạng câu. |
+| C48 | `InterviewTurn` | `adaptiveReason` | `String?` | `null` | mock-interview | Lý do AI chọn câu này — hiển thị "Ghi chú thích ứng" ở S17. |
+| C49 | `InterviewTurn` | `flagged` | `Boolean` | `false` | mock-interview | Người dùng đánh dấu "câu hỏi này có vấn đề" (FR-MI-11). |
+| C50 | `InterviewTurn` | `flagReason` | `String?` | `null` | mock-interview | Lý do ngắn (≤500 ký tự) kèm cờ. |
 
 > ⚠️ **Xung đột đã hợp nhất:** `personal-state-journal` đề xuất `AiCall.preview` (160 ký tự) trong khi
 > `settings-cost` đề xuất `AiCall.dataPreview` (280 ký tự) — **cùng ý nghĩa, khác tên và khác độ dài**.

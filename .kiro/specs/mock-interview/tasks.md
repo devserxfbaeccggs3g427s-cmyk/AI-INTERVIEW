@@ -9,36 +9,36 @@
 ## 0. Nền tảng dữ liệu
 
 - [ ] 1. Mô hình Prisma — `InterviewProfile`, `InterviewSession`, `InterviewTurn`
-  - [ ] 1.1 Thêm `answerMode String @default("text")` và `englishClarity Boolean @default(false)` vào `model InterviewProfile` trong `prisma/schema.prisma`
-  - [ ] 1.2 Thêm `report Json?` và `activityId String? @unique` vào `model InterviewSession`; thêm quan hệ `activity Activity? @relation(fields: [activityId], references: [id])`
+  - [x] 1.1 Thêm `answerMode String @default("text")` và `englishClarity Boolean @default(false)` vào `model InterviewProfile` trong `prisma/schema.prisma`
+  - [x] 1.2 Thêm `report Json?` và `activityId String? @unique` vào `model InterviewSession`; thêm quan hệ `activity Activity? @relation(fields: [activityId], references: [id])`
   - [ ] 1.3 Thêm `status` giá trị mới `paused` — ghi chú trong schema, giá trị hiện tại là String tự do (không cần enum)
-  - [ ] 1.4 Thêm các cột mới vào `model InterviewTurn`: `skillId String?`, `behavioralScores Json?`, `clarityScore Float?`, `nextKind String?`, `nextSkillId String?`, `isFollowUp Boolean @default(false)`, `adaptiveReason String?`, `flagged Boolean @default(false)`, `flagReason String?`
+  - [x] 1.4 Thêm các cột mới vào `model InterviewTurn`: `skillId String?`, `behavioralScores Json?`, `clarityScore Float?`, `nextKind String?`, `nextSkillId String?`, `isFollowUp Boolean @default(false)`, `adaptiveReason String?`, `flagged Boolean @default(false)`, `flagReason String?`
   - [ ] 1.5 Thêm index `@@index([sessionId, index])` trên `InterviewTurn` và `@@index([profileId, status, startedAt])` trên `InterviewSession`
-  - [ ] 1.6 Chạy `npx prisma migrate dev --name add_mock_interview_columns` (migration **additive** — không dùng `reset`)
-  - [ ] 1.7 Xác minh `npx prisma migrate status` báo không có migration pending
+  - [x] 1.6 Chạy `npx prisma migrate dev --name add_mock_interview_columns` (migration **additive** — không dùng `reset`)
+  - [x] 1.7 Xác minh `npx prisma migrate status` báo không có migration pending
   - [ ] 1.8 Seed: thêm 3 `InterviewProfile` mẫu ("Backend Engineer", "System Architect", "Engineering Manager") trong `prisma/seed.ts`, `focusSkills` trỏ tới node `professional` có sẵn
 
 - [ ] 2. Kiểu dùng chung & rubric
-  - [ ] 2.1 Tạo `src/lib/interview/types.ts` khai báo **một lần duy nhất**: `QuestionKind`, `Seniority`, `AnswerMode`, `SessionStatus`, `RubricKey`, `BehavioralRubricKey`, `CriterionScore`, `ScoresJson`, `BehavioralScoresJson`
-  - [ ] 2.2 Tạo `src/lib/interview/rubric.ts` — khai báo `RUBRIC_TECHNICAL` (5 tiêu chí), `RUBRIC_BEHAVIORAL` (4 tiêu chí), `RUBRIC_BY_KIND`, `RUBRIC_SCORE_MIN/MAX`
-  - [ ] 2.3 Implement `sanitizeScores(raw, kind)` — clamp về [0,5], lọc key ngoài rubric theo `kind`, loại bỏ `scores` khi kind = `behavioral`
-  - [ ] 2.4 Implement `computeTurnTotal(scores, kind)` — trung bình tiêu chí đã chấm, làm tròn 2 chữ số
-  - [ ] 2.5 Implement `computeSessionTotal(turnTotals)` — trả `null` khi danh sách rỗng
-  - [ ] 2.6 Export `RUBRIC_BLOCK` — chuỗi text rubric 2 bảng + quy tắc chấm, **không** chứa timestamp/UUID
-  - [ ] 2.7 Unit test `rubric.ts` — clamp, lọc key lạ, đúng rubric theo kind, tổng đúng trung bình
+  - [x] 2.1 Tạo `src/lib/interview/types.ts` khai báo **một lần duy nhất**: `QuestionKind`, `Seniority`, `AnswerMode`, `SessionStatus`, `RubricKey`, `BehavioralRubricKey`, `CriterionScore`, `ScoresJson`, `BehavioralScoresJson`
+  - [x] 2.2 Tạo `src/lib/interview/rubric.ts` — khai báo `RUBRIC_TECHNICAL` (5 tiêu chí), `RUBRIC_BEHAVIORAL` (4 tiêu chí), `RUBRIC_BY_KIND`, `RUBRIC_SCORE_MIN/MAX`
+  - [x] 2.3 Implement `sanitizeScores(raw, kind)` — clamp về [0,5], lọc key ngoài rubric theo `kind`, loại bỏ `scores` khi kind = `behavioral`
+  - [x] 2.4 Implement `computeTurnTotal(scores, kind)` — trung bình tiêu chí đã chấm, làm tròn 2 chữ số
+  - [x] 2.5 Implement `computeSessionTotal(turnTotals)` — trả `null` khi danh sách rỗng
+  - [x] 2.6 Export `RUBRIC_BLOCK` — chuỗi text rubric 2 bảng + quy tắc chấm, **không** chứa timestamp/UUID
+  - [x] 2.7 Unit test `rubric.ts` — clamp, lọc key lạ, đúng rubric theo kind, tổng đúng trung bình
 
 - [ ] 3. Lớp nghiệp vụ — thuật toán chọn kỹ năng yếu
-  - [ ] 3.1 Tạo `src/lib/interview/weak-skills.ts` với interface `SkillEvidenceStat`, `WeakSkillView`, `WeaknessBand`
-  - [ ] 3.2 Implement `rankWeakSkills(stats, options)` — sort theo 4 khoá: `evidenceCount ASC` → `avgRating ASC` (null = Infinity) → `level ASC` → `name ASC`
-  - [ ] 3.3 Implement `pickWeakSkills(stats, count)` và `bandOf(evidenceCount, level)` — P0 = 0 bằng chứng, P1 = 1–2, P2 = ≥3
+  - [x] 3.1 Tạo `src/lib/interview/weak-skills.ts` với interface `SkillEvidenceStat`, `WeakSkillView`, `WeaknessBand`
+  - [x] 3.2 Implement `rankWeakSkills(stats, options)` — sort theo 4 khoá: `evidenceCount ASC` → `avgRating ASC` (null = Infinity) → `level ASC` → `name ASC`
+  - [x] 3.3 Implement `pickWeakSkills(stats, count)` và `bandOf(evidenceCount, level)` — P0 = 0 bằng chứng, P1 = 1–2, P2 = ≥3
   - [ ] 3.4 Implement `getSkillEvidenceStats(skillIds)` — query Prisma raw theo SQL ở `design.md` §3.2
   - [ ] 3.5 Unit test: fixture "Lựa chọn giải pháp" (0 bằng chứng) phải đứng trước "Phân tích yêu cầu" (2 bằng chứng) → **AC-10**
   - [ ] 3.6 Unit test: khoá ổn định — gọi 2 lần cùng dữ liệu cho kết quả giống hệt
   - [ ] 3.7 Unit test: `avgRating = null` không bị ưu tiên sai; `focusSkills` rỗng trả `[]`
 
 - [ ] 4. Lớp nghiệp vụ — turn machine & adaptive
-  - [ ] 4.1 Tạo `src/lib/interview/turn-machine.ts` với `TurnContext` và `TurnValidation`
-  - [ ] 4.2 Implement `validateTurn(ctx, rawAnswer)` — trả lỗi `EMPTY_ANSWER` / `SESSION_PAUSED` / `INDEX_MISMATCH` / `SESSION_DONE`
+  - [x] 4.1 Tạo `src/lib/interview/turn-machine.ts` với `TurnContext` và `TurnValidation`
+  - [x] 4.2 Implement `validateTurn(ctx, rawAnswer)` — trả lỗi `EMPTY_ANSWER` / `SESSION_PAUSED` / `INDEX_MISMATCH` / `SESSION_DONE`
   - [ ] 4.3 Implement `shouldFollowUp(scores)` theo đúng ngưỡng ở `design.md` §3.5 (thiếu depth/tradeoff/STAR → follow-up; đạt → câu mới)
   - [ ] 4.4 Implement `normalizeTurnResult(result, ctx, focusedSkillIds, fallbackSkillId)` — ép câu mới khi AI sinh follow-up thừa; gắn lại `skillId` hợp lệ; `nextQuestion = null` khi đủ câu
   - [ ] 4.5 Implement `buildTurnPromptInput(answer, maxChars)` — cắt còn 2000 ký tự đầu + 500 ký tự cuối, chèn `[...bị cắt...]`, trả `truncated`
@@ -49,12 +49,12 @@
   - [ ] 4.10 Unit test `buildTurnPromptInput` — giữ nguyên 3000 ký tự dưới ngưỡng; cắt đúng khi vượt
 
 - [ ] 5. Lớp nghiệp vụ — báo cáo, delta, Activity/Evidence
-  - [ ] 5.1 Tạo `src/lib/interview/report.ts` với `TurnTranscript` và `NormalizedReport`
-  - [ ] 5.2 Implement `isVerbatimQuote(quote, answer)` — chuẩn hoá whitespace rồi `includes`; `answer === null` → `false`
-  - [ ] 5.3 Implement `normalizeReport(raw, transcript)` — cắt/điền **đúng 3** mạnh + **3** yếu, gắn `autoGenerated` cho mục tự sinh
-  - [ ] 5.4 Implement `normalizeReport` — verify `turnIndex` trong khoảng hợp lệ, không hợp lệ thì gán câu có điểm thấp nhất
-  - [ ] 5.5 Implement `buildFallbackPractices(focused)` — dùng node yếu nhất, `action` theo mẫu câu chuẩn
-  - [ ] 5.6 Implement `normalizeReport` — validate `nextPractices.skillId` thuộc `skillsFocused`, sai thì thay bằng fallback
+  - [x] 5.1 Tạo `src/lib/interview/report.ts` với `TurnTranscript` và `NormalizedReport`
+  - [x] 5.2 Implement `isVerbatimQuote(quote, answer)` — chuẩn hoá whitespace rồi `includes`; `answer === null` → `false`
+  - [x] 5.3 Implement `normalizeReport(raw, transcript)` — cắt/điền **đúng 3** mạnh + **3** yếu, gắn `autoGenerated` cho mục tự sinh
+  - [x] 5.4 Implement `normalizeReport` — verify `turnIndex` trong khoảng hợp lệ, không hợp lệ thì gán câu có điểm thấp nhất
+  - [x] 5.5 Implement `buildFallbackPractices(focused)` — dùng node yếu nhất, `action` theo mẫu câu chuẩn
+  - [x] 5.6 Implement `normalizeReport` — validate `nextPractices.skillId` thuộc `skillsFocused`, sai thì thay bằng fallback
   - [ ] 5.7 Tạo `src/lib/interview/delta.ts` — `computeSessionRubric(turns)`, `findPreviousSession(profileId, startedAt)`, `diffRubric(current, previous)`
   - [ ] 5.8 Implement `diffRubric` — `direction`: `up` nếu `delta > 0.05`, `down` nếu `< -0.05`, còn lại `flat`
   - [ ] 5.9 Tạo `src/lib/interview/activity.ts` — `pickPrimarySkill(skillsFocused, turnSkillIds)` và `toEvidenceRating(totalScore)` (4/3/2/1)
@@ -64,7 +64,7 @@
   - [ ] 5.13 Unit test `toEvidenceRating` — 4.5→4, 3.5→3, 2.5→2, 1.0→1
 
 - [ ] 6. Lớp nghiệp vụ — state machine & resume
-  - [ ] 6.1 Tạo `src/lib/interview/session-state.ts` với `SessionStatus` và `SessionSnapshot`
+  - [x] 6.1 Tạo `src/lib/interview/session-state.ts` với `SessionStatus` và `SessionSnapshot`
   - [ ] 6.2 Implement `currentTurnIndex(session)` — trả index của turn chưa có `answer`; `null` khi hết câu
   - [ ] 6.3 Implement `lastAnsweredTurnIndex(session)` — index của turn cuối đã trả lời (panel "Đánh giá Câu N-1")
   - [ ] 6.4 Implement `canTransition(from, to)` — `done`/`abandoned` không hồi sinh được
@@ -79,7 +79,7 @@
 ## 1. AI layer
 
 - [ ] 7. Prompt & schema
-  - [ ] 7.1 Tạo `src/lib/interview/prompts.ts` — export `SYSTEM_INTERVIEW` (đóng vai interviewer + quy tắc chấm, **cố định**)
+  - [x] 7.1 Tạo `src/lib/interview/prompts.ts` — export `SYSTEM_INTERVIEW` (đóng vai interviewer + quy tắc chấm, **cố định**)
   - [ ] 7.2 Export `SYSTEM_INTERVIEW_REPORT` cho AI-13 (cố định)
   - [ ] 7.3 Import `RUBRIC_BLOCK` từ `rubric.ts` vào `prompts.ts` — **1 nguồn duy nhất**, không copy-paste
   - [ ] 7.4 Viết `StartQuestionSchema` (AI-11): `question`, `kind`, `skillId`, `skillName`, `intro`
@@ -91,8 +91,8 @@
   - [ ] 7.10 Implement `buildStartMessages(profile, focusSkills, kinds)` — hồ sơ + node yếu + dạng câu, không đưa timestamp vào system
 
 - [ ] 8. Wrapper Anthropic & prompt caching
-  - [ ] 8.1 Thêm `feature: 'mock_interview'` vào union `feature` của `src/lib/anthropic.ts`
-  - [ ] 8.2 Implement `callStructured<T>(opts)` — gọi `client.messages.parse` với `output_config.format = zodOutputFormat(schema)`
+  - [x] 8.1 Thêm `feature: 'mock_interview'` vào union `feature` của `src/lib/anthropic.ts`
+  - [x] 8.2 Implement `callStructured<T>(opts)` — gọi `client.messages.parse` với `output_config.format = zodOutputFormat(schema)`
   - [ ] 8.3 Bảo đảm wrapper tự ghi `AiCall` cho mọi lời gọi: `inputTokens`, `outputTokens`, `cacheRead`, `cacheWrite`, `estimatedCost`, `ok`, `error`
   - [ ] 8.4 Implement `assertCacheHit(feature)` — đọc `AiCall.cacheRead` của call gần nhất
   - [ ] 8.5 Thiết lập `max_tokens: 8000` cho AI-11/12 và `max_tokens: 12000` cho AI-13
@@ -102,7 +102,7 @@
   - [ ] 8.9 Xác minh cache: chạy 1 phiên 8 câu → `cache_read_input_tokens` của lượt 2 > 0 (AC-5); nếu = 0 → tìm silent invalidator
 
 - [ ] 9. AI-11 — sinh câu hỏi lượt 1
-  - [ ] 9.1 Implement `generateFirstQuestion(profile, focusSkills, kinds)` — gọi `callStructured<StartQuestion>`
+  - [x] 9.1 Implement `generateFirstQuestion(profile, focusSkills, kinds)` — gọi `callStructured<StartQuestion>`
   - [ ] 9.2 Bắt buộc truyền `focusSkills` + `jobTitle` + `seniority` + `language` vào `messages` (R8)
   - [ ] 9.3 Gán `skillId` cho câu hỏi từ `focusSkills`; nếu AI trả `skillId` không hợp lệ → gán node yếu nhất
   - [ ] 9.4 Fallback khi AI lỗi: trả `503` + thông báo có nút "Thử lại" — **không** sinh câu hỏi giả
@@ -117,9 +117,9 @@
   - [ ] 10.7 Unit test với fixture `TurnResult` hợp lệ / thiếu key / điểm ngoài thang / `nextQuestion=null`
 
 - [ ] 11. AI-13 — báo cáo cuối phiên
-  - [ ] 11.1 Implement `generateReport(session, transcript)` — gọi `callStructured<Report>` với `effort:'high'`
-  - [ ] 11.2 Build `TRANSCRIPT_BLOCK` gồm câu hỏi + câu trả lời + điểm từng lượt (cắt câu trả lời > 2000 ký tự)
-  - [ ] 11.3 Chạy `normalizeReport` — cắt/điền 3 mạnh + 3 yếu, verify trích dẫn, fallback `nextPractices`
+  - [x] 11.1 Implement `generateReport(session, transcript)` — gọi `callStructured<Report>` với `effort:'high'`
+  - [x] 11.2 Build `TRANSCRIPT_BLOCK` gồm câu hỏi + câu trả lời + điểm từng lượt (cắt câu trả lời > 2000 ký tự)
+  - [x] 11.3 Chạy `normalizeReport` — cắt/điền 3 mạnh + 3 yếu, verify trích dẫn, fallback `nextPractices`
   - [ ] 11.4 Lưu `session.report` (JSON) — chỉ ghi sau khi đã normalize
   - [ ] 11.5 Gọi `persistSessionOutcome` — tạo 1 Activity + 1 Evidence
   - [ ] 11.6 Chặn gọi lại khi `session.report` đã có → trả report đã lưu (idempotent)
@@ -129,20 +129,20 @@
 ## 2. API
 
 - [ ] 12. `GET /api/interview/profiles`
-  - [ ] 12.1 Query `InterviewProfile` kèm `sessions` để tính `sessionCount` và `averageScore` (chỉ tính session `status='done'`)
-  - [ ] 12.2 Trả `{ ok: true, data: { profiles, total } }`
+  - [x] 12.1 Query `InterviewProfile` kèm `sessions` để tính `sessionCount` và `averageScore` (chỉ tính session `status='done'`)
+  - [x] 12.2 Trả `{ ok: true, data: { profiles, total } }`
 - [ ] 13. `POST /api/interview/profiles`
-  - [ ] 13.1 Validate body bằng Zod — `label`, `jobTitle`, `seniority`, `language`, `questionKinds[]` ⊆ 5 dạng, `focusSkills[]`, `answerMode`, `englishClarity`
-  - [ ] 13.2 Kiểm tra `focusSkills` tồn tại và thuộc domain `professional` → `400` nếu không
+  - [x] 13.1 Validate body bằng Zod — `label`, `jobTitle`, `seniority`, `language`, `questionKinds[]` ⊆ 5 dạng, `focusSkills[]`, `answerMode`, `englishClarity`
+  - [x] 13.2 Kiểm tra `focusSkills` tồn tại và thuộc domain `professional` → `400` nếu không
   - [ ] 13.3 Kiểm tra `questionKinds` không rỗng → `400`
   - [ ] 13.4 Trả `409` nếu trùng `label`
   - [ ] 13.5 Tạo bản ghi, trả `{ ok: true, data: { profile } }`
 - [ ] 14. `PATCH /api/interview/profiles/[id]`
-  - [ ] 14.1 Validate partial body bằng Zod
-  - [ ] 14.2 Cập nhật, trả `404` nếu hồ sơ không tồn tại
+  - [x] 14.1 Validate partial body bằng Zod
+  - [x] 14.2 Cập nhật, trả `404` nếu hồ sơ không tồn tại
 - [ ] 15. `DELETE /api/interview/profiles/[id]`
-  - [ ] 15.1 Xoá hồ sơ → cascade xoá phiên (cascade xác nhận trong schema)
-  - [ ] 15.2 Trả `{ ok: true, data: { deleted: true } }`
+  - [x] 15.1 Xoá hồ sơ → cascade xoá phiên (cascade xác nhận trong schema)
+  - [x] 15.2 Trả `{ ok: true, data: { deleted: true } }`
 - [ ] 16. `GET /api/interview/weak-skills?profileId=&count=2`
   - [ ] 16.1 Lấy `focusSkills` của hồ sơ → `getSkillEvidenceStats` → `rankWeakSkills` → `pickWeakSkills(count)`
   - [ ] 16.2 Trả `{ skills: WeakSkillView[] }` gồm `skillId`, `name`, `evidenceCount`, `avgRating`, `level`, `path`, `band`, `score`
@@ -156,9 +156,9 @@
   - [ ] 17.7 Trả `{ ok: true, data: { sessionId, firstTurn } }`
   - [ ] 17.8 Trả `503 NO_API_KEY` nếu thiếu key — **không** tạo phiên giả
 - [ ] 18. `POST /api/interview/turn` (AI-12)
-  - [ ] 18.1 Validate body: `sessionId`, `turnIndex` ≥ 1, `answer` string
-  - [ ] 18.2 Load session + profile + turns; `404` nếu không có session
-  - [ ] 18.3 Chạy `validateTurn` → `409` cho `EMPTY_ANSWER` / `SESSION_PAUSED` / `INDEX_MISMATCH`
+  - [x] 18.1 Validate body: `sessionId`, `turnIndex` ≥ 1, `answer` string
+  - [x] 18.2 Load session + profile + turns; `404` nếu không có session
+  - [x] 18.3 Chạy `validateTurn` → `409` cho `EMPTY_ANSWER` / `SESSION_PAUSED` / `INDEX_MISMATCH`
   - [ ] 18.4 Gọi AI-12 (1 call) — không tách thành 2 call
   - [ ] 18.5 Áp `normalizeTurnResult` + `sanitizeScores` + tính `total` bằng `computeTurnTotal`
   - [ ] 18.6 Transaction: update turn hiện tại (`answer`, `scores`, `behavioralScores`, `total`, `feedback`, `clarityScore`) + create turn kế tiếp (`index+1`, `question`, `kind`, `skillId`, `skillName`, `isFollowUp`, `adaptiveReason`)
@@ -166,8 +166,8 @@
   - [ ] 18.8 Trả `{ ok: true, data: { turn, nextTurn, session: { askedCount, status } } }`
   - [ ] 18.9 Error mapping theo bảng ở `design.md` §3.12 (401/429/422/502/504/503)
 - [ ] 19. `POST /api/interview/report` (AI-13)
-  - [ ] 19.1 Validate `sessionId`; `404` nếu không có session
-  - [ ] 19.2 `409` nếu số câu đã trả lời `< 2` (báo cáo trên 1 câu là ảo tưởng)
+  - [x] 19.1 Validate `sessionId`; `404` nếu không có session
+  - [x] 19.2 `409` nếu số câu đã trả lời `< 2` (báo cáo trên 1 câu là ảo tưởng)
   - [ ] 19.3 Nếu `session.report` đã có → trả luôn, không gọi AI lại
   - [ ] 19.4 Gọi AI-13 → `normalizeReport` → lưu `session.report`
   - [ ] 19.5 Gọi `persistSessionOutcome` — tạo Activity + Evidence idempotent
@@ -330,3 +330,9 @@
 - [ ] 38.9 Nút "Gợi ý phiên tiếp theo" — chọn mục kỹ năng yếu nhất chưa có phiên gần đây
 - [ ] 38.10 Test: gợi ý sinh ra luôn có `whyNow` chứa số ≥ 1 số liệu Evidence
 - [ ] 38.11 Test: `sessionType` lưu đúng và hiển thị đúng trong lịch sử
+
+> **Ghi nhận sai lệch (2026-10-31):** Task §2 và §3 chỉ định đường dẫn
+> `src/lib/interview/types.ts` + `src/lib/interview/rubric.ts`, nhưng triển khai dùng
+> `src/lib/interview.ts` + `src/lib/interview-rubric.ts` (phẳng, khớp convention
+> `src/lib/<feature>.ts` của các feature khác). Nội dung rubric/turn-machine/weak-skills
+> giữ nguyên theo spec.
