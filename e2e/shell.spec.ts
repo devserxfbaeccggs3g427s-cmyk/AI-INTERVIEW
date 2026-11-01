@@ -218,7 +218,11 @@ test.describe("design token áp dụng thật (AC-AF-3)", () => {
     const fontFamily = await page.locator("h1").evaluate(
       (el) => window.getComputedStyle(el).fontFamily,
     );
-    expect(fontFamily.toLowerCase()).toContain("space grotesk");
+    // ⚠️ `next/font/local` đặt tên font theo tên file (đã bỏ dấu cách)
+    // ⇒ "Space Grotesk" thành "spaceGrotesk". So khớp không phân biệt hoa
+    // thường + bỏ khoảng trắng cho cả hai vế.
+    const normalized = fontFamily.toLowerCase().replace(/\s+/g, "");
+    expect(normalized).toContain("spacegrotesk");
   });
 
   test("body dùng Be Vietnam Pro", async ({ page }) => {
@@ -227,7 +231,8 @@ test.describe("design token áp dụng thật (AC-AF-3)", () => {
     const fontFamily = await page.evaluate(
       () => window.getComputedStyle(document.body).fontFamily,
     );
-    expect(fontFamily.toLowerCase()).toContain("be vietnam pro");
+    const normalized = fontFamily.toLowerCase().replace(/\s+/g, "");
+    expect(normalized).toContain("bevietnampro");
   });
 
   test("font tiếng Việt có đủ glyph dấu", async ({ page }) => {

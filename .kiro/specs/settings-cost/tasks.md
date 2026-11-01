@@ -42,7 +42,7 @@
 
 ## 1. Lớp nghiệp vụ & truy vấn tổng hợp
 
-- [ ] 4. Hồ sơ (`src/lib/profile.ts`)
+- [x] 4. Hồ sơ (`src/lib/profile.ts`)
   - [x] 4.1 Implement `getProfile()` — `findUnique({id:"default"})`, nếu chưa có thì `create` 1 dòng mặc định (singleton, không tạo dòng thứ 2)
   - [x] 4.2 Implement `updateProfile(patch)` dùng `upsert` với `where.id = "default"`, serialize `learningLangs` thành chuỗi CSV
   - [x] 4.3 Implement `toDto(row)` map `learningLangs: "zh,en"` → `["zh","en"]`, map mức không hợp lệ về `"zero"` + `console.warn` (không throw)
@@ -60,7 +60,7 @@
   - [ ] 5.9 Integration test: `listAiCalls` page 2 trả đúng dải bản ghi, `totalPages` đúng
   - [ ] 5.10 Thêm helper `toLocalDayString()` vào `src/lib/dates.ts` — cho ra đúng định dạng `yyyy-MM-dd`, **khớp** với `strftime('%Y-%m-%d', datetime(createdAt,'localtime'))` dùng trong `getCostByDay`
   - [ ] 5.11 Integration test: bản ghi lúc 23:59:59 local nằm đúng ngày đó trong `getCostByDay` (không lệch sang hôm sau)
-- [ ] 6. Minh bạch dữ liệu (`src/lib/privacy.ts`)
+- [x] 6. Minh bạch dữ liệu (`src/lib/privacy.ts`)
   - [x] 6.1 Implement `listPrivacyLog({page,pageSize,feature})` lọc `NOT [{dataKinds:"[]"},{dataKinds:null}]` — chỉ lấy dòng thực sự đã gửi dữ liệu
   - [x] 6.2 Map `dataKinds` từ JSON string → `string[]`, JSON parse lỗi → `[]` (không throw)
   - [ ] 6.3 Integration test: dòng có `dataKinds = "[]"` không xuất hiện trong kết quả; dòng có `["journal_text"]` có xuất hiện

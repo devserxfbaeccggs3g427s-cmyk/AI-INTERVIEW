@@ -67,11 +67,10 @@ test.describe("S15 — Hồ sơ (FR-SC-01..07)", () => {
       await en.click();
     }
 
-    await expect(
-      page.getByText("Không thể tắt tiếng Anh — đây là ngôn ngữ dùng chung của app").first(),
-    ).toBeVisible();
-
+    // ⚠️ Lỗi hiện khi **bấm Lưu**, không phải ngay khi bỏ chip — bỏ chip chỉ
+    // đổi trạng thái form, chỉ khi gửi mới biết là vi phạm quy tắc.
     await page.getByRole("button", { name: "Lưu thay đổi" }).click();
+
     await expect(
       page.getByText("Không thể tắt tiếng Anh — đây là ngôn ngữ dùng chung của app").first(),
     ).toBeVisible();

@@ -2,187 +2,33 @@ import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/dates";
 
 /**
- * Lớp nghiệp vụ Cài đặt & Chi phí (S15) — FR-SC-01..29.
+ * Lớp nghiệp vụ Cài đặt & Chi phí (S15) — FR-SC-15..26.
  *
  * ⚠️ P6 / FR-SC-25 — mọi thao tác xoá dữ liệu cần xác nhận **2 bước**:
  * bước 1 mở hộp thoại, bước 2 gõ đúng `XOA`.
  *
  * ⚠️ FR-SC-24 — xuất JSON chứa **toàn bộ** bảng + hồ sơ + metadata.
- */
-
-/* ══ Hồ sơ người dùng (FR-SC-01..07) ════════════════════════════════════ */
-
-export type AiTone = "direct" | "coach" | "gentle";
-export type LanguageStandard = "cefr" | "hsk" | "both";
-
-/** Thang CEFR đầy đủ (FR-SC-05). */
-export const CEFR_LEVELS = [
-  "A1",
-  "A2",
-  "B1",
-  "B2",
-  "C1",
-  "C2",
-] as const;
-
-/** Thang HSK đầy đủ (FR-SC-05). */
-export const HSK_LEVELS = ["zero", "1", "2", "3", "4", "5", "6"] as const;
-
-export type LanguageCode = "en" | "zh" | "vi";
-
-/**
- * Ngôn ngữ phỏng vấn.
  *
- * ⚠️ Task 35.7 — nhận `zh` ngoài `en`/`vi` (Q2 trong OPEN-QUESTIONS đã chốt:
- * người dùng học 3 ngôn ngữ, phỏng vấn có thể bằng cả 3).
+ * ⚠️ Hồ sơ (`profile.ts`) và nhật ký dữ liệu (`privacy.ts`) nằm ở file
+ * riêng theo spec — ở đây chỉ re-export để call site cũ vẫn chạy được.
  */
-export type InterviewLang = "en" | "zh" | "vi";
+import { getUserProfile } from "@/lib/profile";
 
-export interface UserProfileDTO {
-  name: string | null;
-  goals: string | null;
-  aiTone: AiTone;
-  learningLangs: LanguageCode[];
-  zhLevel: string;
-  enLevel: string;
-  viLevel: string;
-  languageStandard: LanguageStandard;
-  interviewLang: InterviewLang;
-  monthlyBudgetUsd: number;
-  saverMode: boolean;
-  focusSkillId: string | null;
-}
-
-/**
- * Đọc hồ sơ (FR-SC-01..07).
- *
- * Nếu chưa có hồ sơ ⇒ trả mặc định, KHÔNG tự tạo (để `POST` quyết định).
- */
-export async function getUserProfile(): Promise<UserProfileDTO> {
-  const row = await prisma.userProfile.findFirst({ orderBy: { createdAt: "asc" } });
-
-  if (!row) {
-    return {
-      name: null,
-      goals: null,
-      aiTone: "direct",
-      learningLangs: ["zh", "en"],
-      zhLevel: "zero",
-      enLevel: "zero",
-      viLevel: "B2",
-      languageStandard: "cefr",
-      interviewLang: "en",
-      monthlyBudgetUsd: 15,
-      saverMode: false,
-      focusSkillId: null,
-    };
-  }
-
-  return {
-    name: row.name,
-    goals: row.goals,
-    aiTone: (row.aiTone as AiTone) ?? "direct",
-    learningLangs: parseLangs(row.learningLangs),
-    zhLevel: row.zhLevel,
-    enLevel: row.enLevel,
-    viLevel: row.viLevel,
-    languageStandard: (row.languageStandard as LanguageStandard) ?? "cefr",
-    interviewLang: (row.interviewLang as InterviewLang) ?? "en",
-    monthlyBudgetUsd: row.monthlyBudgetUsd,
-    saverMode: row.saverMode,
-    focusSkillId: row.focusSkillId,
-  };
-}
-
-/**
- * Lưu hồ sơ (FR-SC-01..07).
- *
- * ⚠️ FR-SC-04 — phải còn **≥ 1 ngôn ngữ** đang học.
- * ⚠️ FR-SC-07 — upsert, không mất dữ liệu đang gõ khi lỗi.
- */
-export async function saveUserProfile(input: {
-  name?: string | null;
-  goals?: string | null;
-  aiTone?: AiTone;
-  learningLangs?: LanguageCode[];
-  zhLevel?: string;
-  enLevel?: string;
-  viLevel?: string;
-  languageStandard?: LanguageStandard;
-  interviewLang?: InterviewLang;
-  monthlyBudgetUsd?: number;
-  saverMode?: boolean;
-}): Promise<UserProfileDTO> {
-  // ⚠️ FR-SC-04 — ≥ 1 ngôn ngữ đang học.
-  if (input.learningLangs !== undefined && input.learningLangs.length === 0) {
-    throw new Error("no_learning_lang");
-  }
-
-  // ⚠️ FR-SC-01 — tối đa 80 ký tự.
-  if (input.name !== undefined && input.name !== null && input.name.length > 80) {
-    throw new Error("name_too_long");
-  }
-
-  // ⚠️ FR-SC-02 — tối đa 2000 ký tự.
-  if (input.goals !== undefined && input.goals !== null && input.goals.length > 2000) {
-    throw new Error("goals_too_long");
-  }
-
-  // ⚠️ FR-SC-22 — ngân sách phải ≥ 0.
-  if (
-    input.monthlyBudgetUsd !== undefined &&
-    (!Number.isFinite(input.monthlyBudgetUsd) || input.monthlyBudgetUsd < 0)
-  ) {
-    throw new Error("invalid_budget");
-  }
-
-  const existing = await prisma.userProfile.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-
-  const data = {
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.goals !== undefined ? { goals: input.goals } : {}),
-    ...(input.aiTone !== undefined ? { aiTone: input.aiTone } : {}),
-    ...(input.learningLangs !== undefined
-      ? { learningLangs: input.learningLangs.join(",") }
-      : {}),
-    ...(input.zhLevel !== undefined ? { zhLevel: input.zhLevel } : {}),
-    ...(input.enLevel !== undefined ? { enLevel: input.enLevel } : {}),
-    ...(input.viLevel !== undefined ? { viLevel: input.viLevel } : {}),
-    ...(input.languageStandard !== undefined
-      ? { languageStandard: input.languageStandard }
-      : {}),
-    ...(input.interviewLang !== undefined
-      ? { interviewLang: input.interviewLang }
-      : {}),
-    ...(input.monthlyBudgetUsd !== undefined
-      ? { monthlyBudgetUsd: input.monthlyBudgetUsd }
-      : {}),
-    ...(input.saverMode !== undefined ? { saverMode: input.saverMode } : {}),
-  };
-
-  if (existing) {
-    await prisma.userProfile.update({ where: { id: existing.id }, data });
-  } else {
-    await prisma.userProfile.create({ data });
-  }
-
-  return getUserProfile();
-}
-
-/** Parse chuỗi `learningLangs` — luôn ≥ 1 ngôn ngữ. */
-function parseLangs(raw: string): LanguageCode[] {
-  const parts = raw
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part): part is LanguageCode =>
-      part === "en" || part === "zh" || part === "vi",
-    );
-
-  return parts.length > 0 ? parts : ["zh", "en"];
-}
+export {
+  getUserProfile,
+  saveUserProfile,
+  CEFR_LEVELS,
+  HSK_LEVELS,
+} from "@/lib/profile";
+export type {
+  AiTone,
+  InterviewLang,
+  LanguageCode,
+  LanguageStandard,
+  UserProfileDTO,
+} from "@/lib/profile";
+export { listPrivacyLog } from "@/lib/privacy";
+export type { PrivacyLogEntry } from "@/lib/privacy";
 
 /* ══ Chi phí AI (FR-SC-15..23) ══════════════════════════════════════════ */
 
@@ -449,58 +295,6 @@ export async function exportAiCallsCsv(limit = 500): Promise<string> {
 
 /* ══ Dữ liệu đã gửi lên (FR-SC-27) ═══════════════════════════════════════ */
 
-export interface PrivacyLogEntry {
-  id: string;
-  createdAt: string;
-  feature: string;
-  model: string;
-  /** Loại dữ liệu đã gửi — JSON array (C12). */
-  dataKinds: string[];
-  dataPreview: string | null;
-  estimatedCost: number;
-}
-
-/**
- * Nhật ký "dữ liệu nào đã gửi lên API" (FR-SC-27).
- */
-export async function listPrivacyLog(
-  limit = 100,
-): Promise<PrivacyLogEntry[]> {
-  const rows = await prisma.aiCall.findMany({
-    orderBy: { createdAt: "desc" },
-    take: Math.min(500, Math.max(1, limit)),
-    select: {
-      id: true,
-      createdAt: true,
-      feature: true,
-      model: true,
-      dataKinds: true,
-      dataPreview: true,
-      estimatedCost: true,
-    },
-  });
-
-  return rows.map((row) => ({
-    id: row.id,
-    createdAt: row.createdAt.toISOString(),
-    feature: row.feature,
-    model: row.model,
-    dataKinds: parseDataKinds(row.dataKinds),
-    dataPreview: row.dataPreview,
-    estimatedCost: row.estimatedCost,
-  }));
-}
-
-/** Parse `dataKinds` (JSON array) — trả `[]` nếu lỗi. */
-function parseDataKinds(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
 
 /* ══ Thống kê & xuất dữ liệu (FR-SC-24..26) ═════════════════════════════ */
 
