@@ -1,16 +1,28 @@
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { env } from "@/lib/env";
+import { listSpeakPrompts } from "@/lib/speak";
+
+import { PracticeWriter } from "@/components/speak/practice-writer";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder — màn hình `Luyện giao tiếp — Nói` thuộc feature `communication-training`.
+ * S10 — Luyện nói & viết (`/practice/speak`).
+ *
+ * ⚠️ AC-CM-11 — không có API key ⇒ nói rõ là chấm rule cục bộ, không giả lập AI.
  */
-export default function Page() {
+export default async function PracticeSpeakPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prompt?: string }>;
+}) {
+  const params = await searchParams;
+  const prompts = await listSpeakPrompts();
+
   return (
-    <ComingSoon
-      title="Luyện giao tiếp — Nói"
-      description="Ghi âm và nhận phản hồi có cấu trúc từ AI."
-      feature="communication-training"
+    <PracticeWriter
+      prompts={prompts}
+      aiEnabled={!env.isOffline}
+      initialPromptId={params.prompt ?? undefined}
     />
   );
 }

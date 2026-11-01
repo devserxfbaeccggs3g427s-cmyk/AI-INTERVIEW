@@ -1,16 +1,27 @@
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { env } from "@/lib/env";
+import { listRoleplayScenarios, listSpeakPrompts } from "@/lib/speak";
+
+import { LanguagePractice } from "@/components/speak/language-practice";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder — màn hình `Luyện ngoại ngữ chủ động` thuộc feature `communication-training`.
+ * S11 — Luyện ngoại ngữ (`/practice/language`): bài viết + hội thoại role-play.
+ *
+ * ⚠️ AC-CM-6 — kho bài mẫu + bài tự tạo.
+ * ⚠️ AC-CM-7 — hội thoại có mục tiêu ẩn, chỉ lộ khi chấm.
  */
-export default function Page() {
+export default async function LanguagePracticePage() {
+  const [prompts, scenarios] = await Promise.all([
+    listSpeakPrompts(),
+    listRoleplayScenarios(),
+  ]);
+
   return (
-    <ComingSoon
-      title="Luyện ngoại ngữ chủ động"
-      description="Bài luyện theo chủ đề, AI chấm và chỉ ra điểm yếu."
-      feature="communication-training"
+    <LanguagePractice
+      prompts={prompts}
+      scenarios={scenarios}
+      aiEnabled={!env.isOffline}
     />
   );
 }

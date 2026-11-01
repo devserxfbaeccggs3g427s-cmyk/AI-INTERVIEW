@@ -4,7 +4,9 @@ import { createEmptyCard, type Card as FsrsCard } from "ts-fsrs";
 import { loadEnv } from "../scripts/load-env";
 
 import { CARDS, type SeedCard } from "./seed-data/cards";
+import { ROLEPLAY_SCENARIOS } from "./seed-data/roleplay-scenarios";
 import { SKILL_TREE } from "./seed-data/skills";
+import { SPEAK_PROMPTS } from "./seed-data/speak-prompts";
 
 // Nạp `.env.local` / `.env` + đặt DATABASE_URL mặc định — phải chạy TRƯỚC
 // khi khởi tạo PrismaClient, vì Prisma đọc env lúc khởi tạo.
@@ -139,6 +141,83 @@ async function seedCards(): Promise<void> {
   }
 }
 
+/**
+ * Seed 12 bài mẫu luyện nói/vết (S09).
+ *
+ * ⚠️ Dùng `SPEAK_PROMPTS` từ `seed-data/speak-prompts.ts` — không hardcode.
+ */
+async function seedSpeakPrompts(): Promise<void> {
+  const items = SPEAK_PROMPTS;
+
+  for (const prompt of items) {
+    // ⚠️ Shape thật của `SeedSpeakPrompt`: `code` / `prompt` (không phải
+    // `id` / `text`), và không có `estimatedMinutes` ⇒ suy ra từ `mode`.
+    const minutes = prompt.mode === "write" ? 15 : 10;
+
+    await prisma.activity.upsert({
+      where: { id: `seed-speak-${prompt.code}` },
+      update: {
+        title: prompt.title,
+        content: prompt.prompt,
+        domain: "language",
+        type: "speak",
+        minutes,
+      },
+      create: {
+        id: `seed-speak-${prompt.code}`,
+        domain: "language",
+        type: "speak",
+        minutes,
+        title: prompt.title,
+        content: prompt.prompt,
+      },
+    });
+  }
+}
+
+/**
+ * Seed 6 tình huống role-play (S10).
+ *
+ * ⚠️ Dùng `ROLEPLAY_SCENARIOS` từ `seed-data/roleplay-scenarios.ts`.
+ */
+async function seedRoleplayScenarios(): Promise<void> {
+  const items = ROLEPLAY_SCENARIOS;
+
+  for (const scenario of items) {
+    // ⚠️ Shape thật của `SeedRoleplayScenario`: `code` / `brief` /
+    // `durationSec` (không phải `id` / `situation` / `estimatedMinutes`).
+    const minutes = Math.max(1, Math.round(scenario.durationSec / 60));
+    const payload = JSON.stringify({
+      code: scenario.code,
+      brief: scenario.brief,
+      hiddenGoal: scenario.hiddenGoal,
+      lang: scenario.lang,
+      level: scenario.level,
+      tags: scenario.tags,
+    });
+
+    await prisma.activity.upsert({
+      where: { id: `seed-roleplay-${scenario.code}` },
+      update: {
+        title: scenario.title,
+        content: payload,
+        domain: "language",
+        type: "roleplay",
+        minutes,
+      },
+      create: {
+        id: `seed-roleplay-${scenario.code}`,
+        domain: "language",
+        type: "roleplay",
+        minutes,
+        title: scenario.title,
+        content: payload,
+      },
+    });
+  }
+}
+
+
 async function main(): Promise<void> {
   console.log("🌱 Seed Daily Loop OS…");
 
@@ -156,6 +235,12 @@ async function main(): Promise<void> {
 
   await seedCards();
   console.log(`   ✓ ${CARDS.length} thẻ ngoại ngữ`);
+
+  await seedSpeakPrompts();
+  console.log(`   ✓ ${SPEAK_PROMPTS.length} bài mẫu luyện nói/viết`);
+
+  await seedRoleplayScenarios();
+  console.log(`   ✓ ${ROLEPLAY_SCENARIOS.length} tình huống role-play`);
 
   console.log("✅ Seed hoàn tất.");
 }

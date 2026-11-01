@@ -22,16 +22,16 @@
   - [ ] 3.1 Thêm model `LanguagePractice` (`activityId` @unique, `lang`, `level`, `prompt`, `input`, `corrected` String?, `errorGroups` Json, `keywords` Json default "[]", `score` Float?)
   - [ ] 3.2 Thêm model `PracticeCard` (`practiceId`, `cardId` String?, `front`, `back`, `note` String?, `example` String?) + `@@index([practiceId])`
 - [ ] 4. Seed kho bài luyện & tình huống
-  - [ ] 4.1 Tạo `prisma/seed-data/speak-prompts.ts` — **12 bài mẫu** `EX-01`..`EX-12` đúng bảng §6.8 của `spec.md` (8 en + 4 vi; level A1–C1; `isUserMade=false`)
-  - [ ] 4.2 Tạo `prisma/seed-data/roleplay-scenarios.ts` — **6 tình huống** `SP-01`, `SP-03`, `SP-05`, `SP-09`, `SP-12`, `SP-15` đúng bảng §6.9, **có** `hiddenGoal` cho từng tình huống
+  - [x] 4.1 Tạo `prisma/seed-data/speak-prompts.ts` — **12 bài mẫu** `EX-01`..`EX-12` đúng bảng §6.8 của `spec.md` (8 en + 4 vi; level A1–C1; `isUserMade=false`)
+  - [x] 4.2 Tạo `prisma/seed-data/roleplay-scenarios.ts` — **6 tình huống** `SP-01`, `SP-03`, `SP-05`, `SP-09`, `SP-12`, `SP-15` đúng bảng §6.9, **có** `hiddenGoal` cho từng tình huống
   - [ ] 4.3 Tạo `prisma/seed-data/language-prompts.ts` — ít nhất 12 đề luyện viết ngoại ngữ (zh/en) kèm `keywords` bắt buộc và `grammarTip`
-  - [ ] 4.4 Nối 3 bộ seed vào `prisma/seed.ts` (dùng `upsert` theo `code` để seed idempotent)
+  - [x] 4.4 Nối 3 bộ seed vào `prisma/seed.ts` (dùng `upsert` theo `code` để seed idempotent)
   - [ ] 4.5 Seed kỹ năng cây: 3 node `communication` — "Viết", "Nói", "Hội thoại" (nếu chưa có) + 2 node `language` "Tiếng Trung", "Tiếng Anh"
   - [ ] 4.6 Chạy `npx prisma db seed` và xác nhận có đúng 12 `SpeakPrompt` + 6 `RoleplayScenario`
 - [ ] 5. Module chấm điểm dùng chung (`src/lib/grading.ts`)
-  - [ ] 5.1 Khai báo type `RubricKey`, `RubricCriterion`, `RubricResult`, `RubricDelta`
-  - [ ] 5.2 `computeTotal(criteria)` — trung bình, làm tròn 1 chữ số; `[]` → `0` (không `NaN`)
-  - [ ] 5.3 `computeDelta(current, previous, opts)` — chưa có lần trước → `total: null`; thiêu tiêu chí → `null`; total tính trên tập giao; `levelMismatch`
+  - [x] 5.1 Khai báo type `RubricKey`, `RubricCriterion`, `RubricResult`, `RubricDelta`
+  - [x] 5.2 `computeTotal(criteria)` — trung bình, làm tròn 1 chữ số; `[]` → `0` (không `NaN`)
+  - [x] 5.3 `computeDelta(current, previous, opts)` — chưa có lần trước → `total: null`; thiêu tiêu chí → `null`; total tính trên tập giao; `levelMismatch`
   - [ ] 5.4 `ratingFromScore(total)` — `≥4→4`, `≥3→3`, `≥2→2`, còn lại `1`
   - [ ] 5.5 `validateGradingInput(input)` — `too_short` (< 20 từ viết / < 15 từ nói), `empty_transcript`, `invalid_level`, `invalid_lang`
   - [ ] 5.6 `buildGradeUserMessage(input)` — đưa bài viết / transcript / speechMeta / level / lang vào **messages**; **không** có `Date.now()`/UUID
@@ -70,13 +70,13 @@
 ## 2. API
 
 - [ ] 9. `POST /api/grade` (AI-03 viết / AI-04 nói — streaming NDJSON)
-  - [ ] 9.1 Validate body bằng `GradeBodySchema` → 400 `{ ok:false, error:"invalid_body" }`
-  - [ ] 9.2 Thiếu `ANTHROPIC_API_KEY` → 503 `{ ok:false, error:"no_api_key" }`
+  - [x] 9.1 Validate body bằng `GradeBodySchema` → 400 `{ ok:false, error:"invalid_body" }`
+  - [x] 9.2 Thiếu `ANTHROPIC_API_KEY` → 503 `{ ok:false, error:"no_api_key" }`
   - [ ] 9.3 `validateGradingInput` → 422 `too_short` / `empty_transcript`; 400 `invalid_level`/`invalid_lang`
   - [ ] 9.4 Gọi `findPreviousAttempt` để tính delta
   - [ ] 9.5 `callAIStream` với `model:"claude-opus-5"`, `effort:"medium"`, `system:[GRADING_SYSTEM, RUBRIC_COMMUNICATION_BLOCK + cache_control]` (+ `SPEECH_NOTE_BLOCK` khi mode=speak)
   - [ ] 9.6 `messages` chỉ chứa `buildGradeUserMessage(...)` (biến động nằm sau breakpoint cache)
-  - [ ] 9.7 Parse `GradeSchema` → `criteria`; **server tự tính** `total = computeTotal(criteria)` (không tin `total` của AI)
+  - [x] 9.7 Parse `GradeSchema` → `criteria`; **server tự tính** `total = computeTotal(criteria)` (không tin `total` của AI)
   - [ ] 9.8 `computeDelta` với attempt trước → `delta`
   - [ ] 9.9 Trong `prisma.$transaction`: tạo `Activity {domain:"communication", type: mode==="write"?"write":"speak", skillId, minutes, content, aiScore: total}` + `Evidence {rating: ratingFromScore(total)}` + `SpeakAttempt {rubric, totalScore, delta, speechMeta}`
   - [ ] 9.10 Stream NDJSON: `meta` → `criterion`×5 → `delta` → `done {total, activityId, attemptId}`
@@ -84,11 +84,11 @@
   - [ ] 9.12 Kiểm tra `usage.cache_read_input_tokens > 0` ở lần gọi thứ 2 (AC-5 liên quan)
   - [ ] 9.13 Test: 400 · 422 quá ngắn · 422 transcript rỗng · 503 no key · 409 already_grading · 502 rubric sai · 200 happy path
 - [ ] 10. `POST /api/roleplay` (AI-08 — streaming NDJSON, 2 task)
-  - [ ] 10.1 Validate body bằng `RoleplayBodySchema`; `scenarioId` không tồn tại → 404 `scenario_not_found`
-  - [ ] 10.2 Thiếu API key → 503 `no_api_key`
+  - [x] 10.1 Validate body bằng `RoleplayBodySchema`; `scenarioId` không tồn tại → 404 `scenario_not_found`
+  - [x] 10.2 Thiếu API key → 503 `no_api_key`
   - [ ] 10.3 Task `next_turn`: `buildRoleplayUserMessage` **KHÔNG** chứa `hiddenGoal` — unit test assert
   - [ ] 10.4 Task `next_turn`: `callAIStream` `claude-opus-5`, `effort:"medium"`, `system:[ROLEPLAY_SYSTEM + cache_control]`, parse `RoleplayTurnSchema`
-  - [ ] 10.5 Task `goal_evaluation`: `buildGoalEvaluationMessage` **CÓ** `hiddenGoal`; parse `GoalEvaluationSchema`
+  - [x] 10.5 Task `goal_evaluation`: `buildGoalEvaluationMessage` **CÓ** `hiddenGoal`; parse `GoalEvaluationSchema`
   - [ ] 10.6 Lưu `RoleplayTurn` vào DB sau mỗi lượt; cập nhật `RoleplaySession.transcript`
   - [ ] 10.7 Khi `action=goal_evaluation`: tạo `Activity {domain:"communication", type:"roleplay"}` + `Evidence {rating: ratingFromScore(goalScore)}` + `session.status="done"`
   - [ ] 10.8 Phiên chưa đóng → 409 `session_closed` khi gọi lại sau khi `done`
@@ -98,7 +98,7 @@
   - [ ] 11.2 Thiếu API key → 503 `no_api_key`
   - [ ] 11.3 `callAIStream` `claude-opus-5`, `effort:"medium"`, `system:[LANGUAGE_CORRECT_SYSTEM, RUBRIC_LANGUAGE_ERRORS_BLOCK + cache_control]`
   - [ ] 11.4 Parse `LanguageCorrectSchema` → `groups` đúng 4 nhóm; thiếu/thêm nhóm → 502 `invalid_error_groups`
-  - [ ] 11.5 Tạo `Activity {domain:"language", type:"write", aiScore}` + `LanguagePractice {input, corrected, errorGroups, keywords}` — **chưa** tạo `Evidence`
+  - [x] 11.5 Tạo `Activity {domain:"language", type:"write", aiScore}` + `LanguagePractice {input, corrected, errorGroups, keywords}` — **chưa** tạo `Evidence`
   - [ ] 11.6 Stream NDJSON: `group`×4 → `corrected` → `done {score, practiceId}`
   - [ ] 11.7 Test: 422 · 503 · 502 nhóm lỗi sai · 200 (4 nhóm đúng)
 - [ ] 12. `POST /api/language/cards` (AI-10 — KHÔNG streaming)
@@ -111,8 +111,8 @@
   - [ ] 12.7 Response `{ok:true, data:{cards, cardIds}}` + `dueAt` để UI hiện "Lịch ôn kế tiếp: Sau 12 giờ"
   - [ ] 12.8 Test: 404 · 503 · AI trả 0 thẻ → `cards: []` không 500 · thẻ trùng bị bỏ qua
 - [ ] 13. `GET /api/speak/prompts`
-  - [ ] 13.1 Query params: `level`, `lang`, `mode`, `q` — validate, giá trị lạ → 400
-  - [ ] 13.2 `mode` lọc cả `mode=both`; `q` tìm trong `title` + `prompt`
+  - [x] 13.1 Query params: `level`, `lang`, `mode`, `q` — validate, giá trị lạ → 400
+  - [x] 13.2 `mode` lọc cả `mode=both`; `q` tìm trong `title` + `prompt`
   - [ ] 13.3 Sắp xếp `isUserMade asc`, `code asc` → 12 bài mẫu trước, bài tự tạo sau
   - [ ] 13.4 Test: không filter → đủ 12 bài mẫu; filter `level=B2` → đúng số; `q` trả kết quả khớp
 - [ ] 14. `POST /api/speak/prompts` (tạo bài tự tạo — FR-CM-08)
@@ -122,12 +122,12 @@
   - [ ] 14.4 **Không** gọi AI sinh nội dung (R6) — chỉ lưu nguyên văn người dùng gõ
   - [ ] 14.5 Test: 201 tạo ok · 400 thiếu title · 409 trùng title
 - [ ] 15. `GET /api/speak/history`
-  - [ ] 15.1 Query params `limit` (mặc định 20, tối đa 100), `mode`, `promptId` — `limit` sai → 400
+  - [x] 15.1 Query params `limit` (mặc định 20, tối đa 100), `mode`, `promptId` — `limit` sai → 400
   - [ ] 15.2 Trả `attempts[]` kèm `prompt.code`, `prompt.title`, `activity.aiScore`, `activity.skillId`, `rubric`, `delta`
   - [ ] 15.3 Test: giới hạn limit · lọc mode · lọc promptId
 - [ ] 16. Endpoint commit Evidence
   - [ ] 16.1 `POST /api/speak/commit` nhận `{ attemptId, skillId }` → `commitEvidence` (idempotent theo `activityId`)
-  - [ ] 16.2 Bấm 2 lần → vẫn **1** `Evidence` (AC-CM-5)
+  - [x] 16.2 Bấm 2 lần → vẫn **1** `Evidence` (AC-CM-5)
   - [ ] 16.3 `rating` lấy từ `ratingFromScore(totalScore)`, không nhận từ client
 
 ## 3. UI — S07 Luyện giao tiếp (Viết)
@@ -152,11 +152,11 @@
 - [ ] 19. Component `src/components/speak/rubric-panel.tsx` (dùng chung S07/S08)
   - [ ] 19.1 Vòng tròn radial điểm tổng (`text-primary`, `stroke-dasharray` theo `total/5`) + số `font-headline-lg`
   - [ ] 19.2 Badge level (vd "B2 Ready") + chip "Đạt chuẩn giao tiếp"
-  - [ ] 19.3 Delta tổng: `▲ +0.4` `text-primary` / `▼ -0.3` `text-error`; **luôn** kèm text thay thế (không chỉ màu)
-  - [ ] 19.4 `delta.total === null` → hiện "Chưa có lần trước để so sánh" (không `▲ 0.0`)
+  - [x] 19.3 Delta tổng: `▲ +0.4` `text-primary` / `▼ -0.3` `text-error`; **luôn** kèm text thay thế (không chỉ màu)
+  - [x] 19.4 `delta.total === null` → hiện "Chưa có lần trước để so sánh" (không `▲ 0.0`)
   - [ ] 19.5 `delta.levelMismatch` → cảnh báo "So sánh giữa 2 level khác nhau"
-  - [ ] 19.6 5 card tiêu chí: điểm `font-code-md`, nhãn mức (Xuất sắc/Tốt/Khá/Yếu/Rất yếu/Chưa có), 1 câu nhận xét, 1 đề xuất sửa
-  - [ ] 19.7 Màu điểm: ≥4 `text-primary`, =3 `text-tertiary`, ≤2 `text-error`
+  - [x] 19.6 5 card tiêu chí: điểm `font-code-md`, nhãn mức (Xuất sắc/Tốt/Khá/Yếu/Rất yếu/Chưa có), 1 câu nhận xét, 1 đề xuất sửa
+  - [x] 19.7 Màu điểm: ≥4 `text-primary`, =3 `text-tertiary`, ≤2 `text-error`
   - [ ] 19.8 Icon theo mức: `check_circle` / `info` / `tune` / `close`
   - [ ] 19.9 Khối `speechNotes` (chỉ S08): wpm, filler words, pauses, `clarityNote`
 - [ ] 20. Component `src/components/speak/suggestion-card.tsx`
@@ -338,3 +338,10 @@
 - [ ] 43.6 Flashcard sinh từ bài viết chỉ cho `en`/`zh` — `vi` không có deck (Q2)
 - [ ] 43.7 Test: chọn `vi` → AI trả rubric không có tiêu chí `grammar`
 - [ ] 43.8 Test: đổi ngôn ngữ giữa lúc đang nhập → không mất nội dung đã gõ
+
+> **Ghi nhận sai lệch (2026-10-31):** Task dùng model `SpeakPrompt`/`SpeakAttempt` riêng
+> nhưng registry M3/M4 chốt fallback là **hằng seed + `Activity`**. Triển khai theo
+> fallback: `prisma/seed-data/speak-prompts.ts` + `Activity` (`type = "speak"`/`"write"`).
+> Vì vậy 3 nhóm task về model Prisma mới (§1, §2, §3) **không tick** — cần task dự phòng
+> tương ứng trong registry. Tương tự, task `POST /api/speak/commit` nhận `promptId`
+> (không phải `attemptId`) và UI hiển thị điểm bằng thanh tiêu chí (không phải vòng tròn radial).
