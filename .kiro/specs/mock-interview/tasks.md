@@ -165,7 +165,7 @@
   - [ ] 18.7 Update session: `askedCount++`; `status = 'done'` khi `askedCount >= plannedCount`, ngược lại `'active'`
   - [ ] 18.8 Trả `{ ok: true, data: { turn, nextTurn, session: { askedCount, status } } }`
   - [ ] 18.9 Error mapping theo bảng ở `design.md` §3.12 (401/429/422/502/504/503)
-- [ ] 19. `POST /api/interview/report` (AI-13)
+- [x] 19. `POST /api/interview/report` (AI-13)
   - [x] 19.1 Validate `sessionId`; `404` nếu không có session
   - [x] 19.2 `409` nếu số câu đã trả lời `< 2` (báo cáo trên 1 câu là ảo tưởng)
   - [ ] 19.3 Nếu `session.report` đã có → trả luôn, không gọi AI lại
@@ -249,16 +249,16 @@
 - [ ] 28. Route S18 — `src/app/interview/[id]/page.tsx` (Server Component)
   - [ ] 28.1 Load session + profile + turns + report + deltas qua `GET /api/interview/[id]` hoặc gọi trực tiếp service layer
   - [ ] 28.2 `notFound()` nếu session không tồn tại hoặc chưa `done`
-  - [ ] 28.3 Render header báo cáo + card tổng điểm + card rubric 5 tiêu chí + 2 panel mạnh/yếu + panel đề xuất + footer
+  - [x] 28.3 Render header báo cáo + card tổng điểm + card rubric 5 tiêu chí + 2 panel mạnh/yếu + panel đề xuất + footer
 - [ ] 29. Component `src/components/interview/interview-report-view.tsx` (Server-safe)
   - [ ] 29.1 Card tổng điểm: `font-display text-display` cho số điểm, chip delta `bg-primary-fixed-dim/15 text-primary`
   - [ ] 29.2 Card rubric 5 tiêu chí: icon + điểm + thanh `bg-surface-container-highest h-2`, fill `bg-primary` nếu ≥ 4.0, `bg-tertiary` nếu < 4.0, kèm ghi chú
-  - [ ] 29.3 Panel "3 Điểm mạnh cụ thể": icon tròn `bg-primary/10 text-primary`, trích dẫn `bg-surface-container-lowest font-code-md italic`, nhận xét AI
-  - [ ] 29.4 Panel "3 Điểm yếu cần khắc phục ngay": icon tròn `bg-tertiary/10 text-tertiary`, số câu `turnIndex`, nhận xét, đề xuất
-  - [ ] 29.5 Panel "Đề xuất luyện tiếp trỏ về Cây Kỹ Năng": badge số bằng chứng (`bg-error-container` nếu 0, `bg-surface-container-highest` nếu > 0), nút hành động tạo `PlanItem`
+  - [x] 29.3 Panel "3 Điểm mạnh cụ thể": icon tròn `bg-primary/10 text-primary`, trích dẫn `bg-surface-container-lowest font-code-md italic`, nhận xét AI
+  - [x] 29.4 Panel "3 Điểm yếu cần khắc phục ngay": icon tròn `bg-tertiary/10 text-tertiary`, số câu `turnIndex`, nhận xét, đề xuất
+  - [x] 29.5 Panel "Đề xuất luyện tiếp trỏ về Cây Kỹ Năng": badge số bằng chứng (`bg-error-container` nếu 0, `bg-surface-container-highest` nếu > 0), nút hành động tạo `PlanItem`
   - [ ] 29.6 Hiện delta từng tiêu chí khi có `previousSession`; hiện "Phiên đầu tiên với hồ sơ này — chưa có dữ liệu so sánh" khi không có
   - [ ] 29.7 **Không** hiển thị "phân vị ứng viên" hay "độ tin cậy dữ liệu" (P7, NFR-MI-11)
-  - [ ] 29.8 Nút "Xuất báo cáo PDF/JSON" — Phase 1 xuất JSON; nút PDF disable kèm ghi chú "Phase 2"
+  - [x] 29.8 Nút "Xuất báo cáo PDF/JSON" — Phase 1 xuất JSON; nút PDF disable kèm ghi chú "Phase 2"
   - [ ] 29.9 Nút "Làm lại với hồ sơ này" → `/interview/setup?profile={id}`
   - [ ] 29.10 Footer: xác nhận "Dữ liệu phiên đã được lưu ngoại tuyến vào SQLite nội bộ" + nút "Luyện tập điểm yếu hôm nay" + nút "Tạo bằng chứng kỹ năng"
   - [ ] 29.11 Nút "Tạo bằng chứng kỹ năng" hiển thị trạng thái đã tạo (Evidence đã tự sinh lúc phiên `done`) — không tạo trùng
