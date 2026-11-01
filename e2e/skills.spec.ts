@@ -27,7 +27,7 @@ test.beforeEach(() => {
 });
 
 test.describe("S03 — Cây kỹ năng (FR-SK-01, FR-SK-07)", () => {
-  test("render cây 3 tầng + 4 domain", async ({ page }) => {
+  test("render cây 3 tầng + 4 domain (FR-SK-01)", async ({ page }) => {
     await page.goto("/skills");
 
     await expect(page.getByRole("heading", { name: "Cây kỹ năng & bằng chứng" })).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("S03 — Cây kỹ năng (FR-SK-01, FR-SK-07)", () => {
     await expect(page.getByText(/hoàn thành \d+%/i)).toHaveCount(0);
   });
 
-  test("mọi node có thang 0–5 (không dùng %)", async ({ page }) => {
+  test("mọi node có thang 0–5 (không dùng %) (FR-SK-02)", async ({ page }) => {
     await page.goto("/skills");
 
     // Mỗi node con hiện "N/5".
@@ -63,7 +63,7 @@ test.describe("S03 — Cây kỹ năng (FR-SK-01, FR-SK-07)", () => {
     await expect(first).toHaveAttribute("aria-valuemax", "5");
   });
 
-  test("bấm vào kỹ năng ⇒ mở S04", async ({ page }) => {
+  test("bấm vào kỹ năng ⇒ mở S04 (FR-SK-05)", async ({ page }) => {
     await page.goto("/skills");
 
     const firstLink = page.locator('a[href^="/skills/"]').first();
@@ -89,7 +89,7 @@ test.describe("S03 — Cây kỹ năng (FR-SK-01, FR-SK-07)", () => {
 });
 
 test.describe("S04 — Chi tiết kỹ năng (FR-SK-05, FR-SK-12..FR-SK-15)", () => {
-  test("hiện breadcrumb + level + tiêu chuẩn thăng cấp", async ({ page }) => {
+  test("hiện breadcrumb + level + tiêu chuẩn thăng cấp (FR-SK-13)", async ({ page }) => {
     await page.goto("/skills");
     await page.locator('a[href^="/skills/"]').first().click();
 
@@ -99,7 +99,7 @@ test.describe("S04 — Chi tiết kỹ năng (FR-SK-05, FR-SK-12..FR-SK-15)", ()
     await expect(page.getByText(/Cần: \d+ Bằng chứng/)).toBeVisible();
   });
 
-  test("bảng nhật ký bằng chứng là <table> semantic (NFR-SK-05)", async ({ page }) => {
+  test("bảng nhật ký bằng chứng là <table> semantic (NFR-SK-05) (FR-SK-12)", async ({ page }) => {
     await page.goto("/skills");
     await page.locator('a[href^="/skills/"]').first().click();
 
@@ -145,7 +145,7 @@ test.describe("S04 — Chi tiết kỹ năng (FR-SK-05, FR-SK-12..FR-SK-15)", ()
 
 test.describe("API — cây kỹ năng", () => {
 
-  test("GET /api/skills trả 4 domain + cây lồng nhau", async ({ request }) => {
+  test("GET /api/skills trả 4 domain + cây lồng nhau (FR-SK-01)", async ({ request }) => {
     const res = await request.get("/api/skills");
     const payload = await res.json();
 
@@ -159,7 +159,7 @@ test.describe("API — cây kỹ năng", () => {
     }
   });
 
-  test("GET /api/skills/[id] trả chi tiết + path", async ({ request }) => {
+  test("GET /api/skills/[id] trả chi tiết + path (FR-SK-05)", async ({ request }) => {
     const tree = await (await request.get("/api/skills")).json();
     const leaf = tree.data.domains[0].children[0].children[0];
 

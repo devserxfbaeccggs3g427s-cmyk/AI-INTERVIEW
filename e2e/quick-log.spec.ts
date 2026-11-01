@@ -127,7 +127,7 @@ test.describe("S05 — Quick-log (FR-QL-01..FR-QL-09)", () => {
     expect(matches).toHaveLength(1);
   });
 
-  test("sheet đóng bằng Escape", async ({ page }, _testInfo) => {
+  test("sheet đóng bằng Escape (FR-QL-07)", async ({ page }, _testInfo) => {
     await page.goto("/");
     await page.getByRole("button", { name: /Ghi nhanh/ }).first().click();
 
@@ -139,7 +139,7 @@ test.describe("S05 — Quick-log (FR-QL-01..FR-QL-09)", () => {
 });
 
 test.describe("API — quick-log", () => {
-  test("POST /api/log tạo 1 Activity + Evidence khi có skill + difficulty", async ({
+  test("POST /api/log tạo 1 Activity + Evidence khi có skill + difficulty (FR-QL-08)", async ({
     request,
   }, testInfo) => {
     const res = await request.post("/api/log", {
@@ -161,7 +161,7 @@ test.describe("API — quick-log", () => {
     expect(payload.data.entry.skillName).toBe("Spring Boot");
   });
 
-  test("POST /api/log không tạo Evidence khi createEvidence = false", async ({
+  test("POST /api/log không tạo Evidence khi createEvidence = false (FR-QL-08)", async ({
     request,
   }, testInfo) => {
     const res = await request.post("/api/log", {
@@ -181,7 +181,7 @@ test.describe("API — quick-log", () => {
     expect(payload.data.entry.hasEvidence).toBe(false);
   });
 
-  test("POST /api/log trả 400 khi thiếu text", async ({ request }, _testInfo) => {
+  test("POST /api/log trả 400 khi thiếu text (FR-QL-03)", async ({ request }, _testInfo) => {
     const res = await request.post("/api/log", {
       data: { domain: "professional", type: "study", minutes: 20 },
     });
@@ -209,7 +209,7 @@ test.describe("API — quick-log", () => {
     }
   });
 
-  test("GET /api/log/history lọc theo domain", async ({ request }, _testInfo) => {
+  test("GET /api/log/history lọc theo domain (FR-QL-10)", async ({ request }, _testInfo) => {
     const all = await (await request.get("/api/log/history?limit=200")).json();
     const professional = await (
       await request.get("/api/log/history?domain=professional&limit=200")

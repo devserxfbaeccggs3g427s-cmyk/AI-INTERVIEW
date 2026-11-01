@@ -100,7 +100,7 @@ interface PlanApiResponse {
 }
 
 test.describe("S01 — Daily Loop (AC-1)", () => {
-  test("trang chủ render, không lỗi console", async ({ page }) => {
+  test("trang chủ render, không lỗi console (FR-DL-01)", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (message) => {
       if (message.type() === "error") {
@@ -119,7 +119,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("có 6 hành động nhỏ + chip đếm đã xong", async ({ page, request }) => {
+  test("có 6 hành động nhỏ + chip đếm đã xong (FR-DL-01)", async ({ page, request }) => {
     const dateKey = dateAtOffset(6);
     await resetPlan(request, dateKey);
 
@@ -132,7 +132,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
     await expect(page.getByText(/\d+ \/ 6 đã xong/)).toBeVisible();
   });
 
-  test("bấm 'Hoàn thành' ⇒ tạo bằng chứng + slot gạch ngang", async ({ page, request }) => {
+  test("bấm 'Hoàn thành' ⇒ tạo bằng chứng + slot gạch ngang (FR-DL-03)", async ({ page, request }) => {
     // Nút "Hoàn thành" chỉ enable cho HÔM NAY (FR-DL-08) → dùng offset 0.
     const dateKey = dateAtOffset(0);
     await resetPlan(request, dateKey);
@@ -151,7 +151,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
     await expect(page.getByText(/1 \/ 6 đã xong/)).toBeVisible();
   });
 
-  test("bấm 2 lần không tạo 2 Activity (idempotent)", async ({ page, request }) => {
+  test("bấm 2 lần không tạo 2 Activity (idempotent) (FR-DL-03)", async ({ page, request }) => {
     // Slot 0 = `study` ⇒ nút "Hoàn thành" (slot 2 là SRS ⇒ nút là link).
     const dateKey = dateAtOffset(0);
     await page.goto("/");
@@ -170,7 +170,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
     expect(payload.data.activityId).toBeNull();
   });
 
-  test("ngày khác hôm nay ⇒ nút hành động bị disable", async ({ page, request }) => {
+  test("ngày khác hôm nay ⇒ nút hành động bị disable (FR-DL-08)", async ({ page, request }) => {
     const yKey = dateAtOffset(-1);
 
     await resetPlan(request, yKey);
@@ -182,7 +182,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
     await expect(page.getByText(/Chế độ xem lại/)).toBeVisible();
   });
 
-  test("chưa có kế hoạch ⇒ empty state + CTA", async ({ page }) => {
+  test("chưa có kế hoạch ⇒ empty state + CTA (FR-DL-07)", async ({ page }) => {
     // Ngày tương lai ⇒ chắc chắn chưa có PlanItem
     const future = new Date();
     future.setDate(future.getDate() + 30);
@@ -196,7 +196,7 @@ test.describe("S01 — Daily Loop (AC-1)", () => {
 });
 
 test.describe("API — bất biến 6 slot (AC-DL-2)", () => {
-  test("GET /api/plan trả đúng 6 slot + đúng tập domain", async ({ request }) => {
+  test("GET /api/plan trả đúng 6 slot + đúng tập domain (FR-DL-02)", async ({ request }) => {
     const dateKey = dateAtOffset(3);
     await resetPlan(request, dateKey);
 
@@ -217,7 +217,7 @@ test.describe("API — bất biến 6 slot (AC-DL-2)", () => {
     ]);
   });
 
-  test("offline ⇒ 6 slot đúng domain theo vị trí, source = fallback", async ({ request }) => {
+  test("offline ⇒ 6 slot đúng domain theo vị trí, source = fallback (FR-DL-01)", async ({ request }) => {
     const res = await request.post("http://localhost:3000/api/plan/generate", {
       data: { mode: "fallback" },
     });
@@ -290,7 +290,7 @@ test.describe("API — bất biến 6 slot (AC-DL-2)", () => {
 });
 
 test.describe("S02 — Sinh kế hoạch (AC-DL-9)", () => {
-  test("CTA trên S01 dẫn tới /plan?date=", async ({ page }) => {
+  test("CTA trên S01 dẫn tới /plan?date= (FR-DL-07)", async ({ page }) => {
     const future = new Date();
     future.setDate(future.getDate() + 30);
     const fKey = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, "0")}-${String(future.getDate()).padStart(2, "0")}`;
@@ -301,7 +301,7 @@ test.describe("S02 — Sinh kế hoạch (AC-DL-9)", () => {
     await expect(page).toHaveURL(new RegExp(`/plan\\?date=${fKey}`));
   });
 
-  test("S02 render 6 card slot", async ({ page, request }) => {
+  test("S02 render 6 card slot (FR-DL-02)", async ({ page, request }) => {
     const dateKey = dateAtOffset(5);
     await resetPlan(request, dateKey);
 
@@ -310,7 +310,7 @@ test.describe("S02 — Sinh kế hoạch (AC-DL-9)", () => {
     await expect(page.locator("article[data-slot]")).toHaveCount(6, { timeout: 15_000 });
   });
 
-  test("S02 có 3 nút hành động chính", async ({ page }) => {
+  test("S02 có 3 nút hành động chính (FR-DL-06)", async ({ page }) => {
     const dateKey = dateAtOffset(4);
 
     await page.goto(`/plan?date=${dateKey}`);
@@ -322,7 +322,7 @@ test.describe("S02 — Sinh kế hoạch (AC-DL-9)", () => {
 });
 
 test.describe("AC-DL-3 — sinh lại giữ slot đã xong", () => {
-  test("regenerate không ghi đè nội dung slot đã done", async ({ page, request }) => {
+  test("regenerate không ghi đè nội dung slot đã done (FR-DL-06)", async ({ page, request }) => {
     const dateKey = dateAtOffset(0);
     await resetPlan(request, dateKey);
 
@@ -363,7 +363,7 @@ test.describe("AC-DL-3 — sinh lại giữ slot đã xong", () => {
 });
 
 test.describe("AC-DL-7 — duyệt kế hoạch không nhân bản", () => {
-  test("duyệt 2 lần ⇒ vẫn đúng 6 row", async ({ request }) => {
+  test("duyệt 2 lần ⇒ vẫn đúng 6 row (FR-DL-02)", async ({ request }) => {
     const dateKey = dateAtOffset(2);
     await resetPlan(request, dateKey);
 
@@ -389,7 +389,7 @@ test.describe("AC-DL-7 — duyệt kế hoạch không nhân bản", () => {
 });
 
 test.describe("AC-DL-8 — lịch sử theo ngày (read-only)", () => {
-  test("xem lại ngày khác ⇒ không có nút đánh dấu", async ({ page, request }) => {
+  test("xem lại ngày khác ⇒ không có nút đánh dấu (FR-DL-08)", async ({ page, request }) => {
     const yKey = dateAtOffset(-2);
     await resetPlan(request, yKey);
 
@@ -399,7 +399,7 @@ test.describe("AC-DL-8 — lịch sử theo ngày (read-only)", () => {
     await expect(page.getByRole("button", { name: /Hoàn thành/ })).toHaveCount(0);
   });
 
-  test("bộ chọn ngày hiện 7 ngày gần nhất", async ({ page }) => {
+  test("bộ chọn ngày hiện 7 ngày gần nhất (FR-DL-08)", async ({ page }) => {
     await page.goto("/");
 
     const picker = page.getByRole("navigation", { name: /Chọn ngày/ });
@@ -409,7 +409,7 @@ test.describe("AC-DL-8 — lịch sử theo ngày (read-only)", () => {
 });
 
 test.describe("AC-DL-5 — offline mode", () => {
-  test("không có API key vẫn sinh đủ 6 slot", async ({ request }) => {
+  test("không có API key vẫn sinh đủ 6 slot (FR-DL-07)", async ({ request }) => {
     const dateKey = dateAtOffset(1);
 
     const res = await request.post("/api/plan/generate", {
@@ -425,7 +425,7 @@ test.describe("AC-DL-5 — offline mode", () => {
     expect(payload.source).toBe("fallback");
   });
 
-  test("offline vẫn ghi được vào DB (bấm 'Xong' hoạt động)", async ({ page, request }) => {
+  test("offline vẫn ghi được vào DB (bấm 'Xong' hoạt động) (FR-DL-03)", async ({ page, request }) => {
     const dateKey = dateAtOffset(0);
     await resetPlan(request, dateKey);
 

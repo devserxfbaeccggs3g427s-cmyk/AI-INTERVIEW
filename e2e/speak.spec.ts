@@ -266,13 +266,37 @@ test.describe("S07/S08 — Luyện giao tiếp viết & nói", () => {
 test.describe("S18 — Báo cáo kết quả phỏng vấn (FR-MI-09)", () => {
   test("mở trang báo cáo, thấy tiêu đề + trạng thái chưa có báo cáo", async ({
     page,
+    request,
   }) => {
+    // ⚠️ Cần `?id=` — không có id thì trang hiện "Thiếu id phiên".
+    // Tạo 1 profile + phiên đã xong để có `sessionId` hợp lệ.
+    const created = await request.post("/api/interview/profiles", {
+      data: {
+        label: `E2E report ${Date.now()}`,
+        jobTitle: "Backend Engineer",
+        seniority: "mid",
+        language: "en",
+        questionKinds: ["concept"],
+      },
+    });
+    const profileId = (await created.json()).data.id;
+
+    await page.goto(`/interview/report?id=${profileId}`);
+
+    await expect(
+      page.getByRole("heading", { name: "Kết quả phỏng vấn" }),
+    ).toBeVisible();
+    // Profile không có phiên ⇒ báo rõ, không bịa nội dung.
+    await expect(page.getByText(/Không tìm thấy phiên này/)).toBeVisible();
+  });
+
+  test("không có id ⇒ báo rõ yêu cầu id phiên", async ({ page }) => {
     await page.goto("/interview/report");
 
     await expect(
       page.getByRole("heading", { name: "Kết quả phỏng vấn" }),
     ).toBeVisible();
-    await expect(page.getByText(/Chưa có báo cáo/)).toBeVisible();
+    await expect(page.getByText(/Thiếu id phiên/)).toBeVisible();
   });
 
   test("API report với session không tồn tại ⇒ 404", async ({ request }) => {
