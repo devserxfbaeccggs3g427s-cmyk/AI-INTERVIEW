@@ -36,11 +36,11 @@ test.describe("S10 — Luyện viết (AC-CM-1, AC-CM-2, AC-CM-11)", () => {
 
     // 5 tiêu chí.
     for (const label of [
-      "Độ chính xác",
-      "Độ trôi chảy",
-      "Từ vựng",
+      "Rõ ràng",
+      "Cấu trúc",
+      "Giọng văn",
+      "Tự nhiên",
       "Ngữ pháp",
-      "Mạch lạc",
     ]) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
@@ -115,11 +115,11 @@ test.describe("S10 — Lưu lượt luyện (AC-CM-3, AC-CM-5)", () => {
         mode: "write",
         score: 3.5,
         rubric: {
-          accuracy: 3.5,
-          fluency: 3.5,
-          vocabulary: 3.5,
+          clarity: 3.5,
+          structure: 3.5,
+          tone: 3.5,
+          naturalness: 3.5,
           grammar: 3.5,
-          coherence: 3.5,
         },
       },
     });
