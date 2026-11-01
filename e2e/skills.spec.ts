@@ -234,19 +234,40 @@ test.describe("API — cây kỹ năng", () => {
     );
     expect(parent).toBeTruthy();
 
-    const child = parent.children[0];
+    // ⚠️ Không xoá node seed thật — 2 project (mobile + desktop) chạy song
+    // song trên cùng SQLite DB, xoá node thật sẽ làm project còn lại assert
+    // trên cây đã bị cắt. Tạo nhánh test riêng rồi xoá nhánh đó.
+    const branch = await request.post("/api/skills", {
+      data: {
+        name: `Nhánh test xoá ${Date.now()}`,
+        domain: parent.domain,
+        parentId: parent.id,
+        targetLevel: 3,
+      },
+    });
+    expect(branch.status()).toBe(200);
+    const branchId = (await branch.json()).data.id;
 
-    // Xoá node tầng 2.
-    const deleted = await request.delete(`/api/skills/${parent.id}`);
+    const branchChild = await request.post("/api/skills", {
+      data: {
+        name: `Nhánh test con ${Date.now()}`,
+        domain: parent.domain,
+        parentId: branchId,
+        targetLevel: 3,
+      },
+    });
+    expect(branchChild.status()).toBe(200);
+    const branchChildId = (await branchChild.json()).data.id;
+
+    // Xoá node tầng 2 **của nhánh test**.
+    const deleted = await request.delete(`/api/skills/${branchId}`);
     expect(deleted.status()).toBe(200);
 
-    // Node con (tầng 3) phải còn, và cha của nó = **ông bà**.
-    //
-    // ⚠️ Xoá node tầng 2 ⇒ ông bà là DOMAIN gốc (`parentId = null`) ⇒ node con
-    // trở thành node tầng 2, không còn cha.
-    const childAfter = await (await request.get(`/api/skills/${child.id}`)).json();
+    // Node con (tầng 3) phải còn, và cha của nó = **ông bà** (node tầng 2
+    // gốc), không phải null — vì cha gốc vẫn tồn tại.
+    const childAfter = await (await request.get(`/api/skills/${branchChildId}`)).json();
     expect(childAfter.ok).toBe(true);
-    expect(childAfter.data.skill.parentId).toBeNull();
+    expect(childAfter.data.skill.parentId).toBe(parent.id);
   });
 });
 
@@ -256,12 +277,41 @@ test.describe("API — cây kỹ năng", () => {
     const tree = await (await request.get("/api/skills")).json();
     const domain = tree.data.domains[0];
     const level2 = domain.children[0];
-    const level3 = level2.children[0];
 
-    const deleted = await request.delete(`/api/skills/${level3.id}`);
+    // ⚠️ Không xoá node seed thật — 2 project (mobile + desktop) chạy song
+    // song trên cùng SQLite DB, xoá node thật sẽ làm project còn lại assert
+    // trên cây đã bị cắt. Tạo nhánh test riêng rồi xoá nhánh đó.
+    const branch = await request.post("/api/skills", {
+      data: {
+        name: `Nhánh test tầng 3 ${Date.now()}`,
+        domain: level2.domain,
+        parentId: level2.id,
+        targetLevel: 3,
+      },
+    });
+    expect(branch.status()).toBe(200);
+    const branchId = (await branch.json()).data.id;
+
+    const branchChild = await request.post("/api/skills", {
+      data: {
+        name: `Nhánh test tầng 3 con ${Date.now()}`,
+        domain: level2.domain,
+        parentId: branchId,
+        targetLevel: 3,
+      },
+    });
+    expect(branchChild.status()).toBe(200);
+    const branchChildId = (await branchChild.json()).data.id;
+
+    const deleted = await request.delete(`/api/skills/${branchId}`);
     expect(deleted.status()).toBe(200);
 
-    // Node con của level3 (nếu có) phải chuyển lên level2.
+    // Node con của node tầng 3 bị xoá phải chuyển lên node tầng 2.
+    const childAfter = await (await request.get(`/api/skills/${branchChildId}`)).json();
+    expect(childAfter.ok).toBe(true);
+    expect(childAfter.data.skill.parentId).toBe(level2.id);
+
+    // Node tầng 2 gốc vẫn còn nguyên.
     const treeAfter = await (await request.get("/api/skills")).json();
     const level2After = treeAfter.data.domains[0].children.find(
       (node: { id: string }) => node.id === level2.id,
