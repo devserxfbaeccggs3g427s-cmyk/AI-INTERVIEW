@@ -53,7 +53,7 @@ FEATURES = sorted(set(SCREEN_OWNER.values()) |
                   {v for vs in FR_OWNER.values() for v in vs} |
                   {"app-foundation"})
 
-errs, oks = [], []
+errs, oks, warns = [], [], []
 
 
 def read(p):
@@ -261,6 +261,30 @@ else:
                 errs.append("[app-foundation/spec.md] phải ghi rõ Phase -1 "
                             "(đi trước mọi feature khác)")
 
+    # ── 11: mỗi FR nên có ít nhất một test truy vết được ───────────────────
+    # FR không có dấu vết trong test = không ai bảo vệ yêu cầu đó. Đây là
+    # cảnh báo (không fail) vì spec có thể mô tả hành vi chưa cần test.
+    repo_root = os.path.dirname(ROOT)
+    test_dirs = [os.path.join(repo_root, "tests"), os.path.join(repo_root, "e2e")]
+    traced = set()
+    for td in test_dirs:
+        if not os.path.isdir(td):
+            continue
+        for root, _dirs, files in os.walk(td):
+            for fn in files:
+                if fn.endswith((".ts", ".tsx")):
+                    traced |= set(re.findall(r"\bFR-[A-Z]{2,3}-\d{2}\b", read(os.path.join(root, fn))))
+    spec_fr = set()
+    for feat in FEATURES:
+        sp = os.path.join(SPECS, feat, "spec.md")
+        if os.path.exists(sp):
+            spec_fr |= set(re.findall(r"\bFR-[A-Z]{2,3}-\d{2}\b", read(sp)))
+    untested = sorted(spec_fr - traced)
+    if untested:
+        warns.append(f"{len(untested)} FR chưa có test truy vết được "
+                     f"({len(traced & spec_fr)}/{len(spec_fr)} đã phủ) — "
+                     f"xem danh sách ở cuối output")
+
     print("=" * 72)
     print("KIRO SPEC VALIDATION — Daily Loop OS")
     print("=" * 72)
@@ -272,6 +296,13 @@ else:
     print("-" * 72)
     for i in oks:
         print("  ok  ", i)
+    for w in warns:
+        print("  WARN", w)
+    if untested:
+        print("-" * 72)
+        print("  FR chưa có test:")
+        for fr in untested:
+            print(f"    - {fr}")
     if errs:
         print("-" * 72)
         for e in errs:
