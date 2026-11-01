@@ -18,7 +18,7 @@ Local-first — dữ liệu nằm trong SQLite trên máy, AI chỉ được g�
 ```bash
 npm install
 cp .env.example .env.local      # tuỳ chọn — dùng để thêm ANTHROPIC_API_KEY
-npm run db:migrate              # tạo prisma/dev.db + 15 bảng
+npm run db:migrate              # tạo prisma/dev.db + 22 bảng
 npm run db:seed                 # 53 node kỹ năng + 140 thẻ ngoại ngữ
 npm run dev                     # → http://localhost:3000
 ```
@@ -47,23 +47,54 @@ Thêm key tại <https://console.anthropic.com/>, rồi khởi động lại `np
 | `npm run test:e2e` | E2E test (Playwright, 2 viewport) |
 | `npm run validate:specs` | Kiểm tra bộ spec Kiro trong `.kiro/` |
 
+## Màn hình
+
+21 màn hình, đều là route thật (không còn trang "sắp có"):
+
+| Nhóm | Đường dẫn |
+|---|---|
+| Hôm nay | `/` · `/plan` |
+| Kỹ năng | `/skills` · `/skills/[id]` |
+| Ghi nhanh | `/log` · `/log/history` |
+| Nhật ký & chỉ số | `/journal` · `/state` |
+| Luyện tập | `/speak/write` · `/speak/talk` · `/language` · `/srs/review` · `/practice/language` |
+| Phỏng vấn | `/interview/setup` · `/interview/session` · `/interview/report` |
+| Bài kiểm tra | `/test` · `/test/session` · `/test/[id]` |
+| Báo cáo | `/review` · `/progress` |
+| Hệ thống | `/settings` |
+
 ## Cấu trúc thư mục
 
 ```
 prisma/
-  schema.prisma           15 model — nguồn chân lý: system-design/SPEC.md §4
+  schema.prisma           22 model — nguồn chân lý: system-design/SPEC.md §4
   seed.ts                 Seed tĩnh (không gọi AI)
   seed-data/
     skills.ts             Cây kỹ năng Java Backend — 53 node
     cards.ts              140 thẻ ngoại ngữ (70 zh + 70 en)
+    speak-prompts.ts      12 đề luyện nói/viết (EX-01..EX-12)
+    roleplay-scenarios.ts 6 tình huống hội thoại (có mục tiêu ẩn)
   migrations/             Migration đã apply
 
 src/
   app/
     layout.tsx            Root layout — 3 font qua next/font
-    page.tsx              Trang chủ placeholder (Phase -1)
+    page.tsx              S01 — Daily Loop (trang chủ)
     globals.css           Design token Tailwind v4 (@theme)
-    api/health/route.ts   Smoke test + healthcheck
+    plan/                 S02 — Sinh kế hoạch AI
+    skills/               S03–S04 — Cây kỹ năng + chi tiết
+    log/                  S05 — Quick-log + lịch sử
+    journal/              S06 — Nhật ký & phản hồi AI
+    speak/                S07–S08 — Luyện viết / Luyện nói
+    language/             S09 — Bảng thẻ SRS
+    srs/review/           S10 — Phiên ôn thẻ
+    practice/             S11 — Luyện ngoại ngữ chủ động
+    state/                S12 — Đánh giá chính
+    review/ progress/     S13–S14 — Báo cáo tuần & tiến độ
+    settings/             S15 — Cài đặt & chi phí AI
+    interview/            S16–S18 — AI Interview Studio
+    test/                 S19–S21 — Bài kiểm tra ngôn ngữ
+    api/                  Route handlers theo feature
   components/shell/
     app-shell.tsx         Khung: header + main + bottom nav
     bottom-nav.tsx        4 mục điều hướng dưới
