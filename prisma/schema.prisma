@@ -52,6 +52,13 @@ model Activity {
   // Quan hệ ngược 1-1 (SPEC §4 `InterviewSession.activity` / `TestSession.activity`).
   interviewSession InterviewSession?
   testSession     TestSession?
+  // Quan hệ ngược 1-1 — communication-training (registry §3 M3/M4/M6/M8).
+  speakAttempt    SpeakAttempt?
+  roleplaySession RoleplaySession?
+  languagePractice LanguagePractice?
+
+  // Báo cáo tiến bộ cần quét theo mốc thời gian (90 ngày × 4 domain).
+  @@index([createdAt])
 }
 
 // ── Bằng chứng (P3: tiến độ = bằng chứng) ─────────────────────────────────
@@ -65,6 +72,8 @@ model Evidence {
   createdAt  DateTime @default(now())
 
   @@index([skillId])
+  // Báo cáo tiến bộ quét evidence theo mốc thời gian (90 ngày).
+  @@index([createdAt])
 }
 
 // ── Nhật ký & phản hồi AI ─────────────────────────────────────────────────
@@ -115,6 +124,8 @@ model PlanItem {
   createdAt DateTime @default(now())
 
   @@index([date])
+  // Báo cáo tuần cần đếm slot theo ngày + trạng thái hoàn thành.
+  @@index([date, done])
 }
 
 // ── SRS ────────────────────────────────────────────────────────────────────
@@ -149,6 +160,8 @@ model Review {
   rating Int // 1=Again 2=Hard 3=Good 4=Easy
   state  Json
   at     DateTime @default(now())
+  /// Registry C27 — `srs` (lượt ôn thường) | `test` (lượt do bài kiểm tra đẩy về).
+  source String   @default("srs")
 }
 
 // ── Chỉ số cá nhân ────────────────────────────────────────────────────────
@@ -221,6 +234,10 @@ model InterviewProfile {
   language      String   @default("en") // en|vi
   questionKinds String   @default("concept,design") // concept|design|debug|tradeoff|behavioral
   focusSkills   String   @default("[]") // JSON: [skillId]
+  /// C35 — FR-MI-07: phương thức trả lời `text | voice`.
+  answerMode    String   @default("text")
+  /// C36 — FR-MI-14: chấm thêm điểm "clarity of expression".
+  englishClarity Boolean @default(false)
   createdAt     DateTime @default(now())
   sessions      InterviewSession[]
 }
@@ -231,7 +248,7 @@ model InterviewSession {
   profile       InterviewProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   plannedCount  Int      @default(8)
   askedCount    Int      @default(0)
-  status        String   @default("active") // active|done|abandoned
+  status        String   @default("active") // active|paused|done|abandoned
   totalScore    Float?
   skillsFocused String   @default("[]") // JSON: [skillId]
   startedAt     DateTime @default(now())
@@ -240,6 +257,22 @@ model InterviewSession {
   // Registry C28 — khoá 1-1 với Activity.
   activityId    String?      @unique
   activity      Activity?    @relation(fields: [activityId], references: [id])
+  /// C37 — kết quả AI-13 đã chuẩn hoá (3 mạnh / 3 yếu / đề xuất).
+  report        Json?
+  /// C38 — 5 dạng câu của phiên này (CSV).
+  questionKinds String   @default("concept,design")
+  /// C39 — phương thức trả lời của phiên này.
+  answerMode    String   @default("text")
+  /// C40 — cờ đo tiếng Anh của phiên này.
+  englishClarity Boolean @default(false)
+  /// C41 — Adaptive Loop (FR-MI-06).
+  adaptive      Boolean  @default(true)
+  /// C30 — loại phiên: skill_drill | interview_loop | partner_sim.
+  sessionType   String   @default("interview_loop")
+  /// C31 — vì sao phiên này được đề xuất.
+  focusHint     String?
+
+  @@index([profileId, status, startedAt])
 }
 
 model InterviewTurn {
@@ -251,11 +284,31 @@ model InterviewTurn {
   kind         String // concept|design|debug|tradeoff|behavioral
   skillName    String?
   answer       String?
-  scores       Json? // {clarity:[score,note], depth:[...], reasoning:[...], communication:[...], tradeoff:[...]}
+  scores       Json? // {accuracy:[score,note], depth:[...], reasoning:[...], communication:[...], tradeoff:[...]}
   total        Float?
   feedback     String?
   nextQuestion String?
   createdAt    DateTime @default(now())
+  /// C42 — node kỹ năng câu hỏi nhắm tới.
+  skillId        String?
+  /// C43 — rubric hành vi 4 tiêu chí (câu `behavioral`).
+  behavioralScores Json?
+  /// C44 — điểm "clarity of expression" (FR-MI-14).
+  clarityScore   Float?
+  /// C45 — dạng của câu kế tiếp.
+  nextKind       String?
+  /// C46 — node của câu kế tiếp.
+  nextSkillId    String?
+  /// C47 — câu này là follow-up của câu trước.
+  isFollowUp     Boolean  @default(false)
+  /// C48 — lý do AI chọn câu này.
+  adaptiveReason String?
+  /// C49 — người dùng đánh dấu câu hỏi có vấn đề.
+  flagged        Boolean  @default(false)
+  /// C50 — lý do ngắn kèm cờ.
+  flagReason     String?
+
+  @@index([sessionId, index])
 }
 
 // ── Bài kiểm tra ngoại ngữ ────────────────────────────────────────────────
@@ -274,6 +327,22 @@ model TestSession {
   // Khoá 1-1 với Activity — cần khóa unique để Prisma validate được.
   activityId  String?    @unique
   activity    Activity?  @relation(fields: [activityId], references: [id])
+  /// Registry C17 — `active` | `done` | `abandoned` | `expired`.
+  status      String     @default("active")
+  /// Registry C18 — hash parallel form (FR-LT-12).
+  formSignature String?
+  /// Registry C19 — `ai` | `local`: nguồn của level ước lượng.
+  levelSource String     @default("local")
+  /// Registry C20 — văn bản người dùng dán cho `from_content`.
+  sourceText  String?
+  /// Registry C21 — tách khỏi `createdAt` để đo thời gian làm bài.
+  startedAt   DateTime   @default(now())
+  /// Registry C22 — thời điểm nộp bài.
+  endedAt     DateTime?
+  /// Registry C33 — chuẩn của đề này: `cefr` | `hsk` | `vendor`.
+  standard    String     @default("cefr")
+
+  @@index([lang, status])
 }
 
 model TestItem {
@@ -293,4 +362,122 @@ model TestItem {
   errorGroups Json? // writing/translation: {grammar:[],vocab:[],expression:[],context:[]}
   notes       String?
   seconds     Int?
+  /// Registry C23 — giải thích ngắn cho câu đúng (hoặc khi AI chưa kịp chấm).
+  explanation String?
+  /// Registry C24 — đánh dấu cờ (FR-LT-17).
+  flagged     Boolean @default(false)
+  /// Registry C25 — điểm 4 nhóm lỗi: {grammar, vocab, expression, context}.
+  rubric      Json?
+  /// Registry C26 — đã chấm xong (câu tự luận chờ AI → `false`).
+  scored      Boolean @default(false)
+
+  @@unique([testId, index])
+}
+
+// ── Communication Training (communication-training, registry §3) ────────────
+
+model SpeakPrompt {
+  id         String   @id @default(cuid())
+  code       String   @unique          // EX-01..EX-12 | CUS-xxxx
+  title      String
+  prompt     String
+  level      String                   // A1|A2|B1|B2|C1
+  lang       String                   // en|vi|zh
+  mode       String   @default("both") // write|speak|both
+  tags       String   @default("[]")   // JSON string[]
+  isUserMade Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  attempts   SpeakAttempt[]
+
+  @@index([level, lang, mode])
+}
+
+model SpeakAttempt {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  promptId   String?
+  prompt     SpeakPrompt? @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  mode       String                   // write|speak
+  content    String                   // bài viết hoặc transcript
+  rubric     Json                     // {clarity:{score,comment,fix}, ...}
+  totalScore Float
+  delta      Json?                    // {total, criteria:{key:number}}
+  speechMeta Json?                    // {durationSec,wordsPerMinute,fillerWords,pauses}
+  createdAt  DateTime @default(now())
+
+  @@index([mode, createdAt])
+}
+
+model RoleplayScenario {
+  id          String   @id @default(cuid())
+  code        String   @unique          // SP-01..SP-15
+  title       String
+  brief       String
+  hiddenGoal  String?                  // FR-CM-06 — không gửi cho AI ở task next_turn
+  lang        String   @default("en")
+  level       String
+  durationSec Int      @default(60)
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+  sessions    RoleplaySession[]
+}
+
+model RoleplaySession {
+  id          String   @id @default(cuid())
+  scenarioId  String
+  scenario    RoleplayScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  status      String   @default("active")   // active|done|abandoned
+  goalScore   Int?                          // 0..5
+  goalNote    String?
+  transcript  Json     @default("[]")       // [{index,role,text}]
+  activityId  String? @unique
+  activity    Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  turns       RoleplayTurn[]
+
+  @@index([status, startedAt])
+}
+
+model RoleplayTurn {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   RoleplaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  index     Int
+  speaker   String                 // ai|user
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, index])
+}
+
+model LanguagePractice {
+  id          String   @id @default(cuid())
+  activityId  String   @unique
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  lang        String   // zh|en
+  level       String
+  prompt      String
+  input       String
+  corrected   String?
+  errorGroups Json     // {grammar:[…],vocab:[…],expression:[…],context:[…]}
+  keywords    Json     @default("[]")
+  score       Float?
+  createdAt   DateTime @default(now())
+  cards       PracticeCard[]
+}
+
+model PracticeCard {
+  id         String   @id @default(cuid())
+  practiceId String
+  practice   LanguagePractice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  cardId     String?          // null = chưa đẩy vào deck FSRS
+  front      String
+  back       String
+  note       String?
+  example    String?
+  createdAt  DateTime @default(now())
+
+  @@index([practiceId])
 }

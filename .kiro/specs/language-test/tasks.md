@@ -7,30 +7,30 @@
 ## 0. Nền tảng dữ liệu
 
 - [ ] 1. Mô hình Prisma
-  - [ ] 1.1 Thêm `status String @default("active")` vào `TestSession` (giá trị: `active` · `done` · `expired` · `abandoned`)
-  - [ ] 1.2 Thêm `formSignature String?` vào `TestSession` (hash parallel form, FR-LT-12)
-  - [ ] 1.3 Thêm `sourceText String?` vào `TestSession` (văn bản `from_content`)
-  - [ ] 1.4 Thêm `startedAt DateTime @default(now())` và `endedAt DateTime?` vào `TestSession`
-  - [ ] 1.5 Thêm `explanation String?` vào `TestItem` (giải thích cho câu đúng / khi AI chưa kịp chấm)
-  - [ ] 1.6 Thêm `flagged Boolean @default(false)` vào `TestItem` (đánh dấu cờ, FR-LT-17)
-  - [ ] 1.7 Thêm `rubric Json?` vào `TestItem` (điểm 4 nhóm lỗi)
+  - [x] 1.1 Thêm `status String @default("active")` vào `TestSession` (giá trị: `active` · `done` · `expired` · `abandoned`)
+  - [x] 1.2 Thêm `formSignature String?` vào `TestSession` (hash parallel form, FR-LT-12)
+  - [x] 1.3 Thêm `sourceText String?` vào `TestSession` (văn bản `from_content`)
+  - [x] 1.4 Thêm `startedAt DateTime @default(now())` và `endedAt DateTime?` vào `TestSession`
+  - [x] 1.5 Thêm `explanation String?` vào `TestItem` (giải thích cho câu đúng / khi AI chưa kịp chấm)
+  - [x] 1.6 Thêm `flagged Boolean @default(false)` vào `TestItem` (đánh dấu cờ, FR-LT-17)
+  - [x] 1.7 Thêm `rubric Json?` vào `TestItem` (điểm 4 nhóm lỗi)
   - [ ] 1.8 Thêm `scored Boolean @default(false)` vào `TestItem` (đã chấm xong)
-  - [ ] 1.9 Thêm `@@unique([testId, index])` vào `TestItem` (chống bản ghi trùng khi double-click)
-  - [ ] 1.10 Thêm `source String @default("srs")` vào `Review` (giá trị: `srs` · `test`) để truy vết lượt do bài kiểm tra đẩy về ôn
-  - [ ] 1.11 Thêm `levelSource String @default("local")` vào `TestSession` (`ai` | `local` — nguồn của level ước lượng)
+  - [x] 1.9 Thêm `@@unique([testId, index])` vào `TestItem` (chống bản ghi trùng khi double-click)
+  - [x] 1.10 Thêm `source String @default("srs")` vào `Review` (giá trị: `srs` · `test`) để truy vết lượt do bài kiểm tra đẩy về ôn
+  - [x] 1.11 Thêm `levelSource String @default("local")` vào `TestSession` (`ai` | `local` — nguồn của level ước lượng)
   - [ ] 1.12 Thêm `@@index([lang, status])` vào `TestSession` (truy vấn phiên `active` + lịch sử)
-  - [ ] 1.13 Chạy `npx prisma migrate dev --name add_language_test_fields`
+  - [x] 1.13 Chạy `npx prisma migrate dev --name add_language_test_fields`
   - [ ] 1.14 Xác nhận `Activity.type` chấp nhận giá trị `test` (SPEC §4 hiện chưa liệt kê → thêm vào hằng số validate trong `src/lib/types.ts`)
 - [ ] 2. Hằng số cấu hình
-  - [ ] 2.1 Thêm `TEST_COUNTS` (`placement 25 · topic 20 · benchmark 40 · from_content 10`) vào `src/lib/config.ts`
-  - [ ] 2.2 Thêm `TEST_TIMERS_SEC` (`benchmark 1800 · from_content 900`) vào `src/lib/config.ts`
-  - [ ] 2.3 Thêm `TEST_TOPIC_GROUPS` (Chào hỏi · Đồ ăn · Địa điểm · Thời gian · Người & thân xã · Động từ & phó từ) vào `src/lib/config.ts`
+  - [x] 2.1 Thêm `TEST_COUNTS` (`placement 25 · topic 20 · benchmark 40 · from_content 10`) vào `src/lib/config.ts`
+  - [x] 2.2 Thêm `TEST_TIMERS_SEC` (`benchmark 1800 · from_content 900`) vào `src/lib/config.ts`
+  - [x] 2.3 Thêm `TEST_TOPIC_GROUPS` (Chào hỏi · Đồ ăn · Địa điểm · Thời gian · Người & thân xã · Động từ & phó từ) vào `src/lib/config.ts`
 - [ ] 3. Ngân hàng seed cho bài kiểm tra
   - [ ] 3.1 Tạo `prisma/seed-test-bank.ts` — ngân hàng câu hỏi biên tập tay cho level `zero`/`A1`, chia theo `lang` × `group` × `itemType`
   - [ ] 3.2 Bổ sung cờ `seedBank Boolean @default(false)` vào `Card` để phân biệt thẻ seed với thẻ người dùng
   - [ ] 3.3 Viết seed ≥ 30 câu cho `zh` và ≥ 30 câu cho `en` (đủ 6 dạng: `mc_vocab` · `mc_grammar` · `cloze` · `listening` · `writing` · `translation`)
   - [ ] 3.4 Seed phải là **file tĩnh** — không gọi AI (R6)
-- [ ] 4. Lớp nghiệp vụ thuần — `src/lib/test.ts`
+- [x] 4. Lớp nghiệp vụ thuần — `src/lib/test.ts`
   - [ ] 4.1 Khai báo type `Lang`, `TestType`, `ItemType`, `LevelCode`, `DifficultyBand`, `RubricScores`, `ErrorGroupKey`
   - [ ] 4.2 Khai báo `TEST_ITEM_DISTRIBUTION` cho 4 loại đề (tổng khớp `TEST_COUNTS`)
   - [ ] 4.3 Viết `normalizeAnswer()` — bỏ khoảng trắng, hạ chữ thường, bỏ dấu câu cuối, bỏ dấu nháy
@@ -51,8 +51,8 @@
   - [ ] 4.18 Viết `createTestEvidence()` — tạo `Activity` (`domain="language"`, `type="test"`) + `Evidence` cho skill ngôn ngữ (FR-LT-11)
   - [ ] 4.19 Viết `setProfileLevel(lang, level)` — chỉ `placement` được ghi `UserProfile.zhLevel`/`enLevel` (FR-LT-07)
   - [ ] 4.20 Viết `suggestedGroupForLevel(lang, level)` — gợi ý nhóm từ nên bắt đầu
-  - [ ] 4.21 Không import `src/lib/anthropic.ts` trong `src/lib/test.ts` (quyết định D1) — assert bằng test
-- [ ] 5. Lớp FSRS — `src/lib/test-fsrs.ts`
+  - [x] 4.21 Không import `src/lib/anthropic.ts` trong `src/lib/test.ts` (quyết định D1) — assert bằng test
+- [x] 5. Lớp FSRS — `src/lib/test-fsrs.ts`
   - [ ] 5.1 Viết `safeParseCardState()` — parse `Card.cardState` JSON, hỏng → `null`
   - [ ] 5.2 Viết `applyAgain(card, now)` dùng `scheduler.next(prev, now, Rating.Again)` từ `ts-fsrs`
   - [ ] 5.3 Ép `due = startOfToday()` (00:00 local) — AC-11 yêu cầu "due = hôm nay"
@@ -75,9 +75,9 @@
   - [ ] 6.6 Thêm `TestBlueprintSchema` (Zod) — `items[]` có `itemType` · `prompt` · `audioText` · `options` (4) · `answer` · `cardId`
   - [ ] 6.7 Thêm `TestGradeSchema` (Zod, `.strict()`) — `rubric` 4 nhóm 0–10 + `errors` 4 nhóm; schema strict để reject nhóm lạ (AC-12)
   - [ ] 6.8 Thêm `TestLevelSchema` (Zod) — `level` · `cefr` · `hsk` · `confidence` · `bottleneck` · `reason`
-  - [ ] 6.9 Thêm `generateTestItems()` vào `src/lib/test-ai.ts` — AI-14, `claude-opus-5`, streaming, `effort: medium`
-  - [ ] 6.10 Thêm `gradeOpenItem()` vào `src/lib/test-ai.ts` — AI-15, `claude-opus-5`, streaming, `effort: medium`
-  - [ ] 6.11 Thêm `estimateLevelWithAi()` vào `src/lib/test-ai.ts` — AI-16, `claude-opus-5`, **không** streaming, `effort: low`
+  - [x] 6.9 Thêm `generateTestItems()` vào `src/lib/test-ai.ts` — AI-14, `claude-opus-5`, streaming, `effort: medium`
+  - [x] 6.10 Thêm `gradeOpenItem()` vào `src/lib/test-ai.ts` — AI-15, `claude-opus-5`, streaming, `effort: medium`
+  - [x] 6.11 Thêm `estimateLevelWithAi()` vào `src/lib/test-ai.ts` — AI-16, `claude-opus-5`, **không** streaming, `effort: low`
   - [ ] 6.12 Viết `buildBlueprintUserMessage()` — danh sách thẻ + band + `itemTypes` yêu cầu nằm trong `messages` (sau breakpoint cache)
   - [ ] 6.13 Viết `buildGradeUserMessage()` — đề bài + bài mẫu + bài làm của người dùng
   - [ ] 6.14 Viết `buildLevelUserMessage()` — `byItemType` + tổng điểm + mốc band code
@@ -93,14 +93,14 @@
 
 ## 2. API
 
-- [ ] 7. `GET /api/test`
+- [x] 7. `GET /api/test`
   - [ ] 7.1 Validate `lang` bằng Zod → `400` nếu sai
   - [ ] 7.2 Query song song (`Promise.all`): profile level · placements · topics · benchmarks · `benchmarkTrend` · `byItemType` · `topWrongWords` · `pushedCards` hôm nay
   - [ ] 7.3 `benchmarkTrend` chỉ lấy phiên `status` ∈ `done|expired` (FR-LT-08)
   - [ ] 7.4 `byItemType` dùng 2 query (count tổng + count đúng) — **không** dùng `_sum` trên boolean (SQLite)
   - [ ] 7.5 Trả `{ ok: true, data }` với `hasApiKey`
   - [ ] 7.6 Test: không có dữ liệu → mảng rỗng, `benchmarkTrend: []`, không lỗi
-- [ ] 8. `POST /api/test/generate` (AI-14)
+- [x] 8. `POST /api/test/generate` (AI-14)
   - [ ] 8.1 Validate body bằng `GenerateTestSchema` (Zod): `lang` · `testType` · `topic?` · `level?` · `itemTypes?` · `count?` · `sourceText?`
   - [ ] 8.2 Chặn khi đã có phiên `active` cùng `lang` → `409` + `data.testId`
   - [ ] 8.3 Kiểm tra `sourceText` ≤ 8.000 ký tự; rỗng → `400`
@@ -111,7 +111,7 @@
   - [ ] 8.8 Error mapping: `400` input sai · `409` đang có phiên · `429` rate limit · `502` AI lỗi/refusal · `503` no_api_key
   - [ ] 8.9 Test: thiếu API key → `503` + UI ẩn nút
   - [ ] 8.10 Test: AI lỗi → không tạo phiên rỗng trong DB
-- [ ] 9. `POST /api/test/answer`
+- [x] 9. `POST /api/test/answer`
   - [ ] 9.1 Validate body: `testId` · `index` ≥ 0 · `userAnswer` · `seconds?` · `flagged?`
   - [ ] 9.2 Load phiên + item; `status !== "active"` → `409`; index ngoài phạm vi → `404`
   - [ ] 9.3 Chấm objective ngay → `isCorrect` + `notes` giải thích
@@ -119,7 +119,7 @@
   - [ ] 9.5 `upsert` theo unique `(testId, index)` — double-click không tạo bản ghi trùng
   - [ ] 9.6 **Không** ghi `Card` ở route này (quyết định D2)
   - [ ] 9.7 Test: gọi 2 lần cùng `(testId, index)` → vẫn 1 bản ghi, `userAnswer` = giá trị mới
-- [ ] 10. `POST /api/test/grade-open` (AI-15)
+- [x] 10. `POST /api/test/grade-open` (AI-15)
   - [ ] 10.1 Validate body: `testId` · `index`
   - [ ] 10.2 `403`/`409` khi câu đã chấm (`scored && rubric`)
   - [ ] 10.3 `400` khi `userAnswer` rỗng
@@ -127,13 +127,13 @@
   - [ ] 10.5 Ghi `rubric` + `errorGroups` + `notes` + `isCorrect = score >= 6` + `scored = true`
   - [ ] 10.6 `score` do **code** tính = trung bình 4 nhóm (không tin tổng của AI)
   - [ ] 10.7 Test: AI trả nhóm lạ → `502`, `TestItem.errorGroups` không đổi (AC-12)
-- [ ] 11. `POST /api/test/level` (AI-16)
+- [x] 11. `POST /api/test/level` (AI-16)
   - [ ] 11.1 Load items → `summarizeSession()` → `estimateLevelLocal()`
   - [ ] 11.2 Thiếu API key → trả `source: "local"` (HTTP 200, không lỗi)
   - [ ] 11.3 Gọi AI-16 (`effort: low`, không streaming) → `clampLevel()` so với band code
   - [ ] 11.4 AI lỗi → `logAiCallFailure()` + trả `source: "local"`
   - [ ] 11.5 Test: AI lệch >1 bậc → level bị kéo về band code
-- [ ] 12. `POST /api/test/submit`
+- [x] 12. `POST /api/test/submit`
   - [ ] 12.1 Validate body: `testId` · `reason?` (`manual` · `timeout`)
   - [ ] 12.2 `404` nếu không tìm thấy phiên · `409` nếu đã nộp
   - [ ] 12.3 Câu `userAnswer` rỗng → `isCorrect = false`, `scored = true`, **không** đẩy thẻ (LT-R9)
@@ -148,7 +148,7 @@
   - [ ] 12.12 Test: 5 câu sai có `cardId` → 5 thẻ `due = hôm nay`, `lapses +1` (AC-11)
   - [ ] 12.13 Test: 5 câu sai **không** có `cardId` → `pushedCards: []`, 0 thẻ đổi, HTTP 200 (AC-11 case 2)
   - [ ] 12.14 Test: tạo đúng 1 `Activity` + ≥1 `Evidence` (AC-LT-8)
-- [ ] 13. `GET /api/test/[id]`
+- [x] 13. `GET /api/test/[id]`
   - [ ] 13.1 `404` nếu không tìm thấy phiên
   - [ ] 13.2 Trả `session` + `items` + `byItemType` + `pushedCards` + `comparison` + `suggestedGroup` (placement)
   - [ ] 13.3 `comparison` lấy phiên `benchmark` gần nhất trước đó; **không** tính delta nếu `formSignature` khác
@@ -159,7 +159,7 @@
 
 ## 3. UI
 
-- [ ] 14. S19 — `src/app/test/page.tsx` + `src/components/test/test-hub.tsx`
+- [x] 14. S19 — `src/app/test/page.tsx` + `src/components/test/test-hub.tsx`
   - [ ] 14.1 Server Component: đọc `?lang=`, gọi `getTestHubData()`, render khung trang
   - [ ] 14.2 Header: badge `FR-LT-01 → FR-LT-12`, chip sync FSRS, H1, toggle ngôn ngữ zh/en
   - [ ] 14.3 Banner level ước lượng + điểm chuẩn gần nhất + pill "N thẻ sai đã đẩy về SRS hôm nay"
@@ -173,7 +173,7 @@
   - [ ] 14.11 Empty state: thiếu thẻ trong ngân hàng → cảnh báo + CTA tới S09
   - [ ] 14.12 Không có API key → ẩn nút sinh đề AI, hiện hướng dẫn thêm key
   - [ ] 14.13 Loading skeleton khi đang tải dữ liệu hub
-- [ ] 15. S20 — `src/app/test/session/page.tsx` + `src/components/test/test-session-runner.tsx`
+- [x] 15. S20 — `src/app/test/session/page.tsx` + `src/components/test/test-session-runner.tsx`
   - [ ] 15.1 Server Component: đọc `?testId=`, load session + items, render runner
   - [ ] 15.2 Header: chip level + tuần + sync, H1 tên đề, ô timer `mm:ss`, nút "Tạm dừng", nút "Nộp bài sớm"
   - [ ] 15.3 Progress rail segmented (đã làm / đang làm / chưa trả lời) + chú thích "6 đã làm · 1 đang làm · 33 chưa trả lời"
@@ -181,8 +181,8 @@
   - [ ] 15.5 Khối prompt: nội dung câu (chỗ trống `___` render `bg-surface-container-lowest`), pinyin, dịch nghĩa
   - [ ] 15.6 Render 4 option `role="radio"` + `aria-checked` + badge A–D; hỗ trợ phím `1`–`4`
   - [ ] 15.7 Render `<input>` cho `cloze` · `<textarea>` cho `writing`/`translation`
-  - [ ] 15.8 Gọi `POST /api/test/answer` ngay khi có đáp án; hiện banner "Đã lưu vào SQLite lúc HH:mm:ss (Zero Data Loss)"
-  - [ ] 15.9 Gọi nền `POST /api/test/grade-open` cho câu tự luận; chip "AI đang chấm…" với `aria-live`
+  - [x] 15.8 Gọi `POST /api/test/answer` ngay khi có đáp án; hiện banner "Đã lưu vào SQLite lúc HH:mm:ss (Zero Data Loss)"
+  - [x] 15.9 Gọi nền `POST /api/test/grade-open` cho câu tự luận; chip "AI đang chấm…" với `aria-live`
   - [ ] 15.10 Điều hướng: "← Câu trước [P]" · "Bỏ qua / Đánh dấu [F]" · "Câu tiếp theo [Ctrl+Enter]"
   - [ ] 15.11 Ma trận câu hỏi lưới 8 cột với 4 trạng thái màu; click → nhảy tới câu
   - [ ] 15.12 Panel "Quy tắc FSRS SRS Tự động" + bảng phím tắt nhanh
@@ -190,18 +190,18 @@
   - [ ] 15.14 Timer: đếm ngược 1s; `remainingSec <= 0` → tự nộp **đúng 1 lần** (`reason: "timeout"`)
   - [ ] 15.15 Timer ≤ 60s → đổi `text-error` + banner "Còn 1 phút"
   - [ ] 15.16 Nút "Tạm dừng" dừng đồng hồ, đổi icon `play_arrow` + nhãn "Tiếp tục"
-  - [ ] 15.17 Quay lại câu đã trả lời để sửa → `POST /api/test/answer` ghi đè; badge "Đã sửa"
+  - [x] 15.17 Quay lại câu đã trả lời để sửa → `POST /api/test/answer` ghi đè; badge "Đã sửa"
   - [ ] 15.18 Nút cờ `F` gửi `flagged: true` lên API và tô đỏ góc ô trong ma trận câu hỏi
   - [ ] 15.19 Khôi phục phiên: mở lại `/test/session` → con trỏ về câu đầu tiên chưa trả lời, đáp án đã lưu còn nguyên
   - [ ] 15.20 Xử lý `409 session_in_progress` → chuyển hướng về phiên đang chạy
   - [ ] 15.21 Xử lý lỗi AI (429/refusal) → thông báo ngắn + nút "Thử lại"; không tạo phiên rỗng
   - [ ] 15.22 Loading skeleton + error state có nút thử lại
-- [ ] 16. `src/components/test/question-card.tsx`
+- [x] 16. `src/components/test/question-card.tsx`
   - [ ] 16.1 Render theo `itemType` (radio / input / textarea)
   - [ ] 16.2 `speak()` dùng `speechSynthesis` với `zh-CN`/`en-US`, `rate 0.85`
   - [ ] 16.3 Không hỗ trợ TTS → hiện "Giọng {lang} không khả dụng — dùng pinyin + hán tự"
   - [ ] 16.4 Nút nghe có `aria-label`; ô option có `role="radio"` + `aria-checked`
-- [ ] 17. S21 — `src/app/test/[id]/page.tsx` + `src/components/test/test-result-view.tsx`
+- [x] 17. S21 — `src/app/test/[id]/page.tsx` + `src/components/test/test-result-view.tsx`
   - [ ] 17.1 Server Component: load kết quả + render
   - [ ] 17.2 Banner "Tự động ghi nhận hệ thống" (Activity + Evidence đã đồng bộ) + mã phiên
   - [ ] 17.3 Bento: điểm tổng (`font-display`) + thời lượng + level CEFR/HSK kèm bottleneck
@@ -221,7 +221,7 @@
   - [ ] 17.17 Không có API key → chip "Ước lượng cục bộ"; câu tự luận chưa chấm → "Chưa chấm được — thử lại" + nút gọi lại `grade-open`
   - [ ] 17.18 Empty state: 0 câu sai → "Không có câu sai — đạt 100%"
   - [ ] 17.19 Error state + loading skeleton
-- [ ] 18. `src/components/test/item-type-breakdown.tsx` + `src/components/test/ability-radar.tsx`
+- [x] 18. `src/components/test/item-type-breakdown.tsx` + `src/components/test/ability-radar.tsx`
   - [ ] 18.1 Ô theo dạng câu: chip `itemType` (font-code) + trạng thái + thanh bar theo ngưỡng 75/60
   - [ ] 18.2 Radar SVG 6 trục, vùng đạt `fill rgba(78,222,163,0.2) stroke #4edea3`; node theo trạng thái màu
   - [ ] 18.3 Bỏ trục không có dữ liệu (không vẽ 0) — tránh báo động giả
@@ -246,25 +246,25 @@
   - [ ] 20.8 `parallelFormSignature` — cùng `itemTypes`+`bands` ⇒ cùng chữ ký
   - [ ] 20.9 `reconcileGeneratedItems` — thừa/thiếu → cắt/bù, không nhân bản, có `warnings`
   - [ ] 20.10 `summarizeSession` — tổng `correct + total` khớp `items.length`
-  - [ ] 20.11 `src/lib/test.ts` không import `src/lib/anthropic.ts`
+  - [x] 20.11 `src/lib/test.ts` không import `src/lib/anthropic.ts`
 - [ ] 21. Integration test (SQLite test DB)
-  - [ ] 21.1 `POST /api/test/answer` 2 lần cùng `(testId, index)` → vẫn 1 bản ghi
-  - [ ] 21.2 `POST /api/test/submit` — 5 câu sai có `cardId` → 5 thẻ `due = hôm nay`, `lapses +1`, `stability` giảm (AC-11)
-  - [ ] 21.3 `POST /api/test/submit` — 5 câu sai không có `cardId` → `pushedCards: []`, 0 thẻ đổi, HTTP 200 (AC-11)
+  - [x] 21.1 `POST /api/test/answer` 2 lần cùng `(testId, index)` → vẫn 1 bản ghi
+  - [x] 21.2 `POST /api/test/submit` — 5 câu sai có `cardId` → 5 thẻ `due = hôm nay`, `lapses +1`, `stability` giảm (AC-11)
+  - [x] 21.3 `POST /api/test/submit` — 5 câu sai không có `cardId` → `pushedCards: []`, 0 thẻ đổi, HTTP 200 (AC-11)
   - [ ] 21.4 1 thẻ sai ở 3 câu → `lapses` tăng **1**
   - [ ] 21.5 Câu bỏ trống khi hết giờ → không đẩy thẻ
-  - [ ] 21.6 `POST /api/test/submit` tạo đúng 1 `Activity` (`domain="language"`, `type="test"`) + ≥1 `Evidence`
+  - [x] 21.6 `POST /api/test/submit` tạo đúng 1 `Activity` (`domain="language"`, `type="test"`) + ≥1 `Evidence`
   - [ ] 21.7 Placement → `UserProfile.zhLevel` được set đúng level ước lượng
   - [ ] 21.8 AI-15 trả nhóm lạ → `502`, `TestItem.errorGroups` không đổi (AC-12)
   - [ ] 21.9 AI-14 trả 22/25 câu → phiên có 22 item + `warnings`, không nhân bản
   - [ ] 21.10 AI-16 trả `C1` khi band code = `A1` → level = `A1`
   - [ ] 21.11 Đóng tab giữa bài → đáp án đã lưu còn nguyên sau khi load lại
   - [ ] 21.12 2 đề `benchmark` liên tiếp → `formSignature` bằng nhau, không trùng `cardId`
-  - [ ] 21.13 `GET /api/test` không có dữ liệu → mảng rỗng, HTTP 200
-  - [ ] 21.14 Thiếu API key → `POST /api/test/generate` trả `503`, không tạo phiên
-  - [ ] 21.15 `GET /api/test/[id]` với đề khác `formSignature` → `comparison = null` + `comparisonUnavailableReason` khác null (FR-LT-12)
-  - [ ] 21.16 `POST /api/test/level` offline → ghi `TestSession.levelSource = "local"`, level = band code
-  - [ ] 21.17 `POST /api/test/level` có AI → ghi `TestSession.levelSource = "ai"`, level đã clamp
+  - [x] 21.13 `GET /api/test` không có dữ liệu → mảng rỗng, HTTP 200
+  - [x] 21.14 Thiếu API key → `POST /api/test/generate` trả `503`, không tạo phiên
+  - [x] 21.15 `GET /api/test/[id]` với đề khác `formSignature` → `comparison = null` + `comparisonUnavailableReason` khác null (FR-LT-12)
+  - [x] 21.16 `POST /api/test/level` offline → ghi `TestSession.levelSource = "local"`, level = band code
+  - [x] 21.17 `POST /api/test/level` có AI → ghi `TestSession.levelSource = "ai"`, level đã clamp
   - [ ] 21.18 Câu sai **có gắn cờ** → không đẩy thẻ về ôn, `lapses` không đổi
 - [ ] 22. E2E (Playwright)
   - [ ] 22.1 S19 → bấm "Bắt đầu" → S20 hiện đúng số câu
@@ -289,8 +289,8 @@
   - [ ] 25.1 Đối chiếu từng FR-LT-01..FR-LT-12 với hành vi quan sát được
   - [ ] 25.2 Đối chiếu AC-11 (2 case) và AC-12 (2 case) — có test tự động pass
   - [ ] 25.3 Kiểm tra `AiCall` có đủ 3 feature `language_test` (AI-14/15/16) + `cacheRead > 0` ở call thứ 2
-  - [ ] 25.4 Kiểm tra không có số liệu hardcode trong component (grep số cứng trong `src/components/test/`)
-  - [ ] 25.5 Kiểm tra token design: không có hex hardcode trong `src/components/test/` (trừ giá trị SVG radar đã quy định)
+  - [x] 25.4 Kiểm tra không có số liệu hardcode trong component (grep số cứng trong `src/components/test/`)
+  - [x] 25.5 Kiểm tra token design: không có hex hardcode trong `src/components/test/` (trừ giá trị SVG radar đã quy định)
 
 ## 26. CEFR đầy đủ & chuẩn đề (Q7)
 

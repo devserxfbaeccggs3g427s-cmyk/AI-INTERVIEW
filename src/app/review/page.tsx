@@ -1,19 +1,50 @@
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { WeeklyReviewReport } from "@/components/review/weekly-review-report";
+import { isAiAvailable } from "@/lib/anthropic";
+import { getWeeklySummary } from "@/lib/analytics";
+import { getStoredInsights, nextWeekKey } from "@/lib/weekly-review";
+import { formatWeekLabel, isValidIsoWeek, lastCompletedWeek } from "@/lib/week";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Placeholder — màn hình `Báo cáo tuần` thuộc feature `weekly-progress-report`.
+ * S13 — Báo cáo tuần.
  *
- * ⚠️ Trang này tồn tại để (1) bottom nav / overflow menu không prefetch 404
- * và (2) người dùng thấy màn hình "sắp có" thay vì lỗi.
+ * ⚠️ Mặc định hiển thị tuần **đã chốt** gần nhất (Chủ Nhật 20:00).
+ * ⚠️ Render server-side số liệu (không chờ AI).
  */
-export default function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string }>;
+}) {
+  const params = await searchParams;
+
+  const requested = params.week;
+  const week =
+    requested && isValidIsoWeek(requested) ? requested : lastCompletedWeek();
+
+  const summary = await getWeeklySummary(week);
+  if (!summary) {
+    return (
+      <p className="font-body-md text-body-md text-on-surface-variant">
+        Không tải được báo cáo tuần. Thử tải lại trang.
+      </p>
+    );
+  }
+
+  const stored = await getStoredInsights(week);
+  const nextWeek = nextWeekKey(week);
+
   return (
-    <ComingSoon
-      title="Báo cáo tuần"
-      description="Tổng hợp bằng chứng trong tuần và điều chỉnh kế hoạch cho tuần sau."
-      feature="weekly-progress-report"
+    <WeeklyReviewReport
+      summary={summary}
+      priorInsights={stored?.insights ?? null}
+      priorPlan={stored?.plan ?? null}
+      hasApiKey={isAiAvailable()}
+      isDue={lastCompletedWeek() === week}
+      week={week}
+      nextWeek={nextWeek}
+      nextWeekLabel={formatWeekLabel(nextWeek)}
     />
   );
 }
