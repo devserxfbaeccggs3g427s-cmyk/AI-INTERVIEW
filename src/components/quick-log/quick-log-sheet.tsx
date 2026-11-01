@@ -263,7 +263,7 @@ export function QuickLogSheet({ date, onClose }: QuickLogSheetProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="quick-log-title"
-        className="w-full max-w-lg rounded-t-2xl bg-surface-container p-space-lg shadow-md sm:rounded-2xl"
+        className="w-full max-w-lg rounded-t-xl bg-surface-container p-space-lg shadow-md sm:rounded-xl"
       >
         <div className="flex items-start justify-between gap-space-md">
           <div>

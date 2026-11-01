@@ -90,7 +90,7 @@ export function AbilityRadar({ stats }: AbilityRadarProps) {
       <polygon
         points={polygon}
         fill="rgba(78,222,163,0.2)"
-        stroke="#4edea3"
+        stroke="var(--color-primary)"
         strokeWidth={2}
       />
 
@@ -99,10 +99,10 @@ export function AbilityRadar({ stats }: AbilityRadarProps) {
         const point = pointAt(index, stat.rate);
         const color =
           stat.status === "good"
-            ? "#4edea3"
+            ? "var(--color-primary)"
             : stat.status === "ok"
-              ? "#ffb95f"
-              : "#ffb4ab";
+              ? "var(--color-tertiary)"
+              : "var(--color-error)";
         return (
           <circle
             key={stat.itemType}
@@ -124,7 +124,7 @@ export function AbilityRadar({ stats }: AbilityRadarProps) {
             y={point.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-[#bbcabf] font-code-md text-[9px]"
+            className="fill-outline font-code-md text-[9px]"
           >
             {stat.itemType}
           </text>

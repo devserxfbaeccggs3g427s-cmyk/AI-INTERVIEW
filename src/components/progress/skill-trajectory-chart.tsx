@@ -92,7 +92,7 @@ export function SkillTrajectoryChart({ series, targetLevel }: SkillTrajectoryCha
             y={yAt(level)}
             textAnchor="end"
             dominantBaseline="middle"
-            className="fill-[#86948a] font-code-md text-[9px]"
+            className="fill-on-surface-variant font-code-md text-[9px]"
           >
             {level}
           </text>
@@ -115,7 +115,7 @@ export function SkillTrajectoryChart({ series, targetLevel }: SkillTrajectoryCha
             x={WIDTH - PADDING}
             y={yAt(targetLevel) - 4}
             textAnchor="end"
-            className="fill-[#ffb95f] font-label-sm text-[9px]"
+            className="fill-tertiary font-label-sm text-[9px]"
           >
             Mục tiêu {targetLevel.toFixed(1)}
           </text>
@@ -155,7 +155,7 @@ export function SkillTrajectoryChart({ series, targetLevel }: SkillTrajectoryCha
           x={xAt(index)}
           y={HEIGHT - 10}
           textAnchor="middle"
-          className="fill-[#86948a] font-code-md text-[9px]"
+          className="fill-on-surface-variant font-code-md text-[9px]"
         >
           {point.month.slice(5)}
         </text>
