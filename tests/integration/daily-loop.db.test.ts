@@ -84,11 +84,16 @@ describe("integration — daily-loop với DB thật", () => {
       },
     });
 
+    // ⚠️ Đo **delta** chứ không đo tổng: seed có sẵn activity mẫu
+    // (12 speak + 6 roleplay) ⇒ `count()` tổng không còn là 1.
+    const activityBefore = await prisma.activity.count();
+    const evidenceBefore = await prisma.evidence.count();
+
     const result = await completePlanItem({ date, slot: 0 });
 
     expect(result.alreadyDone).toBe(false);
-    expect(await prisma.activity.count()).toBe(1);
-    expect(await prisma.evidence.count()).toBe(1);
+    expect(await prisma.activity.count()).toBe(activityBefore + 1);
+    expect(await prisma.evidence.count()).toBe(evidenceBefore + 1);
 
     const item = await prisma.planItem.findFirst({ where: { date, slot: 0 } });
     expect(item?.done).toBe(true);
@@ -122,12 +127,16 @@ describe("integration — daily-loop với DB thật", () => {
       },
     });
 
+    const activityBefore = await prisma.activity.count();
+    const evidenceBefore = await prisma.evidence.count();
+
     await completePlanItem({ date, slot: 1 });
     const second = await completePlanItem({ date, slot: 1 });
 
     expect(second.alreadyDone).toBe(true);
-    expect(await prisma.activity.count()).toBe(1);
-    expect(await prisma.evidence.count()).toBe(1);
+    // ⚠️ Đo delta — seed có sẵn activity mẫu (speak + roleplay).
+    expect(await prisma.activity.count()).toBe(activityBefore + 1);
+    expect(await prisma.evidence.count()).toBe(evidenceBefore + 1);
   });
 
   it("slot không có skillId ⇒ tạo Activity nhưng KHÔNG tạo Evidence", async () => {
@@ -151,10 +160,15 @@ describe("integration — daily-loop với DB thật", () => {
       },
     });
 
+    const activityBefore = await prisma.activity.count();
+    const evidenceBefore = await prisma.evidence.count();
+
     await completePlanItem({ date, slot: 3 });
 
-    expect(await prisma.activity.count()).toBe(1);
-    expect(await prisma.evidence.count()).toBe(0);
+    // ⚠️ Đo delta — seed có sẵn activity mẫu (speak + roleplay).
+    expect(await prisma.activity.count()).toBe(activityBefore + 1);
+    // Không có skillId ⇒ KHÔNG tạo Evidence.
+    expect(await prisma.evidence.count()).toBe(evidenceBefore);
   });
 
   it("Skill.level KHÔNG đổi sau 1 bằng chứng (P3 — level chỉ tăng qua ngưỡng)", async () => {
@@ -217,14 +231,18 @@ describe("integration — daily-loop với DB thật", () => {
       },
     });
 
+    const activityBefore = await prisma.activity.count();
+    const evidenceBefore = await prisma.evidence.count();
+
     await completePlanItem({ date, slot: 4 });
-    expect(await prisma.activity.count()).toBe(1);
+    expect(await prisma.activity.count()).toBe(activityBefore + 1);
 
     const undone = await uncompletePlanItem({ date, slot: 4 });
 
     expect(undone.wasDone).toBe(true);
-    expect(await prisma.activity.count()).toBe(0);
-    expect(await prisma.evidence.count()).toBe(0);
+    // ⚠️ Đo delta — seed có sẵn activity mẫu (speak + roleplay).
+    expect(await prisma.activity.count()).toBe(activityBefore);
+    expect(await prisma.evidence.count()).toBe(evidenceBefore);
 
     const item = await prisma.planItem.findFirst({ where: { date, slot: 4 } });
     expect(item?.done).toBe(false);

@@ -63,7 +63,11 @@ test.describe("a11y — axe (AC-AF-8)", () => {
       };
     });
 
-    expect(styles.fontFamily.toLowerCase()).toContain("jetbrains mono");
+    // ⚠️ `next/font/local` đặt tên font theo tên file ⇒ "JetBrains Mono"
+    // thành "jetbrainsMono". So khớp không phân biệt hoa thường + bỏ khoảng
+    // trắng cho cả hai vế.
+    const normalized = styles.fontFamily.toLowerCase().replace(/\s+/g, "");
+    expect(normalized).toContain("jetbrainsmono");
     // 0.04em ở font-size 0.6875rem (11px) ≈ 0.44px
     expect(Number.parseFloat(styles.letterSpacing)).toBeGreaterThanOrEqual(0.4);
   });

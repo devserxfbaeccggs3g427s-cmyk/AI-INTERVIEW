@@ -142,9 +142,11 @@ async function seedCards(): Promise<void> {
 }
 
 /**
- * Seed 12 bài mẫu luyện nói/vết (S09).
+ * Seed 12 bài mẫu luyện nói/viết (S09).
  *
  * ⚠️ Dùng `SPEAK_PROMPTS` từ `seed-data/speak-prompts.ts` — không hardcode.
+ * ⚠️ Metadata (`lang`, `mode`, `level`, `prompt`) được nhúng trong `content` JSON
+ * để `listSpeakPrompts` có thể đọc lại đúng.
  */
 async function seedSpeakPrompts(): Promise<void> {
   const items = SPEAK_PROMPTS;
@@ -153,7 +155,34 @@ async function seedSpeakPrompts(): Promise<void> {
     // ⚠️ Shape thật của `SeedSpeakPrompt`: `code` / `prompt` (không phải
     // `id` / `text`), và không có `estimatedMinutes` ⇒ suy ra từ `mode`.
     const minutes = prompt.mode === "write" ? 15 : 10;
+    // ⚠️ M3 — kho đề nằm ở bảng `SpeakPrompt` (có sẵn field `lang`, `mode`,
+    // `level`, `tags`, `isUserMade`). Trước đây nhét tất cả vào `Activity`
+    // dạng JSON ⇒ `language` luôn null nên lọc theo ngôn ngữ không bao giờ
+    // có kết quả, và đề bài hiển thị ra là chuỗi JSON thay vì nội dung.
+    await prisma.speakPrompt.upsert({
+      where: { code: prompt.code },
+      update: {
+        title: prompt.title,
+        prompt: prompt.prompt,
+        level: prompt.level,
+        lang: prompt.lang,
+        mode: prompt.mode,
+        tags: JSON.stringify(prompt.tags),
+        isUserMade: prompt.isUserMade,
+      },
+      create: {
+        code: prompt.code,
+        title: prompt.title,
+        prompt: prompt.prompt,
+        level: prompt.level,
+        lang: prompt.lang,
+        mode: prompt.mode,
+        tags: JSON.stringify(prompt.tags),
+        isUserMade: prompt.isUserMade,
+      },
+    });
 
+    // Activity tương ứng — để lịch sử hoạt động hiển thị đề đã luyện.
     await prisma.activity.upsert({
       where: { id: `seed-speak-${prompt.code}` },
       update: {
@@ -161,12 +190,14 @@ async function seedSpeakPrompts(): Promise<void> {
         content: prompt.prompt,
         domain: "language",
         type: "speak",
+        language: prompt.lang,
         minutes,
       },
       create: {
         id: `seed-speak-${prompt.code}`,
         domain: "language",
         type: "speak",
+        language: prompt.lang,
         minutes,
         title: prompt.title,
         content: prompt.prompt,

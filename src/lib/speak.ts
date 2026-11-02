@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/dates";
 import { recordEvidence } from "@/lib/skills";
@@ -166,6 +168,7 @@ export function gradeLocally(text: string): GradeResult {
  *
  * ⚠️ Dùng `Activity` với `type = "speak"` / `type = "roleplay"` — không
  * hardcode trong code.
+ * ⚠️ Chỉ trả về bài mẫu (isUserMade = false) — bài người dùng tự tạo dùng API riêng.
  */
 export async function listSpeakPrompts(options?: {
   lang?: string;
@@ -182,41 +185,40 @@ export async function listSpeakPrompts(options?: {
     isUserMade: boolean;
   }>
 > {
-  const rows = await prisma.activity.findMany({
+  // ⚠️ M3 — kho đề nằm ở bảng `SpeakPrompt` (đúng registry), không phải
+  // `Activity`. Trước đây đọc `Activity` ⇒ `language` luôn null nên lọc theo
+  // ngôn ngữ không bao giờ có kết quả, và nội dung đề là chuỗi JSON.
+  const rows = await prisma.speakPrompt.findMany({
     where: {
-      type: "speak",
-      ...(options?.lang ? { language: options.lang } : {}),
+      isUserMade: false,
+      ...(options?.lang ? { lang: options.lang } : {}),
+      ...(options?.mode
+        ? { OR: [{ mode: options.mode }, { mode: "both" }] }
+        : {}),
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { code: "asc" },
     select: {
       id: true,
       title: true,
-      content: true,
-      language: true,
-      minutes: true,
+      prompt: true,
+      level: true,
+      lang: true,
+      mode: true,
+      tags: true,
+      isUserMade: true,
     },
   });
 
-  return rows.map((row) => {
-    // Metadata được nhúng trong `content` dạng JSON (seed ghi kèm).
-    let meta: Record<string, unknown> = {};
-    try {
-      meta = JSON.parse(row.content ?? "{}") as Record<string, unknown>;
-    } catch {
-      meta = {};
-    }
-
-    return {
-      id: row.id,
-      title: row.title,
-      prompt: (meta.prompt as string) ?? row.content ?? "",
-      lang: (meta.lang as string) ?? row.language ?? null,
-      level: (meta.level as string) ?? null,
-      mode: (meta.mode as string) ?? null,
-      minutes: row.minutes,
-      isUserMade: row.id.startsWith("seed-") ? false : true,
-    };
-  });
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    prompt: row.prompt,
+    lang: row.lang,
+    level: row.level,
+    mode: row.mode,
+    minutes: row.mode === "write" ? 15 : 10,
+    isUserMade: row.isUserMade,
+  }));
 }
 
 /**
@@ -334,8 +336,29 @@ export async function saveAttempt(
 
   const rubric = input.grade?.rubric ?? null;
 
+  // ⚠️ M4 — lượt luyện cần nằm ở bảng `SpeakAttempt` để lịch sử phân biệt
+  // được "lượt thật" với "đề mẫu". Nếu chỉ ghi `Activity` thì lịch sử lấy
+  // từ `Activity` sẽ lẫn đề bài seed ⇒ bằng chứng giả (P3).
+  const attempt = await prisma.speakAttempt.create({
+    data: {
+      activityId: activity.id,
+      promptId:
+        input.promptId === null || input.promptId === undefined
+          ? null
+          : input.promptId,
+      mode,
+      content: trimmed,
+      // Prisma `Json` cần index signature — `RubricScores` không có nên
+      // phải ép kiểu qua `InputJsonValue`.
+      rubric: (rubric ?? {}) as unknown as Prisma.InputJsonValue,
+      totalScore: input.grade?.score ?? 0,
+      delta: Prisma.JsonNull,
+    },
+    select: { id: true },
+  });
+
   return {
-    id: activity.id,
+    id: attempt.id,
     title: activity.title,
     text: activity.content ?? "",
     mode,
