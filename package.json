@@ -18,6 +18,7 @@
     "pretest:e2e": "playwright install chromium",
     "test:e2e": "playwright test",
     "validate:specs": "python3 .kiro/scripts/validate_specs.py",
+    "progress": "python3 .kiro/scripts/roadmap_progress.py",
     "db:migrate:deploy": "tsx scripts/prisma-cli.ts migrate deploy"
   },
   "prisma": {
